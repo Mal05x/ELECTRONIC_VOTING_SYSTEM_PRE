@@ -1,0 +1,4646 @@
+[
+  {
+    "name": "Aba North Ward 001",
+    "code": "AB/AB/001",
+    "lgaId": 1,
+    "capacity": 500
+  },
+  {
+    "name": "Aba South Ward 001",
+    "code": "AB/AB/001",
+    "lgaId": 2,
+    "capacity": 500
+  },
+  {
+    "name": "Arochukwu Ward 001",
+    "code": "AB/AR/001",
+    "lgaId": 3,
+    "capacity": 500
+  },
+  {
+    "name": "Bende Ward 001",
+    "code": "AB/BE/001",
+    "lgaId": 4,
+    "capacity": 500
+  },
+  {
+    "name": "Ikwuano Ward 001",
+    "code": "AB/IK/001",
+    "lgaId": 5,
+    "capacity": 500
+  },
+  {
+    "name": "Isiala Ngwa North Ward 001",
+    "code": "AB/IS/001",
+    "lgaId": 6,
+    "capacity": 500
+  },
+  {
+    "name": "Isiala Ngwa South Ward 001",
+    "code": "AB/IS/001",
+    "lgaId": 7,
+    "capacity": 500
+  },
+  {
+    "name": "Isuikwuato Ward 001",
+    "code": "AB/IS/001",
+    "lgaId": 8,
+    "capacity": 500
+  },
+  {
+    "name": "Obi Ngwa Ward 001",
+    "code": "AB/OB/001",
+    "lgaId": 9,
+    "capacity": 500
+  },
+  {
+    "name": "Ohafia Ward 001",
+    "code": "AB/OH/001",
+    "lgaId": 10,
+    "capacity": 500
+  },
+  {
+    "name": "Osisioma Ward 001",
+    "code": "AB/OS/001",
+    "lgaId": 11,
+    "capacity": 500
+  },
+  {
+    "name": "Ugwunagbo Ward 001",
+    "code": "AB/UG/001",
+    "lgaId": 12,
+    "capacity": 500
+  },
+  {
+    "name": "Ukwa East Ward 001",
+    "code": "AB/UK/001",
+    "lgaId": 13,
+    "capacity": 500
+  },
+  {
+    "name": "Ukwa West Ward 001",
+    "code": "AB/UK/001",
+    "lgaId": 14,
+    "capacity": 500
+  },
+  {
+    "name": "Umuahia North Ward 001",
+    "code": "AB/UM/001",
+    "lgaId": 15,
+    "capacity": 500
+  },
+  {
+    "name": "Umuahia South Ward 001",
+    "code": "AB/UM/001",
+    "lgaId": 16,
+    "capacity": 500
+  },
+  {
+    "name": "Umu Nneochi Ward 001",
+    "code": "AB/UM/001",
+    "lgaId": 17,
+    "capacity": 500
+  },
+  {
+    "name": "Demsa Ward 001",
+    "code": "AD/DE/001",
+    "lgaId": 18,
+    "capacity": 500
+  },
+  {
+    "name": "Fufure Ward 001",
+    "code": "AD/FU/001",
+    "lgaId": 19,
+    "capacity": 500
+  },
+  {
+    "name": "Ganye Ward 001",
+    "code": "AD/GA/001",
+    "lgaId": 20,
+    "capacity": 500
+  },
+  {
+    "name": "Gayuk Ward 001",
+    "code": "AD/GA/001",
+    "lgaId": 21,
+    "capacity": 500
+  },
+  {
+    "name": "Gombi Ward 001",
+    "code": "AD/GO/001",
+    "lgaId": 22,
+    "capacity": 500
+  },
+  {
+    "name": "Grie Ward 001",
+    "code": "AD/GR/001",
+    "lgaId": 23,
+    "capacity": 500
+  },
+  {
+    "name": "Hong Ward 001",
+    "code": "AD/HO/001",
+    "lgaId": 24,
+    "capacity": 500
+  },
+  {
+    "name": "Jada Ward 001",
+    "code": "AD/JA/001",
+    "lgaId": 25,
+    "capacity": 500
+  },
+  {
+    "name": "Lamurde Ward 001",
+    "code": "AD/LA/001",
+    "lgaId": 26,
+    "capacity": 500
+  },
+  {
+    "name": "Madagali Ward 001",
+    "code": "AD/MA/001",
+    "lgaId": 27,
+    "capacity": 500
+  },
+  {
+    "name": "Maiha Ward 001",
+    "code": "AD/MA/001",
+    "lgaId": 28,
+    "capacity": 500
+  },
+  {
+    "name": "Mayo-Belwa Ward 001",
+    "code": "AD/MA/001",
+    "lgaId": 29,
+    "capacity": 500
+  },
+  {
+    "name": "Michika Ward 001",
+    "code": "AD/MI/001",
+    "lgaId": 30,
+    "capacity": 500
+  },
+  {
+    "name": "Mubi North Ward 001",
+    "code": "AD/MU/001",
+    "lgaId": 31,
+    "capacity": 500
+  },
+  {
+    "name": "Mubi South Ward 001",
+    "code": "AD/MU/001",
+    "lgaId": 32,
+    "capacity": 500
+  },
+  {
+    "name": "Numan Ward 001",
+    "code": "AD/NU/001",
+    "lgaId": 33,
+    "capacity": 500
+  },
+  {
+    "name": "Shelleng Ward 001",
+    "code": "AD/SH/001",
+    "lgaId": 34,
+    "capacity": 500
+  },
+  {
+    "name": "Song Ward 001",
+    "code": "AD/SO/001",
+    "lgaId": 35,
+    "capacity": 500
+  },
+  {
+    "name": "Toungo Ward 001",
+    "code": "AD/TO/001",
+    "lgaId": 36,
+    "capacity": 500
+  },
+  {
+    "name": "Yola North Ward 001",
+    "code": "AD/YO/001",
+    "lgaId": 37,
+    "capacity": 500
+  },
+  {
+    "name": "Yola South Ward 001",
+    "code": "AD/YO/001",
+    "lgaId": 38,
+    "capacity": 500
+  },
+  {
+    "name": "Abak Ward 001",
+    "code": "AK/AB/001",
+    "lgaId": 39,
+    "capacity": 500
+  },
+  {
+    "name": "Eastern Obolo Ward 001",
+    "code": "AK/EA/001",
+    "lgaId": 40,
+    "capacity": 500
+  },
+  {
+    "name": "Eket Ward 001",
+    "code": "AK/EK/001",
+    "lgaId": 41,
+    "capacity": 500
+  },
+  {
+    "name": "Esit Eket Ward 001",
+    "code": "AK/ES/001",
+    "lgaId": 42,
+    "capacity": 500
+  },
+  {
+    "name": "Essien Udim Ward 001",
+    "code": "AK/ES/001",
+    "lgaId": 43,
+    "capacity": 500
+  },
+  {
+    "name": "Etim Ekpo Ward 001",
+    "code": "AK/ET/001",
+    "lgaId": 44,
+    "capacity": 500
+  },
+  {
+    "name": "Etinan Ward 001",
+    "code": "AK/ET/001",
+    "lgaId": 45,
+    "capacity": 500
+  },
+  {
+    "name": "Ibeno Ward 001",
+    "code": "AK/IB/001",
+    "lgaId": 46,
+    "capacity": 500
+  },
+  {
+    "name": "Ibesikpo Asutan Ward 001",
+    "code": "AK/IB/001",
+    "lgaId": 47,
+    "capacity": 500
+  },
+  {
+    "name": "Ibiono-Ibom Ward 001",
+    "code": "AK/IB/001",
+    "lgaId": 48,
+    "capacity": 500
+  },
+  {
+    "name": "Ika Ward 001",
+    "code": "AK/IK/001",
+    "lgaId": 49,
+    "capacity": 500
+  },
+  {
+    "name": "Ikono Ward 001",
+    "code": "AK/IK/001",
+    "lgaId": 50,
+    "capacity": 500
+  },
+  {
+    "name": "Ikot Abasi Ward 001",
+    "code": "AK/IK/001",
+    "lgaId": 51,
+    "capacity": 500
+  },
+  {
+    "name": "Ikot Ekpene Ward 001",
+    "code": "AK/IK/001",
+    "lgaId": 52,
+    "capacity": 500
+  },
+  {
+    "name": "Ini Ward 001",
+    "code": "AK/IN/001",
+    "lgaId": 53,
+    "capacity": 500
+  },
+  {
+    "name": "Itu Ward 001",
+    "code": "AK/IT/001",
+    "lgaId": 54,
+    "capacity": 500
+  },
+  {
+    "name": "Mbo Ward 001",
+    "code": "AK/MB/001",
+    "lgaId": 55,
+    "capacity": 500
+  },
+  {
+    "name": "Mkpat-Enin Ward 001",
+    "code": "AK/MK/001",
+    "lgaId": 56,
+    "capacity": 500
+  },
+  {
+    "name": "Nsit-Atai Ward 001",
+    "code": "AK/NS/001",
+    "lgaId": 57,
+    "capacity": 500
+  },
+  {
+    "name": "Nsit-Ibom Ward 001",
+    "code": "AK/NS/001",
+    "lgaId": 58,
+    "capacity": 500
+  },
+  {
+    "name": "Nsit-Ubium Ward 001",
+    "code": "AK/NS/001",
+    "lgaId": 59,
+    "capacity": 500
+  },
+  {
+    "name": "Obot Akara Ward 001",
+    "code": "AK/OB/001",
+    "lgaId": 60,
+    "capacity": 500
+  },
+  {
+    "name": "Okobo Ward 001",
+    "code": "AK/OK/001",
+    "lgaId": 61,
+    "capacity": 500
+  },
+  {
+    "name": "Onna Ward 001",
+    "code": "AK/ON/001",
+    "lgaId": 62,
+    "capacity": 500
+  },
+  {
+    "name": "Oron Ward 001",
+    "code": "AK/OR/001",
+    "lgaId": 63,
+    "capacity": 500
+  },
+  {
+    "name": "Oruk Anam Ward 001",
+    "code": "AK/OR/001",
+    "lgaId": 64,
+    "capacity": 500
+  },
+  {
+    "name": "Udung-Uko Ward 001",
+    "code": "AK/UD/001",
+    "lgaId": 65,
+    "capacity": 500
+  },
+  {
+    "name": "Ukanafun Ward 001",
+    "code": "AK/UK/001",
+    "lgaId": 66,
+    "capacity": 500
+  },
+  {
+    "name": "Uruan Ward 001",
+    "code": "AK/UR/001",
+    "lgaId": 67,
+    "capacity": 500
+  },
+  {
+    "name": "Urue-Offong/Oruko Ward 001",
+    "code": "AK/UR/001",
+    "lgaId": 68,
+    "capacity": 500
+  },
+  {
+    "name": "Uyo Ward 001",
+    "code": "AK/UY/001",
+    "lgaId": 69,
+    "capacity": 500
+  },
+  {
+    "name": "Aguata Ward 001",
+    "code": "AN/AG/001",
+    "lgaId": 70,
+    "capacity": 500
+  },
+  {
+    "name": "Anambra East Ward 001",
+    "code": "AN/AN/001",
+    "lgaId": 71,
+    "capacity": 500
+  },
+  {
+    "name": "Anambra West Ward 001",
+    "code": "AN/AN/001",
+    "lgaId": 72,
+    "capacity": 500
+  },
+  {
+    "name": "Anaocha Ward 001",
+    "code": "AN/AN/001",
+    "lgaId": 73,
+    "capacity": 500
+  },
+  {
+    "name": "Awka North Ward 001",
+    "code": "AN/AW/001",
+    "lgaId": 74,
+    "capacity": 500
+  },
+  {
+    "name": "Awka South Ward 001",
+    "code": "AN/AW/001",
+    "lgaId": 75,
+    "capacity": 500
+  },
+  {
+    "name": "Ayamelum Ward 001",
+    "code": "AN/AY/001",
+    "lgaId": 76,
+    "capacity": 500
+  },
+  {
+    "name": "Dunukofia Ward 001",
+    "code": "AN/DU/001",
+    "lgaId": 77,
+    "capacity": 500
+  },
+  {
+    "name": "Ekwusigo Ward 001",
+    "code": "AN/EK/001",
+    "lgaId": 78,
+    "capacity": 500
+  },
+  {
+    "name": "Idemili North Ward 001",
+    "code": "AN/ID/001",
+    "lgaId": 79,
+    "capacity": 500
+  },
+  {
+    "name": "Idemili South Ward 001",
+    "code": "AN/ID/001",
+    "lgaId": 80,
+    "capacity": 500
+  },
+  {
+    "name": "Ihiala Ward 001",
+    "code": "AN/IH/001",
+    "lgaId": 81,
+    "capacity": 500
+  },
+  {
+    "name": "Njikoka Ward 001",
+    "code": "AN/NJ/001",
+    "lgaId": 82,
+    "capacity": 500
+  },
+  {
+    "name": "Nnewi North Ward 001",
+    "code": "AN/NN/001",
+    "lgaId": 83,
+    "capacity": 500
+  },
+  {
+    "name": "Nnewi South Ward 001",
+    "code": "AN/NN/001",
+    "lgaId": 84,
+    "capacity": 500
+  },
+  {
+    "name": "Ogbaru Ward 001",
+    "code": "AN/OG/001",
+    "lgaId": 85,
+    "capacity": 500
+  },
+  {
+    "name": "Onitsha North Ward 001",
+    "code": "AN/ON/001",
+    "lgaId": 86,
+    "capacity": 500
+  },
+  {
+    "name": "Onitsha South Ward 001",
+    "code": "AN/ON/001",
+    "lgaId": 87,
+    "capacity": 500
+  },
+  {
+    "name": "Orumba North Ward 001",
+    "code": "AN/OR/001",
+    "lgaId": 88,
+    "capacity": 500
+  },
+  {
+    "name": "Orumba South Ward 001",
+    "code": "AN/OR/001",
+    "lgaId": 89,
+    "capacity": 500
+  },
+  {
+    "name": "Oyi Ward 001",
+    "code": "AN/OY/001",
+    "lgaId": 90,
+    "capacity": 500
+  },
+  {
+    "name": "Alkaleri Ward 001",
+    "code": "BA/AL/001",
+    "lgaId": 91,
+    "capacity": 500
+  },
+  {
+    "name": "Bauchi Ward 001",
+    "code": "BA/BA/001",
+    "lgaId": 92,
+    "capacity": 500
+  },
+  {
+    "name": "Bogoro Ward 001",
+    "code": "BA/BO/001",
+    "lgaId": 93,
+    "capacity": 500
+  },
+  {
+    "name": "Damban Ward 001",
+    "code": "BA/DA/001",
+    "lgaId": 94,
+    "capacity": 500
+  },
+  {
+    "name": "Darazo Ward 001",
+    "code": "BA/DA/001",
+    "lgaId": 95,
+    "capacity": 500
+  },
+  {
+    "name": "Dass Ward 001",
+    "code": "BA/DA/001",
+    "lgaId": 96,
+    "capacity": 500
+  },
+  {
+    "name": "Gamawa Ward 001",
+    "code": "BA/GA/001",
+    "lgaId": 97,
+    "capacity": 500
+  },
+  {
+    "name": "Ganjuwa Ward 001",
+    "code": "BA/GA/001",
+    "lgaId": 98,
+    "capacity": 500
+  },
+  {
+    "name": "Giade Ward 001",
+    "code": "BA/GI/001",
+    "lgaId": 99,
+    "capacity": 500
+  },
+  {
+    "name": "Itas/Gadau Ward 001",
+    "code": "BA/IT/001",
+    "lgaId": 100,
+    "capacity": 500
+  },
+  {
+    "name": "Jama'are Ward 001",
+    "code": "BA/JA/001",
+    "lgaId": 101,
+    "capacity": 500
+  },
+  {
+    "name": "Katagum Ward 001",
+    "code": "BA/KA/001",
+    "lgaId": 102,
+    "capacity": 500
+  },
+  {
+    "name": "Kirfi Ward 001",
+    "code": "BA/KI/001",
+    "lgaId": 103,
+    "capacity": 500
+  },
+  {
+    "name": "Misau Ward 001",
+    "code": "BA/MI/001",
+    "lgaId": 104,
+    "capacity": 500
+  },
+  {
+    "name": "Ningi Ward 001",
+    "code": "BA/NI/001",
+    "lgaId": 105,
+    "capacity": 500
+  },
+  {
+    "name": "Shira Ward 001",
+    "code": "BA/SH/001",
+    "lgaId": 106,
+    "capacity": 500
+  },
+  {
+    "name": "Tafawa Balewa Ward 001",
+    "code": "BA/TA/001",
+    "lgaId": 107,
+    "capacity": 500
+  },
+  {
+    "name": "Toro Ward 001",
+    "code": "BA/TO/001",
+    "lgaId": 108,
+    "capacity": 500
+  },
+  {
+    "name": "Warji Ward 001",
+    "code": "BA/WA/001",
+    "lgaId": 109,
+    "capacity": 500
+  },
+  {
+    "name": "Zaki Ward 001",
+    "code": "BA/ZA/001",
+    "lgaId": 110,
+    "capacity": 500
+  },
+  {
+    "name": "Brass Ward 001",
+    "code": "BY/BR/001",
+    "lgaId": 111,
+    "capacity": 500
+  },
+  {
+    "name": "Ekeremor Ward 001",
+    "code": "BY/EK/001",
+    "lgaId": 112,
+    "capacity": 500
+  },
+  {
+    "name": "Kolokuma/Opokuma Ward 001",
+    "code": "BY/KO/001",
+    "lgaId": 113,
+    "capacity": 500
+  },
+  {
+    "name": "Nembe Ward 001",
+    "code": "BY/NE/001",
+    "lgaId": 114,
+    "capacity": 500
+  },
+  {
+    "name": "Ogbia Ward 001",
+    "code": "BY/OG/001",
+    "lgaId": 115,
+    "capacity": 500
+  },
+  {
+    "name": "Sagbama Ward 001",
+    "code": "BY/SA/001",
+    "lgaId": 116,
+    "capacity": 500
+  },
+  {
+    "name": "Southern Ijaw Ward 001",
+    "code": "BY/SO/001",
+    "lgaId": 117,
+    "capacity": 500
+  },
+  {
+    "name": "Yenagoa Ward 001",
+    "code": "BY/YE/001",
+    "lgaId": 118,
+    "capacity": 500
+  },
+  {
+    "name": "Ado Ward 001",
+    "code": "BE/AD/001",
+    "lgaId": 119,
+    "capacity": 500
+  },
+  {
+    "name": "Agatu Ward 001",
+    "code": "BE/AG/001",
+    "lgaId": 120,
+    "capacity": 500
+  },
+  {
+    "name": "Apa Ward 001",
+    "code": "BE/AP/001",
+    "lgaId": 121,
+    "capacity": 500
+  },
+  {
+    "name": "Buruku Ward 001",
+    "code": "BE/BU/001",
+    "lgaId": 122,
+    "capacity": 500
+  },
+  {
+    "name": "Gboko Ward 001",
+    "code": "BE/GB/001",
+    "lgaId": 123,
+    "capacity": 500
+  },
+  {
+    "name": "Guma Ward 001",
+    "code": "BE/GU/001",
+    "lgaId": 124,
+    "capacity": 500
+  },
+  {
+    "name": "Gwer East Ward 001",
+    "code": "BE/GW/001",
+    "lgaId": 125,
+    "capacity": 500
+  },
+  {
+    "name": "Gwer West Ward 001",
+    "code": "BE/GW/001",
+    "lgaId": 126,
+    "capacity": 500
+  },
+  {
+    "name": "Katsina-Ala Ward 001",
+    "code": "BE/KA/001",
+    "lgaId": 127,
+    "capacity": 500
+  },
+  {
+    "name": "Konshisha Ward 001",
+    "code": "BE/KO/001",
+    "lgaId": 128,
+    "capacity": 500
+  },
+  {
+    "name": "Kwande Ward 001",
+    "code": "BE/KW/001",
+    "lgaId": 129,
+    "capacity": 500
+  },
+  {
+    "name": "Logo Ward 001",
+    "code": "BE/LO/001",
+    "lgaId": 130,
+    "capacity": 500
+  },
+  {
+    "name": "Makurdi Ward 001",
+    "code": "BE/MA/001",
+    "lgaId": 131,
+    "capacity": 500
+  },
+  {
+    "name": "Obi Ward 001",
+    "code": "BE/OB/001",
+    "lgaId": 132,
+    "capacity": 500
+  },
+  {
+    "name": "Ogbadibo Ward 001",
+    "code": "BE/OG/001",
+    "lgaId": 133,
+    "capacity": 500
+  },
+  {
+    "name": "Ohimini Ward 001",
+    "code": "BE/OH/001",
+    "lgaId": 134,
+    "capacity": 500
+  },
+  {
+    "name": "Oju Ward 001",
+    "code": "BE/OJ/001",
+    "lgaId": 135,
+    "capacity": 500
+  },
+  {
+    "name": "Okpokwu Ward 001",
+    "code": "BE/OK/001",
+    "lgaId": 136,
+    "capacity": 500
+  },
+  {
+    "name": "Otukpo Ward 001",
+    "code": "BE/OT/001",
+    "lgaId": 137,
+    "capacity": 500
+  },
+  {
+    "name": "Tarka Ward 001",
+    "code": "BE/TA/001",
+    "lgaId": 138,
+    "capacity": 500
+  },
+  {
+    "name": "Ukum Ward 001",
+    "code": "BE/UK/001",
+    "lgaId": 139,
+    "capacity": 500
+  },
+  {
+    "name": "Ushongo Ward 001",
+    "code": "BE/US/001",
+    "lgaId": 140,
+    "capacity": 500
+  },
+  {
+    "name": "Vandeikya Ward 001",
+    "code": "BE/VA/001",
+    "lgaId": 141,
+    "capacity": 500
+  },
+  {
+    "name": "Abadam Ward 001",
+    "code": "BO/AB/001",
+    "lgaId": 142,
+    "capacity": 500
+  },
+  {
+    "name": "Askira/Uba Ward 001",
+    "code": "BO/AS/001",
+    "lgaId": 143,
+    "capacity": 500
+  },
+  {
+    "name": "Bama Ward 001",
+    "code": "BO/BA/001",
+    "lgaId": 144,
+    "capacity": 500
+  },
+  {
+    "name": "Bayo Ward 001",
+    "code": "BO/BA/001",
+    "lgaId": 145,
+    "capacity": 500
+  },
+  {
+    "name": "Biu Ward 001",
+    "code": "BO/BI/001",
+    "lgaId": 146,
+    "capacity": 500
+  },
+  {
+    "name": "Chibok Ward 001",
+    "code": "BO/CH/001",
+    "lgaId": 147,
+    "capacity": 500
+  },
+  {
+    "name": "Damboa Ward 001",
+    "code": "BO/DA/001",
+    "lgaId": 148,
+    "capacity": 500
+  },
+  {
+    "name": "Dikwa Ward 001",
+    "code": "BO/DI/001",
+    "lgaId": 149,
+    "capacity": 500
+  },
+  {
+    "name": "Gubio Ward 001",
+    "code": "BO/GU/001",
+    "lgaId": 150,
+    "capacity": 500
+  },
+  {
+    "name": "Guzamala Ward 001",
+    "code": "BO/GU/001",
+    "lgaId": 151,
+    "capacity": 500
+  },
+  {
+    "name": "Gwoza Ward 001",
+    "code": "BO/GW/001",
+    "lgaId": 152,
+    "capacity": 500
+  },
+  {
+    "name": "Hawul Ward 001",
+    "code": "BO/HA/001",
+    "lgaId": 153,
+    "capacity": 500
+  },
+  {
+    "name": "Jere Ward 001",
+    "code": "BO/JE/001",
+    "lgaId": 154,
+    "capacity": 500
+  },
+  {
+    "name": "Kaga Ward 001",
+    "code": "BO/KA/001",
+    "lgaId": 155,
+    "capacity": 500
+  },
+  {
+    "name": "Kala/Balge Ward 001",
+    "code": "BO/KA/001",
+    "lgaId": 156,
+    "capacity": 500
+  },
+  {
+    "name": "Konduga Ward 001",
+    "code": "BO/KO/001",
+    "lgaId": 157,
+    "capacity": 500
+  },
+  {
+    "name": "Kukawa Ward 001",
+    "code": "BO/KU/001",
+    "lgaId": 158,
+    "capacity": 500
+  },
+  {
+    "name": "Kwaya Kusar Ward 001",
+    "code": "BO/KW/001",
+    "lgaId": 159,
+    "capacity": 500
+  },
+  {
+    "name": "Mafa Ward 001",
+    "code": "BO/MA/001",
+    "lgaId": 160,
+    "capacity": 500
+  },
+  {
+    "name": "Magumeri Ward 001",
+    "code": "BO/MA/001",
+    "lgaId": 161,
+    "capacity": 500
+  },
+  {
+    "name": "Maiduguri Ward 001",
+    "code": "BO/MA/001",
+    "lgaId": 162,
+    "capacity": 500
+  },
+  {
+    "name": "Marte Ward 001",
+    "code": "BO/MA/001",
+    "lgaId": 163,
+    "capacity": 500
+  },
+  {
+    "name": "Mobbar Ward 001",
+    "code": "BO/MO/001",
+    "lgaId": 164,
+    "capacity": 500
+  },
+  {
+    "name": "Monguno Ward 001",
+    "code": "BO/MO/001",
+    "lgaId": 165,
+    "capacity": 500
+  },
+  {
+    "name": "Ngala Ward 001",
+    "code": "BO/NG/001",
+    "lgaId": 166,
+    "capacity": 500
+  },
+  {
+    "name": "Nganzai Ward 001",
+    "code": "BO/NG/001",
+    "lgaId": 167,
+    "capacity": 500
+  },
+  {
+    "name": "Shani Ward 001",
+    "code": "BO/SH/001",
+    "lgaId": 168,
+    "capacity": 500
+  },
+  {
+    "name": "Abi Ward 001",
+    "code": "CR/AB/001",
+    "lgaId": 169,
+    "capacity": 500
+  },
+  {
+    "name": "Akamkpa Ward 001",
+    "code": "CR/AK/001",
+    "lgaId": 170,
+    "capacity": 500
+  },
+  {
+    "name": "Akpabuyo Ward 001",
+    "code": "CR/AK/001",
+    "lgaId": 171,
+    "capacity": 500
+  },
+  {
+    "name": "Bakassi Ward 001",
+    "code": "CR/BA/001",
+    "lgaId": 172,
+    "capacity": 500
+  },
+  {
+    "name": "Bekwarra Ward 001",
+    "code": "CR/BE/001",
+    "lgaId": 173,
+    "capacity": 500
+  },
+  {
+    "name": "Biase Ward 001",
+    "code": "CR/BI/001",
+    "lgaId": 174,
+    "capacity": 500
+  },
+  {
+    "name": "Boki Ward 001",
+    "code": "CR/BO/001",
+    "lgaId": 175,
+    "capacity": 500
+  },
+  {
+    "name": "Calabar Municipal Ward 001",
+    "code": "CR/CA/001",
+    "lgaId": 176,
+    "capacity": 500
+  },
+  {
+    "name": "Calabar South Ward 001",
+    "code": "CR/CA/001",
+    "lgaId": 177,
+    "capacity": 500
+  },
+  {
+    "name": "Etung Ward 001",
+    "code": "CR/ET/001",
+    "lgaId": 178,
+    "capacity": 500
+  },
+  {
+    "name": "Ikom Ward 001",
+    "code": "CR/IK/001",
+    "lgaId": 179,
+    "capacity": 500
+  },
+  {
+    "name": "Obanliku Ward 001",
+    "code": "CR/OB/001",
+    "lgaId": 180,
+    "capacity": 500
+  },
+  {
+    "name": "Obubra Ward 001",
+    "code": "CR/OB/001",
+    "lgaId": 181,
+    "capacity": 500
+  },
+  {
+    "name": "Obudu Ward 001",
+    "code": "CR/OB/001",
+    "lgaId": 182,
+    "capacity": 500
+  },
+  {
+    "name": "Odukpani Ward 001",
+    "code": "CR/OD/001",
+    "lgaId": 183,
+    "capacity": 500
+  },
+  {
+    "name": "Ogoja Ward 001",
+    "code": "CR/OG/001",
+    "lgaId": 184,
+    "capacity": 500
+  },
+  {
+    "name": "Yakuur Ward 001",
+    "code": "CR/YA/001",
+    "lgaId": 185,
+    "capacity": 500
+  },
+  {
+    "name": "Yala Ward 001",
+    "code": "CR/YA/001",
+    "lgaId": 186,
+    "capacity": 500
+  },
+  {
+    "name": "Aniocha North Ward 001",
+    "code": "DE/AN/001",
+    "lgaId": 187,
+    "capacity": 500
+  },
+  {
+    "name": "Aniocha South Ward 001",
+    "code": "DE/AN/001",
+    "lgaId": 188,
+    "capacity": 500
+  },
+  {
+    "name": "Bomadi Ward 001",
+    "code": "DE/BO/001",
+    "lgaId": 189,
+    "capacity": 500
+  },
+  {
+    "name": "Burutu Ward 001",
+    "code": "DE/BU/001",
+    "lgaId": 190,
+    "capacity": 500
+  },
+  {
+    "name": "Ethiope East Ward 001",
+    "code": "DE/ET/001",
+    "lgaId": 191,
+    "capacity": 500
+  },
+  {
+    "name": "Ethiope West Ward 001",
+    "code": "DE/ET/001",
+    "lgaId": 192,
+    "capacity": 500
+  },
+  {
+    "name": "Ika North East Ward 001",
+    "code": "DE/IK/001",
+    "lgaId": 193,
+    "capacity": 500
+  },
+  {
+    "name": "Ika South Ward 001",
+    "code": "DE/IK/001",
+    "lgaId": 194,
+    "capacity": 500
+  },
+  {
+    "name": "Isoko North Ward 001",
+    "code": "DE/IS/001",
+    "lgaId": 195,
+    "capacity": 500
+  },
+  {
+    "name": "Isoko South Ward 001",
+    "code": "DE/IS/001",
+    "lgaId": 196,
+    "capacity": 500
+  },
+  {
+    "name": "Ndokwa East Ward 001",
+    "code": "DE/ND/001",
+    "lgaId": 197,
+    "capacity": 500
+  },
+  {
+    "name": "Ndokwa West Ward 001",
+    "code": "DE/ND/001",
+    "lgaId": 198,
+    "capacity": 500
+  },
+  {
+    "name": "Okpe Ward 001",
+    "code": "DE/OK/001",
+    "lgaId": 199,
+    "capacity": 500
+  },
+  {
+    "name": "Oshimili North Ward 001",
+    "code": "DE/OS/001",
+    "lgaId": 200,
+    "capacity": 500
+  },
+  {
+    "name": "Oshimili South Ward 001",
+    "code": "DE/OS/001",
+    "lgaId": 201,
+    "capacity": 500
+  },
+  {
+    "name": "Patani Ward 001",
+    "code": "DE/PA/001",
+    "lgaId": 202,
+    "capacity": 500
+  },
+  {
+    "name": "Sapele Ward 001",
+    "code": "DE/SA/001",
+    "lgaId": 203,
+    "capacity": 500
+  },
+  {
+    "name": "Udu Ward 001",
+    "code": "DE/UD/001",
+    "lgaId": 204,
+    "capacity": 500
+  },
+  {
+    "name": "Ughelli North Ward 001",
+    "code": "DE/UG/001",
+    "lgaId": 205,
+    "capacity": 500
+  },
+  {
+    "name": "Ughelli South Ward 001",
+    "code": "DE/UG/001",
+    "lgaId": 206,
+    "capacity": 500
+  },
+  {
+    "name": "Ukwuani Ward 001",
+    "code": "DE/UK/001",
+    "lgaId": 207,
+    "capacity": 500
+  },
+  {
+    "name": "Uvwie Ward 001",
+    "code": "DE/UV/001",
+    "lgaId": 208,
+    "capacity": 500
+  },
+  {
+    "name": "Warri North Ward 001",
+    "code": "DE/WA/001",
+    "lgaId": 209,
+    "capacity": 500
+  },
+  {
+    "name": "Warri South Ward 001",
+    "code": "DE/WA/001",
+    "lgaId": 210,
+    "capacity": 500
+  },
+  {
+    "name": "Warri South West Ward 001",
+    "code": "DE/WA/001",
+    "lgaId": 211,
+    "capacity": 500
+  },
+  {
+    "name": "Abakaliki Ward 001",
+    "code": "EB/AB/001",
+    "lgaId": 212,
+    "capacity": 500
+  },
+  {
+    "name": "Afikpo North Ward 001",
+    "code": "EB/AF/001",
+    "lgaId": 213,
+    "capacity": 500
+  },
+  {
+    "name": "Afikpo South Ward 001",
+    "code": "EB/AF/001",
+    "lgaId": 214,
+    "capacity": 500
+  },
+  {
+    "name": "Ebonyi Ward 001",
+    "code": "EB/EB/001",
+    "lgaId": 215,
+    "capacity": 500
+  },
+  {
+    "name": "Ezza North Ward 001",
+    "code": "EB/EZ/001",
+    "lgaId": 216,
+    "capacity": 500
+  },
+  {
+    "name": "Ezza South Ward 001",
+    "code": "EB/EZ/001",
+    "lgaId": 217,
+    "capacity": 500
+  },
+  {
+    "name": "Ikwo Ward 001",
+    "code": "EB/IK/001",
+    "lgaId": 218,
+    "capacity": 500
+  },
+  {
+    "name": "Ishielu Ward 001",
+    "code": "EB/IS/001",
+    "lgaId": 219,
+    "capacity": 500
+  },
+  {
+    "name": "Ivo Ward 001",
+    "code": "EB/IV/001",
+    "lgaId": 220,
+    "capacity": 500
+  },
+  {
+    "name": "Izzi Ward 001",
+    "code": "EB/IZ/001",
+    "lgaId": 221,
+    "capacity": 500
+  },
+  {
+    "name": "Ohaozara Ward 001",
+    "code": "EB/OH/001",
+    "lgaId": 222,
+    "capacity": 500
+  },
+  {
+    "name": "Ohaukwu Ward 001",
+    "code": "EB/OH/001",
+    "lgaId": 223,
+    "capacity": 500
+  },
+  {
+    "name": "Onicha Ward 001",
+    "code": "EB/ON/001",
+    "lgaId": 224,
+    "capacity": 500
+  },
+  {
+    "name": "Akoko-Edo Ward 001",
+    "code": "ED/AK/001",
+    "lgaId": 225,
+    "capacity": 500
+  },
+  {
+    "name": "Egor Ward 001",
+    "code": "ED/EG/001",
+    "lgaId": 226,
+    "capacity": 500
+  },
+  {
+    "name": "Esan Central Ward 001",
+    "code": "ED/ES/001",
+    "lgaId": 227,
+    "capacity": 500
+  },
+  {
+    "name": "Esan North-East Ward 001",
+    "code": "ED/ES/001",
+    "lgaId": 228,
+    "capacity": 500
+  },
+  {
+    "name": "Esan South-East Ward 001",
+    "code": "ED/ES/001",
+    "lgaId": 229,
+    "capacity": 500
+  },
+  {
+    "name": "Esan West Ward 001",
+    "code": "ED/ES/001",
+    "lgaId": 230,
+    "capacity": 500
+  },
+  {
+    "name": "Etsako Central Ward 001",
+    "code": "ED/ET/001",
+    "lgaId": 231,
+    "capacity": 500
+  },
+  {
+    "name": "Etsako East Ward 001",
+    "code": "ED/ET/001",
+    "lgaId": 232,
+    "capacity": 500
+  },
+  {
+    "name": "Etsako West Ward 001",
+    "code": "ED/ET/001",
+    "lgaId": 233,
+    "capacity": 500
+  },
+  {
+    "name": "Igueben Ward 001",
+    "code": "ED/IG/001",
+    "lgaId": 234,
+    "capacity": 500
+  },
+  {
+    "name": "Ikpoba-Okha Ward 001",
+    "code": "ED/IK/001",
+    "lgaId": 235,
+    "capacity": 500
+  },
+  {
+    "name": "Oredo Ward 001",
+    "code": "ED/OR/001",
+    "lgaId": 236,
+    "capacity": 500
+  },
+  {
+    "name": "Orhionmwon Ward 001",
+    "code": "ED/OR/001",
+    "lgaId": 237,
+    "capacity": 500
+  },
+  {
+    "name": "Ovia North-East Ward 001",
+    "code": "ED/OV/001",
+    "lgaId": 238,
+    "capacity": 500
+  },
+  {
+    "name": "Ovia South-West Ward 001",
+    "code": "ED/OV/001",
+    "lgaId": 239,
+    "capacity": 500
+  },
+  {
+    "name": "Owan East Ward 001",
+    "code": "ED/OW/001",
+    "lgaId": 240,
+    "capacity": 500
+  },
+  {
+    "name": "Owan West Ward 001",
+    "code": "ED/OW/001",
+    "lgaId": 241,
+    "capacity": 500
+  },
+  {
+    "name": "Uhunmwonde Ward 001",
+    "code": "ED/UH/001",
+    "lgaId": 242,
+    "capacity": 500
+  },
+  {
+    "name": "Ado Ekiti Ward 001",
+    "code": "EK/AD/001",
+    "lgaId": 243,
+    "capacity": 500
+  },
+  {
+    "name": "Efon Ward 001",
+    "code": "EK/EF/001",
+    "lgaId": 244,
+    "capacity": 500
+  },
+  {
+    "name": "Ekiti East Ward 001",
+    "code": "EK/EK/001",
+    "lgaId": 245,
+    "capacity": 500
+  },
+  {
+    "name": "Ekiti South-West Ward 001",
+    "code": "EK/EK/001",
+    "lgaId": 246,
+    "capacity": 500
+  },
+  {
+    "name": "Ekiti West Ward 001",
+    "code": "EK/EK/001",
+    "lgaId": 247,
+    "capacity": 500
+  },
+  {
+    "name": "Emure Ward 001",
+    "code": "EK/EM/001",
+    "lgaId": 248,
+    "capacity": 500
+  },
+  {
+    "name": "Gbonyin Ward 001",
+    "code": "EK/GB/001",
+    "lgaId": 249,
+    "capacity": 500
+  },
+  {
+    "name": "Ido/Osi Ward 001",
+    "code": "EK/ID/001",
+    "lgaId": 250,
+    "capacity": 500
+  },
+  {
+    "name": "Ijero Ward 001",
+    "code": "EK/IJ/001",
+    "lgaId": 251,
+    "capacity": 500
+  },
+  {
+    "name": "Ikere Ward 001",
+    "code": "EK/IK/001",
+    "lgaId": 252,
+    "capacity": 500
+  },
+  {
+    "name": "Ikole Ward 001",
+    "code": "EK/IK/001",
+    "lgaId": 253,
+    "capacity": 500
+  },
+  {
+    "name": "Ilejemeje Ward 001",
+    "code": "EK/IL/001",
+    "lgaId": 254,
+    "capacity": 500
+  },
+  {
+    "name": "Irepodun/Ifelodun Ward 001",
+    "code": "EK/IR/001",
+    "lgaId": 255,
+    "capacity": 500
+  },
+  {
+    "name": "Ise/Orun Ward 001",
+    "code": "EK/IS/001",
+    "lgaId": 256,
+    "capacity": 500
+  },
+  {
+    "name": "Moba Ward 001",
+    "code": "EK/MO/001",
+    "lgaId": 257,
+    "capacity": 500
+  },
+  {
+    "name": "Oye Ward 001",
+    "code": "EK/OY/001",
+    "lgaId": 258,
+    "capacity": 500
+  },
+  {
+    "name": "Aninri Ward 001",
+    "code": "EN/AN/001",
+    "lgaId": 259,
+    "capacity": 500
+  },
+  {
+    "name": "Awgu Ward 001",
+    "code": "EN/AW/001",
+    "lgaId": 260,
+    "capacity": 500
+  },
+  {
+    "name": "Enugu East Ward 001",
+    "code": "EN/EN/001",
+    "lgaId": 261,
+    "capacity": 500
+  },
+  {
+    "name": "Enugu North Ward 001",
+    "code": "EN/EN/001",
+    "lgaId": 262,
+    "capacity": 500
+  },
+  {
+    "name": "Enugu South Ward 001",
+    "code": "EN/EN/001",
+    "lgaId": 263,
+    "capacity": 500
+  },
+  {
+    "name": "Ezeagu Ward 001",
+    "code": "EN/EZ/001",
+    "lgaId": 264,
+    "capacity": 500
+  },
+  {
+    "name": "Igbo Etiti Ward 001",
+    "code": "EN/IG/001",
+    "lgaId": 265,
+    "capacity": 500
+  },
+  {
+    "name": "Igbo Eze North Ward 001",
+    "code": "EN/IG/001",
+    "lgaId": 266,
+    "capacity": 500
+  },
+  {
+    "name": "Igbo Eze South Ward 001",
+    "code": "EN/IG/001",
+    "lgaId": 267,
+    "capacity": 500
+  },
+  {
+    "name": "Isi Uzo Ward 001",
+    "code": "EN/IS/001",
+    "lgaId": 268,
+    "capacity": 500
+  },
+  {
+    "name": "Nkanu East Ward 001",
+    "code": "EN/NK/001",
+    "lgaId": 269,
+    "capacity": 500
+  },
+  {
+    "name": "Nkanu West Ward 001",
+    "code": "EN/NK/001",
+    "lgaId": 270,
+    "capacity": 500
+  },
+  {
+    "name": "Nsukka Ward 001",
+    "code": "EN/NS/001",
+    "lgaId": 271,
+    "capacity": 500
+  },
+  {
+    "name": "Oji River Ward 001",
+    "code": "EN/OJ/001",
+    "lgaId": 272,
+    "capacity": 500
+  },
+  {
+    "name": "Udenu Ward 001",
+    "code": "EN/UD/001",
+    "lgaId": 273,
+    "capacity": 500
+  },
+  {
+    "name": "Udi Ward 001",
+    "code": "EN/UD/001",
+    "lgaId": 274,
+    "capacity": 500
+  },
+  {
+    "name": "Uzo-Uwani Ward 001",
+    "code": "EN/UZ/001",
+    "lgaId": 275,
+    "capacity": 500
+  },
+  {
+    "name": "Abaji Ward 001",
+    "code": "FC/AB/001",
+    "lgaId": 276,
+    "capacity": 500
+  },
+  {
+    "name": "Abuja Municipal Ward 001",
+    "code": "FC/AB/001",
+    "lgaId": 277,
+    "capacity": 500
+  },
+  {
+    "name": "Bwari Ward 001",
+    "code": "FC/BW/001",
+    "lgaId": 278,
+    "capacity": 500
+  },
+  {
+    "name": "Gwagwalada Ward 001",
+    "code": "FC/GW/001",
+    "lgaId": 279,
+    "capacity": 500
+  },
+  {
+    "name": "Kuje Ward 001",
+    "code": "FC/KU/001",
+    "lgaId": 280,
+    "capacity": 500
+  },
+  {
+    "name": "Kwali Ward 001",
+    "code": "FC/KW/001",
+    "lgaId": 281,
+    "capacity": 500
+  },
+  {
+    "name": "Akko Ward 001",
+    "code": "GO/AK/001",
+    "lgaId": 282,
+    "capacity": 500
+  },
+  {
+    "name": "Balanga Ward 001",
+    "code": "GO/BA/001",
+    "lgaId": 283,
+    "capacity": 500
+  },
+  {
+    "name": "Billiri Ward 001",
+    "code": "GO/BI/001",
+    "lgaId": 284,
+    "capacity": 500
+  },
+  {
+    "name": "Dukku Ward 001",
+    "code": "GO/DU/001",
+    "lgaId": 285,
+    "capacity": 500
+  },
+  {
+    "name": "Funakaye Ward 001",
+    "code": "GO/FU/001",
+    "lgaId": 286,
+    "capacity": 500
+  },
+  {
+    "name": "Gombe Ward 001",
+    "code": "GO/GO/001",
+    "lgaId": 287,
+    "capacity": 500
+  },
+  {
+    "name": "Kaltungo Ward 001",
+    "code": "GO/KA/001",
+    "lgaId": 288,
+    "capacity": 500
+  },
+  {
+    "name": "Kwami Ward 001",
+    "code": "GO/KW/001",
+    "lgaId": 289,
+    "capacity": 500
+  },
+  {
+    "name": "Nafada Ward 001",
+    "code": "GO/NA/001",
+    "lgaId": 290,
+    "capacity": 500
+  },
+  {
+    "name": "Shongom Ward 001",
+    "code": "GO/SH/001",
+    "lgaId": 291,
+    "capacity": 500
+  },
+  {
+    "name": "Yamaltu/Deba Ward 001",
+    "code": "GO/YA/001",
+    "lgaId": 292,
+    "capacity": 500
+  },
+  {
+    "name": "Aboh Mbaise Ward 001",
+    "code": "IM/AB/001",
+    "lgaId": 293,
+    "capacity": 500
+  },
+  {
+    "name": "Ahiazu Mbaise Ward 001",
+    "code": "IM/AH/001",
+    "lgaId": 294,
+    "capacity": 500
+  },
+  {
+    "name": "Ehime Mbano Ward 001",
+    "code": "IM/EH/001",
+    "lgaId": 295,
+    "capacity": 500
+  },
+  {
+    "name": "Ezinihitte Ward 001",
+    "code": "IM/EZ/001",
+    "lgaId": 296,
+    "capacity": 500
+  },
+  {
+    "name": "Ideato North Ward 001",
+    "code": "IM/ID/001",
+    "lgaId": 297,
+    "capacity": 500
+  },
+  {
+    "name": "Ideato South Ward 001",
+    "code": "IM/ID/001",
+    "lgaId": 298,
+    "capacity": 500
+  },
+  {
+    "name": "Ihitte/Uboma Ward 001",
+    "code": "IM/IH/001",
+    "lgaId": 299,
+    "capacity": 500
+  },
+  {
+    "name": "Ikeduru Ward 001",
+    "code": "IM/IK/001",
+    "lgaId": 300,
+    "capacity": 500
+  },
+  {
+    "name": "Isiala Mbano Ward 001",
+    "code": "IM/IS/001",
+    "lgaId": 301,
+    "capacity": 500
+  },
+  {
+    "name": "Isu Ward 001",
+    "code": "IM/IS/001",
+    "lgaId": 302,
+    "capacity": 500
+  },
+  {
+    "name": "Mbaitoli Ward 001",
+    "code": "IM/MB/001",
+    "lgaId": 303,
+    "capacity": 500
+  },
+  {
+    "name": "Ngor Okpala Ward 001",
+    "code": "IM/NG/001",
+    "lgaId": 304,
+    "capacity": 500
+  },
+  {
+    "name": "Njaba Ward 001",
+    "code": "IM/NJ/001",
+    "lgaId": 305,
+    "capacity": 500
+  },
+  {
+    "name": "Nkwerre Ward 001",
+    "code": "IM/NK/001",
+    "lgaId": 306,
+    "capacity": 500
+  },
+  {
+    "name": "Nwangele Ward 001",
+    "code": "IM/NW/001",
+    "lgaId": 307,
+    "capacity": 500
+  },
+  {
+    "name": "Obowo Ward 001",
+    "code": "IM/OB/001",
+    "lgaId": 308,
+    "capacity": 500
+  },
+  {
+    "name": "Oguta Ward 001",
+    "code": "IM/OG/001",
+    "lgaId": 309,
+    "capacity": 500
+  },
+  {
+    "name": "Ohaji/Egbema Ward 001",
+    "code": "IM/OH/001",
+    "lgaId": 310,
+    "capacity": 500
+  },
+  {
+    "name": "Okigwe Ward 001",
+    "code": "IM/OK/001",
+    "lgaId": 311,
+    "capacity": 500
+  },
+  {
+    "name": "Onuimo Ward 001",
+    "code": "IM/ON/001",
+    "lgaId": 312,
+    "capacity": 500
+  },
+  {
+    "name": "Orlu Ward 001",
+    "code": "IM/OR/001",
+    "lgaId": 313,
+    "capacity": 500
+  },
+  {
+    "name": "Orsu Ward 001",
+    "code": "IM/OR/001",
+    "lgaId": 314,
+    "capacity": 500
+  },
+  {
+    "name": "Oru East Ward 001",
+    "code": "IM/OR/001",
+    "lgaId": 315,
+    "capacity": 500
+  },
+  {
+    "name": "Oru West Ward 001",
+    "code": "IM/OR/001",
+    "lgaId": 316,
+    "capacity": 500
+  },
+  {
+    "name": "Owerri Municipal Ward 001",
+    "code": "IM/OW/001",
+    "lgaId": 317,
+    "capacity": 500
+  },
+  {
+    "name": "Owerri North Ward 001",
+    "code": "IM/OW/001",
+    "lgaId": 318,
+    "capacity": 500
+  },
+  {
+    "name": "Owerri West Ward 001",
+    "code": "IM/OW/001",
+    "lgaId": 319,
+    "capacity": 500
+  },
+  {
+    "name": "Auyo Ward 001",
+    "code": "JI/AU/001",
+    "lgaId": 320,
+    "capacity": 500
+  },
+  {
+    "name": "Babura Ward 001",
+    "code": "JI/BA/001",
+    "lgaId": 321,
+    "capacity": 500
+  },
+  {
+    "name": "Biriniwa Ward 001",
+    "code": "JI/BI/001",
+    "lgaId": 322,
+    "capacity": 500
+  },
+  {
+    "name": "Birnin Kudu Ward 001",
+    "code": "JI/BI/001",
+    "lgaId": 323,
+    "capacity": 500
+  },
+  {
+    "name": "Buji Ward 001",
+    "code": "JI/BU/001",
+    "lgaId": 324,
+    "capacity": 500
+  },
+  {
+    "name": "Dutse Ward 001",
+    "code": "JI/DU/001",
+    "lgaId": 325,
+    "capacity": 500
+  },
+  {
+    "name": "Gagarawa Ward 001",
+    "code": "JI/GA/001",
+    "lgaId": 326,
+    "capacity": 500
+  },
+  {
+    "name": "Garki Ward 001",
+    "code": "JI/GA/001",
+    "lgaId": 327,
+    "capacity": 500
+  },
+  {
+    "name": "Gumel Ward 001",
+    "code": "JI/GU/001",
+    "lgaId": 328,
+    "capacity": 500
+  },
+  {
+    "name": "Guri Ward 001",
+    "code": "JI/GU/001",
+    "lgaId": 329,
+    "capacity": 500
+  },
+  {
+    "name": "Gwaram Ward 001",
+    "code": "JI/GW/001",
+    "lgaId": 330,
+    "capacity": 500
+  },
+  {
+    "name": "Gwiwa Ward 001",
+    "code": "JI/GW/001",
+    "lgaId": 331,
+    "capacity": 500
+  },
+  {
+    "name": "Hadejia Ward 001",
+    "code": "JI/HA/001",
+    "lgaId": 332,
+    "capacity": 500
+  },
+  {
+    "name": "Jahun Ward 001",
+    "code": "JI/JA/001",
+    "lgaId": 333,
+    "capacity": 500
+  },
+  {
+    "name": "Kafin Hausa Ward 001",
+    "code": "JI/KA/001",
+    "lgaId": 334,
+    "capacity": 500
+  },
+  {
+    "name": "Kaugama Ward 001",
+    "code": "JI/KA/001",
+    "lgaId": 335,
+    "capacity": 500
+  },
+  {
+    "name": "Kazaure Ward 001",
+    "code": "JI/KA/001",
+    "lgaId": 336,
+    "capacity": 500
+  },
+  {
+    "name": "Kiri Kasama Ward 001",
+    "code": "JI/KI/001",
+    "lgaId": 337,
+    "capacity": 500
+  },
+  {
+    "name": "Kiyawa Ward 001",
+    "code": "JI/KI/001",
+    "lgaId": 338,
+    "capacity": 500
+  },
+  {
+    "name": "Maigatari Ward 001",
+    "code": "JI/MA/001",
+    "lgaId": 339,
+    "capacity": 500
+  },
+  {
+    "name": "Malam Madori Ward 001",
+    "code": "JI/MA/001",
+    "lgaId": 340,
+    "capacity": 500
+  },
+  {
+    "name": "Miga Ward 001",
+    "code": "JI/MI/001",
+    "lgaId": 341,
+    "capacity": 500
+  },
+  {
+    "name": "Ringim Ward 001",
+    "code": "JI/RI/001",
+    "lgaId": 342,
+    "capacity": 500
+  },
+  {
+    "name": "Roni Ward 001",
+    "code": "JI/RO/001",
+    "lgaId": 343,
+    "capacity": 500
+  },
+  {
+    "name": "Sule Tankarkar Ward 001",
+    "code": "JI/SU/001",
+    "lgaId": 344,
+    "capacity": 500
+  },
+  {
+    "name": "Taura Ward 001",
+    "code": "JI/TA/001",
+    "lgaId": 345,
+    "capacity": 500
+  },
+  {
+    "name": "Yankwashi Ward 001",
+    "code": "JI/YA/001",
+    "lgaId": 346,
+    "capacity": 500
+  },
+  {
+    "name": "Birnin Gwari Ward 001",
+    "code": "KD/BI/001",
+    "lgaId": 347,
+    "capacity": 500
+  },
+  {
+    "name": "Chikun Ward 001",
+    "code": "KD/CH/001",
+    "lgaId": 348,
+    "capacity": 500
+  },
+  {
+    "name": "Giwa Ward 001",
+    "code": "KD/GI/001",
+    "lgaId": 349,
+    "capacity": 500
+  },
+  {
+    "name": "Igabi Ward 001",
+    "code": "KD/IG/001",
+    "lgaId": 350,
+    "capacity": 500
+  },
+  {
+    "name": "Ikara Ward 001",
+    "code": "KD/IK/001",
+    "lgaId": 351,
+    "capacity": 500
+  },
+  {
+    "name": "Jaba Ward 001",
+    "code": "KD/JA/001",
+    "lgaId": 352,
+    "capacity": 500
+  },
+  {
+    "name": "Jema'a Ward 001",
+    "code": "KD/JE/001",
+    "lgaId": 353,
+    "capacity": 500
+  },
+  {
+    "name": "Kachia Ward 001",
+    "code": "KD/KA/001",
+    "lgaId": 354,
+    "capacity": 500
+  },
+  {
+    "name": "Kaduna North Ward 001",
+    "code": "KD/KA/001",
+    "lgaId": 355,
+    "capacity": 500
+  },
+  {
+    "name": "Kaduna South Ward 001",
+    "code": "KD/KA/001",
+    "lgaId": 356,
+    "capacity": 500
+  },
+  {
+    "name": "Kagarko Ward 001",
+    "code": "KD/KA/001",
+    "lgaId": 357,
+    "capacity": 500
+  },
+  {
+    "name": "Kajuru Ward 001",
+    "code": "KD/KA/001",
+    "lgaId": 358,
+    "capacity": 500
+  },
+  {
+    "name": "Kaura Ward 001",
+    "code": "KD/KA/001",
+    "lgaId": 359,
+    "capacity": 500
+  },
+  {
+    "name": "Kauru Ward 001",
+    "code": "KD/KA/001",
+    "lgaId": 360,
+    "capacity": 500
+  },
+  {
+    "name": "Kubau Ward 001",
+    "code": "KD/KU/001",
+    "lgaId": 361,
+    "capacity": 500
+  },
+  {
+    "name": "Kudan Ward 001",
+    "code": "KD/KU/001",
+    "lgaId": 362,
+    "capacity": 500
+  },
+  {
+    "name": "Lere Ward 001",
+    "code": "KD/LE/001",
+    "lgaId": 363,
+    "capacity": 500
+  },
+  {
+    "name": "Makarfi Ward 001",
+    "code": "KD/MA/001",
+    "lgaId": 364,
+    "capacity": 500
+  },
+  {
+    "name": "Sabon Gari Ward 001",
+    "code": "KD/SA/001",
+    "lgaId": 365,
+    "capacity": 500
+  },
+  {
+    "name": "Sanga Ward 001",
+    "code": "KD/SA/001",
+    "lgaId": 366,
+    "capacity": 500
+  },
+  {
+    "name": "Soba Ward 001",
+    "code": "KD/SO/001",
+    "lgaId": 367,
+    "capacity": 500
+  },
+  {
+    "name": "Zangon Kataf Ward 001",
+    "code": "KD/ZA/001",
+    "lgaId": 368,
+    "capacity": 500
+  },
+  {
+    "name": "Zaria Ward 001",
+    "code": "KD/ZA/001",
+    "lgaId": 369,
+    "capacity": 500
+  },
+  {
+    "name": "Ajingi Ward 001",
+    "code": "KN/AJ/001",
+    "lgaId": 370,
+    "capacity": 500
+  },
+  {
+    "name": "Albasu Ward 001",
+    "code": "KN/AL/001",
+    "lgaId": 371,
+    "capacity": 500
+  },
+  {
+    "name": "Bagwai Ward 001",
+    "code": "KN/BA/001",
+    "lgaId": 372,
+    "capacity": 500
+  },
+  {
+    "name": "Bebeji Ward 001",
+    "code": "KN/BE/001",
+    "lgaId": 373,
+    "capacity": 500
+  },
+  {
+    "name": "Bichi Ward 001",
+    "code": "KN/BI/001",
+    "lgaId": 374,
+    "capacity": 500
+  },
+  {
+    "name": "Bunkure Ward 001",
+    "code": "KN/BU/001",
+    "lgaId": 375,
+    "capacity": 500
+  },
+  {
+    "name": "Dala Ward 001",
+    "code": "KN/DA/001",
+    "lgaId": 376,
+    "capacity": 500
+  },
+  {
+    "name": "Dambatta Ward 001",
+    "code": "KN/DA/001",
+    "lgaId": 377,
+    "capacity": 500
+  },
+  {
+    "name": "Dawakin Kudu Ward 001",
+    "code": "KN/DA/001",
+    "lgaId": 378,
+    "capacity": 500
+  },
+  {
+    "name": "Dawakin Tofa Ward 001",
+    "code": "KN/DA/001",
+    "lgaId": 379,
+    "capacity": 500
+  },
+  {
+    "name": "Doguwa Ward 001",
+    "code": "KN/DO/001",
+    "lgaId": 380,
+    "capacity": 500
+  },
+  {
+    "name": "Fagge Ward 001",
+    "code": "KN/FA/001",
+    "lgaId": 381,
+    "capacity": 500
+  },
+  {
+    "name": "Gabasawa Ward 001",
+    "code": "KN/GA/001",
+    "lgaId": 382,
+    "capacity": 500
+  },
+  {
+    "name": "Garko Ward 001",
+    "code": "KN/GA/001",
+    "lgaId": 383,
+    "capacity": 500
+  },
+  {
+    "name": "Garun Mallam Ward 001",
+    "code": "KN/GA/001",
+    "lgaId": 384,
+    "capacity": 500
+  },
+  {
+    "name": "Gaya Ward 001",
+    "code": "KN/GA/001",
+    "lgaId": 385,
+    "capacity": 500
+  },
+  {
+    "name": "Gezawa Ward 001",
+    "code": "KN/GE/001",
+    "lgaId": 386,
+    "capacity": 500
+  },
+  {
+    "name": "Gwale Ward 001",
+    "code": "KN/GW/001",
+    "lgaId": 387,
+    "capacity": 500
+  },
+  {
+    "name": "Gwarzo Ward 001",
+    "code": "KN/GW/001",
+    "lgaId": 388,
+    "capacity": 500
+  },
+  {
+    "name": "Kabo Ward 001",
+    "code": "KN/KA/001",
+    "lgaId": 389,
+    "capacity": 500
+  },
+  {
+    "name": "Kano Municipal Ward 001",
+    "code": "KN/KA/001",
+    "lgaId": 390,
+    "capacity": 500
+  },
+  {
+    "name": "Karaye Ward 001",
+    "code": "KN/KA/001",
+    "lgaId": 391,
+    "capacity": 500
+  },
+  {
+    "name": "Kibiya Ward 001",
+    "code": "KN/KI/001",
+    "lgaId": 392,
+    "capacity": 500
+  },
+  {
+    "name": "Kiru Ward 001",
+    "code": "KN/KI/001",
+    "lgaId": 393,
+    "capacity": 500
+  },
+  {
+    "name": "Kumbotso Ward 001",
+    "code": "KN/KU/001",
+    "lgaId": 394,
+    "capacity": 500
+  },
+  {
+    "name": "Kunchi Ward 001",
+    "code": "KN/KU/001",
+    "lgaId": 395,
+    "capacity": 500
+  },
+  {
+    "name": "Kura Ward 001",
+    "code": "KN/KU/001",
+    "lgaId": 396,
+    "capacity": 500
+  },
+  {
+    "name": "Madobi Ward 001",
+    "code": "KN/MA/001",
+    "lgaId": 397,
+    "capacity": 500
+  },
+  {
+    "name": "Makoda Ward 001",
+    "code": "KN/MA/001",
+    "lgaId": 398,
+    "capacity": 500
+  },
+  {
+    "name": "Minjibir Ward 001",
+    "code": "KN/MI/001",
+    "lgaId": 399,
+    "capacity": 500
+  },
+  {
+    "name": "Nasarawa Kano Ward 001",
+    "code": "KN/NA/001",
+    "lgaId": 400,
+    "capacity": 500
+  },
+  {
+    "name": "Rano Ward 001",
+    "code": "KN/RA/001",
+    "lgaId": 401,
+    "capacity": 500
+  },
+  {
+    "name": "Rimin Gado Ward 001",
+    "code": "KN/RI/001",
+    "lgaId": 402,
+    "capacity": 500
+  },
+  {
+    "name": "Rogo Ward 001",
+    "code": "KN/RO/001",
+    "lgaId": 403,
+    "capacity": 500
+  },
+  {
+    "name": "Shanono Ward 001",
+    "code": "KN/SH/001",
+    "lgaId": 404,
+    "capacity": 500
+  },
+  {
+    "name": "Sumaila Ward 001",
+    "code": "KN/SU/001",
+    "lgaId": 405,
+    "capacity": 500
+  },
+  {
+    "name": "Takai Ward 001",
+    "code": "KN/TA/001",
+    "lgaId": 406,
+    "capacity": 500
+  },
+  {
+    "name": "Tarauni Ward 001",
+    "code": "KN/TA/001",
+    "lgaId": 407,
+    "capacity": 500
+  },
+  {
+    "name": "Tofa Ward 001",
+    "code": "KN/TO/001",
+    "lgaId": 408,
+    "capacity": 500
+  },
+  {
+    "name": "Tsanyawa Ward 001",
+    "code": "KN/TS/001",
+    "lgaId": 409,
+    "capacity": 500
+  },
+  {
+    "name": "Tudun Wada Ward 001",
+    "code": "KN/TU/001",
+    "lgaId": 410,
+    "capacity": 500
+  },
+  {
+    "name": "Ungogo Ward 001",
+    "code": "KN/UN/001",
+    "lgaId": 411,
+    "capacity": 500
+  },
+  {
+    "name": "Warawa Ward 001",
+    "code": "KN/WA/001",
+    "lgaId": 412,
+    "capacity": 500
+  },
+  {
+    "name": "Wudil Ward 001",
+    "code": "KN/WU/001",
+    "lgaId": 413,
+    "capacity": 500
+  },
+  {
+    "name": "Bakori Ward 001",
+    "code": "KT/BA/001",
+    "lgaId": 414,
+    "capacity": 500
+  },
+  {
+    "name": "Batagarawa Ward 001",
+    "code": "KT/BA/001",
+    "lgaId": 415,
+    "capacity": 500
+  },
+  {
+    "name": "Batsari Ward 001",
+    "code": "KT/BA/001",
+    "lgaId": 416,
+    "capacity": 500
+  },
+  {
+    "name": "Baure Ward 001",
+    "code": "KT/BA/001",
+    "lgaId": 417,
+    "capacity": 500
+  },
+  {
+    "name": "Bindawa Ward 001",
+    "code": "KT/BI/001",
+    "lgaId": 418,
+    "capacity": 500
+  },
+  {
+    "name": "Charanchi Ward 001",
+    "code": "KT/CH/001",
+    "lgaId": 419,
+    "capacity": 500
+  },
+  {
+    "name": "Dan Musa Ward 001",
+    "code": "KT/DA/001",
+    "lgaId": 420,
+    "capacity": 500
+  },
+  {
+    "name": "Dandume Ward 001",
+    "code": "KT/DA/001",
+    "lgaId": 421,
+    "capacity": 500
+  },
+  {
+    "name": "Danja Ward 001",
+    "code": "KT/DA/001",
+    "lgaId": 422,
+    "capacity": 500
+  },
+  {
+    "name": "Daura Ward 001",
+    "code": "KT/DA/001",
+    "lgaId": 423,
+    "capacity": 500
+  },
+  {
+    "name": "Dutsi Ward 001",
+    "code": "KT/DU/001",
+    "lgaId": 424,
+    "capacity": 500
+  },
+  {
+    "name": "Dutsin-Ma Ward 001",
+    "code": "KT/DU/001",
+    "lgaId": 425,
+    "capacity": 500
+  },
+  {
+    "name": "Faskari Ward 001",
+    "code": "KT/FA/001",
+    "lgaId": 426,
+    "capacity": 500
+  },
+  {
+    "name": "Funtua Ward 001",
+    "code": "KT/FU/001",
+    "lgaId": 427,
+    "capacity": 500
+  },
+  {
+    "name": "Ingawa Ward 001",
+    "code": "KT/IN/001",
+    "lgaId": 428,
+    "capacity": 500
+  },
+  {
+    "name": "Jibia Ward 001",
+    "code": "KT/JI/001",
+    "lgaId": 429,
+    "capacity": 500
+  },
+  {
+    "name": "Kafur Ward 001",
+    "code": "KT/KA/001",
+    "lgaId": 430,
+    "capacity": 500
+  },
+  {
+    "name": "Kaita Ward 001",
+    "code": "KT/KA/001",
+    "lgaId": 431,
+    "capacity": 500
+  },
+  {
+    "name": "Kankara Ward 001",
+    "code": "KT/KA/001",
+    "lgaId": 432,
+    "capacity": 500
+  },
+  {
+    "name": "Kankia Ward 001",
+    "code": "KT/KA/001",
+    "lgaId": 433,
+    "capacity": 500
+  },
+  {
+    "name": "Katsina Ward 001",
+    "code": "KT/KA/001",
+    "lgaId": 434,
+    "capacity": 500
+  },
+  {
+    "name": "Kurfi Ward 001",
+    "code": "KT/KU/001",
+    "lgaId": 435,
+    "capacity": 500
+  },
+  {
+    "name": "Kusada Ward 001",
+    "code": "KT/KU/001",
+    "lgaId": 436,
+    "capacity": 500
+  },
+  {
+    "name": "Mai'adua Ward 001",
+    "code": "KT/MA/001",
+    "lgaId": 437,
+    "capacity": 500
+  },
+  {
+    "name": "Malumfashi Ward 001",
+    "code": "KT/MA/001",
+    "lgaId": 438,
+    "capacity": 500
+  },
+  {
+    "name": "Mani Ward 001",
+    "code": "KT/MA/001",
+    "lgaId": 439,
+    "capacity": 500
+  },
+  {
+    "name": "Mashi Ward 001",
+    "code": "KT/MA/001",
+    "lgaId": 440,
+    "capacity": 500
+  },
+  {
+    "name": "Matazu Ward 001",
+    "code": "KT/MA/001",
+    "lgaId": 441,
+    "capacity": 500
+  },
+  {
+    "name": "Musawa Ward 001",
+    "code": "KT/MU/001",
+    "lgaId": 442,
+    "capacity": 500
+  },
+  {
+    "name": "Rimi Ward 001",
+    "code": "KT/RI/001",
+    "lgaId": 443,
+    "capacity": 500
+  },
+  {
+    "name": "Sabuwa Ward 001",
+    "code": "KT/SA/001",
+    "lgaId": 444,
+    "capacity": 500
+  },
+  {
+    "name": "Safana Ward 001",
+    "code": "KT/SA/001",
+    "lgaId": 445,
+    "capacity": 500
+  },
+  {
+    "name": "Sandamu Ward 001",
+    "code": "KT/SA/001",
+    "lgaId": 446,
+    "capacity": 500
+  },
+  {
+    "name": "Zango Ward 001",
+    "code": "KT/ZA/001",
+    "lgaId": 447,
+    "capacity": 500
+  },
+  {
+    "name": "Aleiro Ward 001",
+    "code": "KB/AL/001",
+    "lgaId": 448,
+    "capacity": 500
+  },
+  {
+    "name": "Arewa Dandi Ward 001",
+    "code": "KB/AR/001",
+    "lgaId": 449,
+    "capacity": 500
+  },
+  {
+    "name": "Argungu Ward 001",
+    "code": "KB/AR/001",
+    "lgaId": 450,
+    "capacity": 500
+  },
+  {
+    "name": "Augie Ward 001",
+    "code": "KB/AU/001",
+    "lgaId": 451,
+    "capacity": 500
+  },
+  {
+    "name": "Bagudo Ward 001",
+    "code": "KB/BA/001",
+    "lgaId": 452,
+    "capacity": 500
+  },
+  {
+    "name": "Birnin Kebbi Ward 001",
+    "code": "KB/BI/001",
+    "lgaId": 453,
+    "capacity": 500
+  },
+  {
+    "name": "Bunza Ward 001",
+    "code": "KB/BU/001",
+    "lgaId": 454,
+    "capacity": 500
+  },
+  {
+    "name": "Dandi Ward 001",
+    "code": "KB/DA/001",
+    "lgaId": 455,
+    "capacity": 500
+  },
+  {
+    "name": "Fakai Ward 001",
+    "code": "KB/FA/001",
+    "lgaId": 456,
+    "capacity": 500
+  },
+  {
+    "name": "Gwandu Ward 001",
+    "code": "KB/GW/001",
+    "lgaId": 457,
+    "capacity": 500
+  },
+  {
+    "name": "Jega Ward 001",
+    "code": "KB/JE/001",
+    "lgaId": 458,
+    "capacity": 500
+  },
+  {
+    "name": "Kalgo Ward 001",
+    "code": "KB/KA/001",
+    "lgaId": 459,
+    "capacity": 500
+  },
+  {
+    "name": "Koko/Besse Ward 001",
+    "code": "KB/KO/001",
+    "lgaId": 460,
+    "capacity": 500
+  },
+  {
+    "name": "Maiyama Ward 001",
+    "code": "KB/MA/001",
+    "lgaId": 461,
+    "capacity": 500
+  },
+  {
+    "name": "Ngaski Ward 001",
+    "code": "KB/NG/001",
+    "lgaId": 462,
+    "capacity": 500
+  },
+  {
+    "name": "Sakaba Ward 001",
+    "code": "KB/SA/001",
+    "lgaId": 463,
+    "capacity": 500
+  },
+  {
+    "name": "Shanga Ward 001",
+    "code": "KB/SH/001",
+    "lgaId": 464,
+    "capacity": 500
+  },
+  {
+    "name": "Suru Ward 001",
+    "code": "KB/SU/001",
+    "lgaId": 465,
+    "capacity": 500
+  },
+  {
+    "name": "Wasagu/Danko Ward 001",
+    "code": "KB/WA/001",
+    "lgaId": 466,
+    "capacity": 500
+  },
+  {
+    "name": "Yauri Ward 001",
+    "code": "KB/YA/001",
+    "lgaId": 467,
+    "capacity": 500
+  },
+  {
+    "name": "Zuru Ward 001",
+    "code": "KB/ZU/001",
+    "lgaId": 468,
+    "capacity": 500
+  },
+  {
+    "name": "Adavi Ward 001",
+    "code": "KO/AD/001",
+    "lgaId": 469,
+    "capacity": 500
+  },
+  {
+    "name": "Ajaokuta Ward 001",
+    "code": "KO/AJ/001",
+    "lgaId": 470,
+    "capacity": 500
+  },
+  {
+    "name": "Ankpa Ward 001",
+    "code": "KO/AN/001",
+    "lgaId": 471,
+    "capacity": 500
+  },
+  {
+    "name": "Bassa Ward 001",
+    "code": "KO/BA/001",
+    "lgaId": 472,
+    "capacity": 500
+  },
+  {
+    "name": "Dekina Ward 001",
+    "code": "KO/DE/001",
+    "lgaId": 473,
+    "capacity": 500
+  },
+  {
+    "name": "Ibaji Ward 001",
+    "code": "KO/IB/001",
+    "lgaId": 474,
+    "capacity": 500
+  },
+  {
+    "name": "Idah Ward 001",
+    "code": "KO/ID/001",
+    "lgaId": 475,
+    "capacity": 500
+  },
+  {
+    "name": "Igalamela-Odolu Ward 001",
+    "code": "KO/IG/001",
+    "lgaId": 476,
+    "capacity": 500
+  },
+  {
+    "name": "Ijumu Ward 001",
+    "code": "KO/IJ/001",
+    "lgaId": 477,
+    "capacity": 500
+  },
+  {
+    "name": "Kabba/Bunu Ward 001",
+    "code": "KO/KA/001",
+    "lgaId": 478,
+    "capacity": 500
+  },
+  {
+    "name": "Kogi Ward 001",
+    "code": "KO/KO/001",
+    "lgaId": 479,
+    "capacity": 500
+  },
+  {
+    "name": "Lokoja Ward 001",
+    "code": "KO/LO/001",
+    "lgaId": 480,
+    "capacity": 500
+  },
+  {
+    "name": "Mopa-Muro Ward 001",
+    "code": "KO/MO/001",
+    "lgaId": 481,
+    "capacity": 500
+  },
+  {
+    "name": "Ofu Ward 001",
+    "code": "KO/OF/001",
+    "lgaId": 482,
+    "capacity": 500
+  },
+  {
+    "name": "Ogori/Magongo Ward 001",
+    "code": "KO/OG/001",
+    "lgaId": 483,
+    "capacity": 500
+  },
+  {
+    "name": "Okehi Ward 001",
+    "code": "KO/OK/001",
+    "lgaId": 484,
+    "capacity": 500
+  },
+  {
+    "name": "Okene Ward 001",
+    "code": "KO/OK/001",
+    "lgaId": 485,
+    "capacity": 500
+  },
+  {
+    "name": "Olamaboro Ward 001",
+    "code": "KO/OL/001",
+    "lgaId": 486,
+    "capacity": 500
+  },
+  {
+    "name": "Omala Ward 001",
+    "code": "KO/OM/001",
+    "lgaId": 487,
+    "capacity": 500
+  },
+  {
+    "name": "Yagba East Ward 001",
+    "code": "KO/YA/001",
+    "lgaId": 488,
+    "capacity": 500
+  },
+  {
+    "name": "Yagba West Ward 001",
+    "code": "KO/YA/001",
+    "lgaId": 489,
+    "capacity": 500
+  },
+  {
+    "name": "Asa Ward 001",
+    "code": "KW/AS/001",
+    "lgaId": 490,
+    "capacity": 500
+  },
+  {
+    "name": "Baruten Ward 001",
+    "code": "KW/BA/001",
+    "lgaId": 491,
+    "capacity": 500
+  },
+  {
+    "name": "Edu Ward 001",
+    "code": "KW/ED/001",
+    "lgaId": 492,
+    "capacity": 500
+  },
+  {
+    "name": "Ekiti Kwara Ward 001",
+    "code": "KW/EK/001",
+    "lgaId": 493,
+    "capacity": 500
+  },
+  {
+    "name": "Ifelodun Ward 001",
+    "code": "KW/IF/001",
+    "lgaId": 494,
+    "capacity": 500
+  },
+  {
+    "name": "Ilorin East Ward 001",
+    "code": "KW/IL/001",
+    "lgaId": 495,
+    "capacity": 500
+  },
+  {
+    "name": "Ilorin South Ward 001",
+    "code": "KW/IL/001",
+    "lgaId": 496,
+    "capacity": 500
+  },
+  {
+    "name": "Ilorin West Ward 001",
+    "code": "KW/IL/001",
+    "lgaId": 497,
+    "capacity": 500
+  },
+  {
+    "name": "Irepodun Ward 001",
+    "code": "KW/IR/001",
+    "lgaId": 498,
+    "capacity": 500
+  },
+  {
+    "name": "Isin Ward 001",
+    "code": "KW/IS/001",
+    "lgaId": 499,
+    "capacity": 500
+  },
+  {
+    "name": "Kaiama Ward 001",
+    "code": "KW/KA/001",
+    "lgaId": 500,
+    "capacity": 500
+  },
+  {
+    "name": "Moro Ward 001",
+    "code": "KW/MO/001",
+    "lgaId": 501,
+    "capacity": 500
+  },
+  {
+    "name": "Offa Ward 001",
+    "code": "KW/OF/001",
+    "lgaId": 502,
+    "capacity": 500
+  },
+  {
+    "name": "Oke Ero Ward 001",
+    "code": "KW/OK/001",
+    "lgaId": 503,
+    "capacity": 500
+  },
+  {
+    "name": "Oyun Ward 001",
+    "code": "KW/OY/001",
+    "lgaId": 504,
+    "capacity": 500
+  },
+  {
+    "name": "Pategi Ward 001",
+    "code": "KW/PA/001",
+    "lgaId": 505,
+    "capacity": 500
+  },
+  {
+    "name": "Agege Ward 001",
+    "code": "LA/AG/001",
+    "lgaId": 506,
+    "capacity": 500
+  },
+  {
+    "name": "Ajeromi-Ifelodun Ward 001",
+    "code": "LA/AJ/001",
+    "lgaId": 507,
+    "capacity": 500
+  },
+  {
+    "name": "Alimosho Ward 001",
+    "code": "LA/AL/001",
+    "lgaId": 508,
+    "capacity": 500
+  },
+  {
+    "name": "Amuwo-Odofin Ward 001",
+    "code": "LA/AM/001",
+    "lgaId": 509,
+    "capacity": 500
+  },
+  {
+    "name": "Apapa Ward 001",
+    "code": "LA/AP/001",
+    "lgaId": 510,
+    "capacity": 500
+  },
+  {
+    "name": "Badagry Ward 001",
+    "code": "LA/BA/001",
+    "lgaId": 511,
+    "capacity": 500
+  },
+  {
+    "name": "Epe Ward 001",
+    "code": "LA/EP/001",
+    "lgaId": 512,
+    "capacity": 500
+  },
+  {
+    "name": "Eti-Osa Ward 001",
+    "code": "LA/ET/001",
+    "lgaId": 513,
+    "capacity": 500
+  },
+  {
+    "name": "Ibeju-Lekki Ward 001",
+    "code": "LA/IB/001",
+    "lgaId": 514,
+    "capacity": 500
+  },
+  {
+    "name": "Ifako-Ijaiye Ward 001",
+    "code": "LA/IF/001",
+    "lgaId": 515,
+    "capacity": 500
+  },
+  {
+    "name": "Ikeja Ward 001",
+    "code": "LA/IK/001",
+    "lgaId": 516,
+    "capacity": 500
+  },
+  {
+    "name": "Ikorodu Ward 001",
+    "code": "LA/IK/001",
+    "lgaId": 517,
+    "capacity": 500
+  },
+  {
+    "name": "Kosofe Ward 001",
+    "code": "LA/KO/001",
+    "lgaId": 518,
+    "capacity": 500
+  },
+  {
+    "name": "Lagos Island Ward 001",
+    "code": "LA/LA/001",
+    "lgaId": 519,
+    "capacity": 500
+  },
+  {
+    "name": "Lagos Mainland Ward 001",
+    "code": "LA/LA/001",
+    "lgaId": 520,
+    "capacity": 500
+  },
+  {
+    "name": "Mushin Ward 001",
+    "code": "LA/MU/001",
+    "lgaId": 521,
+    "capacity": 500
+  },
+  {
+    "name": "Ojo Ward 001",
+    "code": "LA/OJ/001",
+    "lgaId": 522,
+    "capacity": 500
+  },
+  {
+    "name": "Oshodi-Isolo Ward 001",
+    "code": "LA/OS/001",
+    "lgaId": 523,
+    "capacity": 500
+  },
+  {
+    "name": "Shomolu Ward 001",
+    "code": "LA/SH/001",
+    "lgaId": 524,
+    "capacity": 500
+  },
+  {
+    "name": "Surulere Ward 001",
+    "code": "LA/SU/001",
+    "lgaId": 525,
+    "capacity": 500
+  },
+  {
+    "name": "Akwanga Ward 001",
+    "code": "NA/AK/001",
+    "lgaId": 526,
+    "capacity": 500
+  },
+  {
+    "name": "Awe Ward 001",
+    "code": "NA/AW/001",
+    "lgaId": 527,
+    "capacity": 500
+  },
+  {
+    "name": "Doma Ward 001",
+    "code": "NA/DO/001",
+    "lgaId": 528,
+    "capacity": 500
+  },
+  {
+    "name": "Karu Ward 001",
+    "code": "NA/KA/001",
+    "lgaId": 529,
+    "capacity": 500
+  },
+  {
+    "name": "Keana Ward 001",
+    "code": "NA/KE/001",
+    "lgaId": 530,
+    "capacity": 500
+  },
+  {
+    "name": "Keffi Ward 001",
+    "code": "NA/KE/001",
+    "lgaId": 531,
+    "capacity": 500
+  },
+  {
+    "name": "Kokona Ward 001",
+    "code": "NA/KO/001",
+    "lgaId": 532,
+    "capacity": 500
+  },
+  {
+    "name": "Lafia Ward 001",
+    "code": "NA/LA/001",
+    "lgaId": 533,
+    "capacity": 500
+  },
+  {
+    "name": "Nasarawa Ward 001",
+    "code": "NA/NA/001",
+    "lgaId": 534,
+    "capacity": 500
+  },
+  {
+    "name": "Nasarawa Egon Ward 001",
+    "code": "NA/NA/001",
+    "lgaId": 535,
+    "capacity": 500
+  },
+  {
+    "name": "Obi Ward 001",
+    "code": "NA/OB/001",
+    "lgaId": 536,
+    "capacity": 500
+  },
+  {
+    "name": "Toto Ward 001",
+    "code": "NA/TO/001",
+    "lgaId": 537,
+    "capacity": 500
+  },
+  {
+    "name": "Wamba Ward 001",
+    "code": "NA/WA/001",
+    "lgaId": 538,
+    "capacity": 500
+  },
+  {
+    "name": "Agaie Ward 001",
+    "code": "NI/AG/001",
+    "lgaId": 539,
+    "capacity": 500
+  },
+  {
+    "name": "Agwara Ward 001",
+    "code": "NI/AG/001",
+    "lgaId": 540,
+    "capacity": 500
+  },
+  {
+    "name": "Bida Ward 001",
+    "code": "NI/BI/001",
+    "lgaId": 541,
+    "capacity": 500
+  },
+  {
+    "name": "Borgu Ward 001",
+    "code": "NI/BO/001",
+    "lgaId": 542,
+    "capacity": 500
+  },
+  {
+    "name": "Bosso Ward 001",
+    "code": "NI/BO/001",
+    "lgaId": 543,
+    "capacity": 500
+  },
+  {
+    "name": "Chanchaga Ward 001",
+    "code": "NI/CH/001",
+    "lgaId": 544,
+    "capacity": 500
+  },
+  {
+    "name": "Edati Ward 001",
+    "code": "NI/ED/001",
+    "lgaId": 545,
+    "capacity": 500
+  },
+  {
+    "name": "Gbako Ward 001",
+    "code": "NI/GB/001",
+    "lgaId": 546,
+    "capacity": 500
+  },
+  {
+    "name": "Gurara Ward 001",
+    "code": "NI/GU/001",
+    "lgaId": 547,
+    "capacity": 500
+  },
+  {
+    "name": "Katcha Ward 001",
+    "code": "NI/KA/001",
+    "lgaId": 548,
+    "capacity": 500
+  },
+  {
+    "name": "Kontagora Ward 001",
+    "code": "NI/KO/001",
+    "lgaId": 549,
+    "capacity": 500
+  },
+  {
+    "name": "Lapai Ward 001",
+    "code": "NI/LA/001",
+    "lgaId": 550,
+    "capacity": 500
+  },
+  {
+    "name": "Lavun Ward 001",
+    "code": "NI/LA/001",
+    "lgaId": 551,
+    "capacity": 500
+  },
+  {
+    "name": "Magama Ward 001",
+    "code": "NI/MA/001",
+    "lgaId": 552,
+    "capacity": 500
+  },
+  {
+    "name": "Mariga Ward 001",
+    "code": "NI/MA/001",
+    "lgaId": 553,
+    "capacity": 500
+  },
+  {
+    "name": "Mashegu Ward 001",
+    "code": "NI/MA/001",
+    "lgaId": 554,
+    "capacity": 500
+  },
+  {
+    "name": "Mokwa Ward 001",
+    "code": "NI/MO/001",
+    "lgaId": 555,
+    "capacity": 500
+  },
+  {
+    "name": "Moya Ward 001",
+    "code": "NI/MO/001",
+    "lgaId": 556,
+    "capacity": 500
+  },
+  {
+    "name": "Paikoro Ward 001",
+    "code": "NI/PA/001",
+    "lgaId": 557,
+    "capacity": 500
+  },
+  {
+    "name": "Rafi Ward 001",
+    "code": "NI/RA/001",
+    "lgaId": 558,
+    "capacity": 500
+  },
+  {
+    "name": "Rijau Ward 001",
+    "code": "NI/RI/001",
+    "lgaId": 559,
+    "capacity": 500
+  },
+  {
+    "name": "Shiroro Ward 001",
+    "code": "NI/SH/001",
+    "lgaId": 560,
+    "capacity": 500
+  },
+  {
+    "name": "Suleja Ward 001",
+    "code": "NI/SU/001",
+    "lgaId": 561,
+    "capacity": 500
+  },
+  {
+    "name": "Tafa Ward 001",
+    "code": "NI/TA/001",
+    "lgaId": 562,
+    "capacity": 500
+  },
+  {
+    "name": "Wushishi Ward 001",
+    "code": "NI/WU/001",
+    "lgaId": 563,
+    "capacity": 500
+  },
+  {
+    "name": "Abeokuta North Ward 001",
+    "code": "OG/AB/001",
+    "lgaId": 564,
+    "capacity": 500
+  },
+  {
+    "name": "Abeokuta South Ward 001",
+    "code": "OG/AB/001",
+    "lgaId": 565,
+    "capacity": 500
+  },
+  {
+    "name": "Ado-Odo/Ota Ward 001",
+    "code": "OG/AD/001",
+    "lgaId": 566,
+    "capacity": 500
+  },
+  {
+    "name": "Egbado North Ward 001",
+    "code": "OG/EG/001",
+    "lgaId": 567,
+    "capacity": 500
+  },
+  {
+    "name": "Egbado South Ward 001",
+    "code": "OG/EG/001",
+    "lgaId": 568,
+    "capacity": 500
+  },
+  {
+    "name": "Ewekoro Ward 001",
+    "code": "OG/EW/001",
+    "lgaId": 569,
+    "capacity": 500
+  },
+  {
+    "name": "Ifo Ward 001",
+    "code": "OG/IF/001",
+    "lgaId": 570,
+    "capacity": 500
+  },
+  {
+    "name": "Ijebu East Ward 001",
+    "code": "OG/IJ/001",
+    "lgaId": 571,
+    "capacity": 500
+  },
+  {
+    "name": "Ijebu North Ward 001",
+    "code": "OG/IJ/001",
+    "lgaId": 572,
+    "capacity": 500
+  },
+  {
+    "name": "Ijebu North East Ward 001",
+    "code": "OG/IJ/001",
+    "lgaId": 573,
+    "capacity": 500
+  },
+  {
+    "name": "Ijebu Ode Ward 001",
+    "code": "OG/IJ/001",
+    "lgaId": 574,
+    "capacity": 500
+  },
+  {
+    "name": "Ikenne Ward 001",
+    "code": "OG/IK/001",
+    "lgaId": 575,
+    "capacity": 500
+  },
+  {
+    "name": "Imeko Afon Ward 001",
+    "code": "OG/IM/001",
+    "lgaId": 576,
+    "capacity": 500
+  },
+  {
+    "name": "Ipokia Ward 001",
+    "code": "OG/IP/001",
+    "lgaId": 577,
+    "capacity": 500
+  },
+  {
+    "name": "Obafemi Owode Ward 001",
+    "code": "OG/OB/001",
+    "lgaId": 578,
+    "capacity": 500
+  },
+  {
+    "name": "Odeda Ward 001",
+    "code": "OG/OD/001",
+    "lgaId": 579,
+    "capacity": 500
+  },
+  {
+    "name": "Odogbolu Ward 001",
+    "code": "OG/OD/001",
+    "lgaId": 580,
+    "capacity": 500
+  },
+  {
+    "name": "Ogun Waterside Ward 001",
+    "code": "OG/OG/001",
+    "lgaId": 581,
+    "capacity": 500
+  },
+  {
+    "name": "Remo North Ward 001",
+    "code": "OG/RE/001",
+    "lgaId": 582,
+    "capacity": 500
+  },
+  {
+    "name": "Shagamu Ward 001",
+    "code": "OG/SH/001",
+    "lgaId": 583,
+    "capacity": 500
+  },
+  {
+    "name": "Akoko North-East Ward 001",
+    "code": "ON/AK/001",
+    "lgaId": 584,
+    "capacity": 500
+  },
+  {
+    "name": "Akoko North-West Ward 001",
+    "code": "ON/AK/001",
+    "lgaId": 585,
+    "capacity": 500
+  },
+  {
+    "name": "Akoko South-East Ward 001",
+    "code": "ON/AK/001",
+    "lgaId": 586,
+    "capacity": 500
+  },
+  {
+    "name": "Akoko South-West Ward 001",
+    "code": "ON/AK/001",
+    "lgaId": 587,
+    "capacity": 500
+  },
+  {
+    "name": "Akure North Ward 001",
+    "code": "ON/AK/001",
+    "lgaId": 588,
+    "capacity": 500
+  },
+  {
+    "name": "Akure South Ward 001",
+    "code": "ON/AK/001",
+    "lgaId": 589,
+    "capacity": 500
+  },
+  {
+    "name": "Ese Odo Ward 001",
+    "code": "ON/ES/001",
+    "lgaId": 590,
+    "capacity": 500
+  },
+  {
+    "name": "Idanre Ward 001",
+    "code": "ON/ID/001",
+    "lgaId": 591,
+    "capacity": 500
+  },
+  {
+    "name": "Ifedore Ward 001",
+    "code": "ON/IF/001",
+    "lgaId": 592,
+    "capacity": 500
+  },
+  {
+    "name": "Ilaje Ward 001",
+    "code": "ON/IL/001",
+    "lgaId": 593,
+    "capacity": 500
+  },
+  {
+    "name": "Ile Oluji/Okeigbo Ward 001",
+    "code": "ON/IL/001",
+    "lgaId": 594,
+    "capacity": 500
+  },
+  {
+    "name": "Irele Ward 001",
+    "code": "ON/IR/001",
+    "lgaId": 595,
+    "capacity": 500
+  },
+  {
+    "name": "Odigbo Ward 001",
+    "code": "ON/OD/001",
+    "lgaId": 596,
+    "capacity": 500
+  },
+  {
+    "name": "Okitipupa Ward 001",
+    "code": "ON/OK/001",
+    "lgaId": 597,
+    "capacity": 500
+  },
+  {
+    "name": "Ondo East Ward 001",
+    "code": "ON/ON/001",
+    "lgaId": 598,
+    "capacity": 500
+  },
+  {
+    "name": "Ondo West Ward 001",
+    "code": "ON/ON/001",
+    "lgaId": 599,
+    "capacity": 500
+  },
+  {
+    "name": "Ose Ward 001",
+    "code": "ON/OS/001",
+    "lgaId": 600,
+    "capacity": 500
+  },
+  {
+    "name": "Owo Ward 001",
+    "code": "ON/OW/001",
+    "lgaId": 601,
+    "capacity": 500
+  },
+  {
+    "name": "Aiyedade Ward 001",
+    "code": "OS/AI/001",
+    "lgaId": 602,
+    "capacity": 500
+  },
+  {
+    "name": "Aiyedire Ward 001",
+    "code": "OS/AI/001",
+    "lgaId": 603,
+    "capacity": 500
+  },
+  {
+    "name": "Atakumosa East Ward 001",
+    "code": "OS/AT/001",
+    "lgaId": 604,
+    "capacity": 500
+  },
+  {
+    "name": "Atakumosa West Ward 001",
+    "code": "OS/AT/001",
+    "lgaId": 605,
+    "capacity": 500
+  },
+  {
+    "name": "Boluwaduro Ward 001",
+    "code": "OS/BO/001",
+    "lgaId": 606,
+    "capacity": 500
+  },
+  {
+    "name": "Boripe Ward 001",
+    "code": "OS/BO/001",
+    "lgaId": 607,
+    "capacity": 500
+  },
+  {
+    "name": "Ede North Ward 001",
+    "code": "OS/ED/001",
+    "lgaId": 608,
+    "capacity": 500
+  },
+  {
+    "name": "Ede South Ward 001",
+    "code": "OS/ED/001",
+    "lgaId": 609,
+    "capacity": 500
+  },
+  {
+    "name": "Egbedore Ward 001",
+    "code": "OS/EG/001",
+    "lgaId": 610,
+    "capacity": 500
+  },
+  {
+    "name": "Ejigbo Ward 001",
+    "code": "OS/EJ/001",
+    "lgaId": 611,
+    "capacity": 500
+  },
+  {
+    "name": "Ife Central Ward 001",
+    "code": "OS/IF/001",
+    "lgaId": 612,
+    "capacity": 500
+  },
+  {
+    "name": "Ife East Ward 001",
+    "code": "OS/IF/001",
+    "lgaId": 613,
+    "capacity": 500
+  },
+  {
+    "name": "Ife North Ward 001",
+    "code": "OS/IF/001",
+    "lgaId": 614,
+    "capacity": 500
+  },
+  {
+    "name": "Ife South Ward 001",
+    "code": "OS/IF/001",
+    "lgaId": 615,
+    "capacity": 500
+  },
+  {
+    "name": "Ifedayo Ward 001",
+    "code": "OS/IF/001",
+    "lgaId": 616,
+    "capacity": 500
+  },
+  {
+    "name": "Ifelodun Osun Ward 001",
+    "code": "OS/IF/001",
+    "lgaId": 617,
+    "capacity": 500
+  },
+  {
+    "name": "Ila Ward 001",
+    "code": "OS/IL/001",
+    "lgaId": 618,
+    "capacity": 500
+  },
+  {
+    "name": "Ilesa East Ward 001",
+    "code": "OS/IL/001",
+    "lgaId": 619,
+    "capacity": 500
+  },
+  {
+    "name": "Ilesa West Ward 001",
+    "code": "OS/IL/001",
+    "lgaId": 620,
+    "capacity": 500
+  },
+  {
+    "name": "Irepodun Osun Ward 001",
+    "code": "OS/IR/001",
+    "lgaId": 621,
+    "capacity": 500
+  },
+  {
+    "name": "Irewole Ward 001",
+    "code": "OS/IR/001",
+    "lgaId": 622,
+    "capacity": 500
+  },
+  {
+    "name": "Isokan Ward 001",
+    "code": "OS/IS/001",
+    "lgaId": 623,
+    "capacity": 500
+  },
+  {
+    "name": "Iwo Ward 001",
+    "code": "OS/IW/001",
+    "lgaId": 624,
+    "capacity": 500
+  },
+  {
+    "name": "Obokun Ward 001",
+    "code": "OS/OB/001",
+    "lgaId": 625,
+    "capacity": 500
+  },
+  {
+    "name": "Odo Otin Ward 001",
+    "code": "OS/OD/001",
+    "lgaId": 626,
+    "capacity": 500
+  },
+  {
+    "name": "Ola Oluwa Ward 001",
+    "code": "OS/OL/001",
+    "lgaId": 627,
+    "capacity": 500
+  },
+  {
+    "name": "Olorunda Ward 001",
+    "code": "OS/OL/001",
+    "lgaId": 628,
+    "capacity": 500
+  },
+  {
+    "name": "Oriade Ward 001",
+    "code": "OS/OR/001",
+    "lgaId": 629,
+    "capacity": 500
+  },
+  {
+    "name": "Orolu Ward 001",
+    "code": "OS/OR/001",
+    "lgaId": 630,
+    "capacity": 500
+  },
+  {
+    "name": "Osogbo Ward 001",
+    "code": "OS/OS/001",
+    "lgaId": 631,
+    "capacity": 500
+  },
+  {
+    "name": "Afijio Ward 001",
+    "code": "OY/AF/001",
+    "lgaId": 632,
+    "capacity": 500
+  },
+  {
+    "name": "Akinyele Ward 001",
+    "code": "OY/AK/001",
+    "lgaId": 633,
+    "capacity": 500
+  },
+  {
+    "name": "Atiba Ward 001",
+    "code": "OY/AT/001",
+    "lgaId": 634,
+    "capacity": 500
+  },
+  {
+    "name": "Atisbo Ward 001",
+    "code": "OY/AT/001",
+    "lgaId": 635,
+    "capacity": 500
+  },
+  {
+    "name": "Egbeda Ward 001",
+    "code": "OY/EG/001",
+    "lgaId": 636,
+    "capacity": 500
+  },
+  {
+    "name": "Ibadan North Ward 001",
+    "code": "OY/IB/001",
+    "lgaId": 637,
+    "capacity": 500
+  },
+  {
+    "name": "Ibadan North-East Ward 001",
+    "code": "OY/IB/001",
+    "lgaId": 638,
+    "capacity": 500
+  },
+  {
+    "name": "Ibadan North-West Ward 001",
+    "code": "OY/IB/001",
+    "lgaId": 639,
+    "capacity": 500
+  },
+  {
+    "name": "Ibadan South-East Ward 001",
+    "code": "OY/IB/001",
+    "lgaId": 640,
+    "capacity": 500
+  },
+  {
+    "name": "Ibadan South-West Ward 001",
+    "code": "OY/IB/001",
+    "lgaId": 641,
+    "capacity": 500
+  },
+  {
+    "name": "Ibarapa Central Ward 001",
+    "code": "OY/IB/001",
+    "lgaId": 642,
+    "capacity": 500
+  },
+  {
+    "name": "Ibarapa East Ward 001",
+    "code": "OY/IB/001",
+    "lgaId": 643,
+    "capacity": 500
+  },
+  {
+    "name": "Ibarapa North Ward 001",
+    "code": "OY/IB/001",
+    "lgaId": 644,
+    "capacity": 500
+  },
+  {
+    "name": "Ido Ward 001",
+    "code": "OY/ID/001",
+    "lgaId": 645,
+    "capacity": 500
+  },
+  {
+    "name": "Irepo Ward 001",
+    "code": "OY/IR/001",
+    "lgaId": 646,
+    "capacity": 500
+  },
+  {
+    "name": "Iseyin Ward 001",
+    "code": "OY/IS/001",
+    "lgaId": 647,
+    "capacity": 500
+  },
+  {
+    "name": "Itesiwaju Ward 001",
+    "code": "OY/IT/001",
+    "lgaId": 648,
+    "capacity": 500
+  },
+  {
+    "name": "Iwajowa Ward 001",
+    "code": "OY/IW/001",
+    "lgaId": 649,
+    "capacity": 500
+  },
+  {
+    "name": "Kajola Ward 001",
+    "code": "OY/KA/001",
+    "lgaId": 650,
+    "capacity": 500
+  },
+  {
+    "name": "Lagelu Ward 001",
+    "code": "OY/LA/001",
+    "lgaId": 651,
+    "capacity": 500
+  },
+  {
+    "name": "Ogbomosho North Ward 001",
+    "code": "OY/OG/001",
+    "lgaId": 652,
+    "capacity": 500
+  },
+  {
+    "name": "Ogbomosho South Ward 001",
+    "code": "OY/OG/001",
+    "lgaId": 653,
+    "capacity": 500
+  },
+  {
+    "name": "Ogo Oluwa Ward 001",
+    "code": "OY/OG/001",
+    "lgaId": 654,
+    "capacity": 500
+  },
+  {
+    "name": "Olorunsogo Ward 001",
+    "code": "OY/OL/001",
+    "lgaId": 655,
+    "capacity": 500
+  },
+  {
+    "name": "Oluyole Ward 001",
+    "code": "OY/OL/001",
+    "lgaId": 656,
+    "capacity": 500
+  },
+  {
+    "name": "Ona Ara Ward 001",
+    "code": "OY/ON/001",
+    "lgaId": 657,
+    "capacity": 500
+  },
+  {
+    "name": "Orelope Ward 001",
+    "code": "OY/OR/001",
+    "lgaId": 658,
+    "capacity": 500
+  },
+  {
+    "name": "Ori Ire Ward 001",
+    "code": "OY/OR/001",
+    "lgaId": 659,
+    "capacity": 500
+  },
+  {
+    "name": "Oyo East Ward 001",
+    "code": "OY/OY/001",
+    "lgaId": 660,
+    "capacity": 500
+  },
+  {
+    "name": "Oyo West Ward 001",
+    "code": "OY/OY/001",
+    "lgaId": 661,
+    "capacity": 500
+  },
+  {
+    "name": "Saki East Ward 001",
+    "code": "OY/SA/001",
+    "lgaId": 662,
+    "capacity": 500
+  },
+  {
+    "name": "Saki West Ward 001",
+    "code": "OY/SA/001",
+    "lgaId": 663,
+    "capacity": 500
+  },
+  {
+    "name": "Surulere Oyo Ward 001",
+    "code": "OY/SU/001",
+    "lgaId": 664,
+    "capacity": 500
+  },
+  {
+    "name": "Barkin Ladi Ward 001",
+    "code": "PL/BA/001",
+    "lgaId": 665,
+    "capacity": 500
+  },
+  {
+    "name": "Bassa Ward 001",
+    "code": "PL/BA/001",
+    "lgaId": 666,
+    "capacity": 500
+  },
+  {
+    "name": "Bokkos Ward 001",
+    "code": "PL/BO/001",
+    "lgaId": 667,
+    "capacity": 500
+  },
+  {
+    "name": "Jos East Ward 001",
+    "code": "PL/JO/001",
+    "lgaId": 668,
+    "capacity": 500
+  },
+  {
+    "name": "Jos North Ward 001",
+    "code": "PL/JO/001",
+    "lgaId": 669,
+    "capacity": 500
+  },
+  {
+    "name": "Jos South Ward 001",
+    "code": "PL/JO/001",
+    "lgaId": 670,
+    "capacity": 500
+  },
+  {
+    "name": "Kanam Ward 001",
+    "code": "PL/KA/001",
+    "lgaId": 671,
+    "capacity": 500
+  },
+  {
+    "name": "Kanke Ward 001",
+    "code": "PL/KA/001",
+    "lgaId": 672,
+    "capacity": 500
+  },
+  {
+    "name": "Langtang North Ward 001",
+    "code": "PL/LA/001",
+    "lgaId": 673,
+    "capacity": 500
+  },
+  {
+    "name": "Langtang South Ward 001",
+    "code": "PL/LA/001",
+    "lgaId": 674,
+    "capacity": 500
+  },
+  {
+    "name": "Mangu Ward 001",
+    "code": "PL/MA/001",
+    "lgaId": 675,
+    "capacity": 500
+  },
+  {
+    "name": "Mikang Ward 001",
+    "code": "PL/MI/001",
+    "lgaId": 676,
+    "capacity": 500
+  },
+  {
+    "name": "Pankshin Ward 001",
+    "code": "PL/PA/001",
+    "lgaId": 677,
+    "capacity": 500
+  },
+  {
+    "name": "Qua'an Pan Ward 001",
+    "code": "PL/QU/001",
+    "lgaId": 678,
+    "capacity": 500
+  },
+  {
+    "name": "Riyom Ward 001",
+    "code": "PL/RI/001",
+    "lgaId": 679,
+    "capacity": 500
+  },
+  {
+    "name": "Shendam Ward 001",
+    "code": "PL/SH/001",
+    "lgaId": 680,
+    "capacity": 500
+  },
+  {
+    "name": "Wase Ward 001",
+    "code": "PL/WA/001",
+    "lgaId": 681,
+    "capacity": 500
+  },
+  {
+    "name": "Abua/Odual Ward 001",
+    "code": "RI/AB/001",
+    "lgaId": 682,
+    "capacity": 500
+  },
+  {
+    "name": "Ahoada East Ward 001",
+    "code": "RI/AH/001",
+    "lgaId": 683,
+    "capacity": 500
+  },
+  {
+    "name": "Ahoada West Ward 001",
+    "code": "RI/AH/001",
+    "lgaId": 684,
+    "capacity": 500
+  },
+  {
+    "name": "Akuku-Toru Ward 001",
+    "code": "RI/AK/001",
+    "lgaId": 685,
+    "capacity": 500
+  },
+  {
+    "name": "Andoni Ward 001",
+    "code": "RI/AN/001",
+    "lgaId": 686,
+    "capacity": 500
+  },
+  {
+    "name": "Asari-Toru Ward 001",
+    "code": "RI/AS/001",
+    "lgaId": 687,
+    "capacity": 500
+  },
+  {
+    "name": "Bonny Ward 001",
+    "code": "RI/BO/001",
+    "lgaId": 688,
+    "capacity": 500
+  },
+  {
+    "name": "Degema Ward 001",
+    "code": "RI/DE/001",
+    "lgaId": 689,
+    "capacity": 500
+  },
+  {
+    "name": "Eleme Ward 001",
+    "code": "RI/EL/001",
+    "lgaId": 690,
+    "capacity": 500
+  },
+  {
+    "name": "Emohua Ward 001",
+    "code": "RI/EM/001",
+    "lgaId": 691,
+    "capacity": 500
+  },
+  {
+    "name": "Etche Ward 001",
+    "code": "RI/ET/001",
+    "lgaId": 692,
+    "capacity": 500
+  },
+  {
+    "name": "Gokana Ward 001",
+    "code": "RI/GO/001",
+    "lgaId": 693,
+    "capacity": 500
+  },
+  {
+    "name": "Ikwerre Ward 001",
+    "code": "RI/IK/001",
+    "lgaId": 694,
+    "capacity": 500
+  },
+  {
+    "name": "Khana Ward 001",
+    "code": "RI/KH/001",
+    "lgaId": 695,
+    "capacity": 500
+  },
+  {
+    "name": "Obio/Akpor Ward 001",
+    "code": "RI/OB/001",
+    "lgaId": 696,
+    "capacity": 500
+  },
+  {
+    "name": "Ogba/Egbema/Ndoni Ward 001",
+    "code": "RI/OG/001",
+    "lgaId": 697,
+    "capacity": 500
+  },
+  {
+    "name": "Ogu/Bolo Ward 001",
+    "code": "RI/OG/001",
+    "lgaId": 698,
+    "capacity": 500
+  },
+  {
+    "name": "Okrika Ward 001",
+    "code": "RI/OK/001",
+    "lgaId": 699,
+    "capacity": 500
+  },
+  {
+    "name": "Omuma Ward 001",
+    "code": "RI/OM/001",
+    "lgaId": 700,
+    "capacity": 500
+  },
+  {
+    "name": "Opobo/Nkoro Ward 001",
+    "code": "RI/OP/001",
+    "lgaId": 701,
+    "capacity": 500
+  },
+  {
+    "name": "Oyigbo Ward 001",
+    "code": "RI/OY/001",
+    "lgaId": 702,
+    "capacity": 500
+  },
+  {
+    "name": "Port Harcourt Ward 001",
+    "code": "RI/PO/001",
+    "lgaId": 703,
+    "capacity": 500
+  },
+  {
+    "name": "Tai Ward 001",
+    "code": "RI/TA/001",
+    "lgaId": 704,
+    "capacity": 500
+  },
+  {
+    "name": "Binji Ward 001",
+    "code": "SO/BI/001",
+    "lgaId": 705,
+    "capacity": 500
+  },
+  {
+    "name": "Bodinga Ward 001",
+    "code": "SO/BO/001",
+    "lgaId": 706,
+    "capacity": 500
+  },
+  {
+    "name": "Dange Shuni Ward 001",
+    "code": "SO/DA/001",
+    "lgaId": 707,
+    "capacity": 500
+  },
+  {
+    "name": "Gada Ward 001",
+    "code": "SO/GA/001",
+    "lgaId": 708,
+    "capacity": 500
+  },
+  {
+    "name": "Goronyo Ward 001",
+    "code": "SO/GO/001",
+    "lgaId": 709,
+    "capacity": 500
+  },
+  {
+    "name": "Gudu Ward 001",
+    "code": "SO/GU/001",
+    "lgaId": 710,
+    "capacity": 500
+  },
+  {
+    "name": "Gwadabawa Ward 001",
+    "code": "SO/GW/001",
+    "lgaId": 711,
+    "capacity": 500
+  },
+  {
+    "name": "Illela Ward 001",
+    "code": "SO/IL/001",
+    "lgaId": 712,
+    "capacity": 500
+  },
+  {
+    "name": "Isa Ward 001",
+    "code": "SO/IS/001",
+    "lgaId": 713,
+    "capacity": 500
+  },
+  {
+    "name": "Kebbe Ward 001",
+    "code": "SO/KE/001",
+    "lgaId": 714,
+    "capacity": 500
+  },
+  {
+    "name": "Kware Ward 001",
+    "code": "SO/KW/001",
+    "lgaId": 715,
+    "capacity": 500
+  },
+  {
+    "name": "Rabah Ward 001",
+    "code": "SO/RA/001",
+    "lgaId": 716,
+    "capacity": 500
+  },
+  {
+    "name": "Sabon Birni Ward 001",
+    "code": "SO/SA/001",
+    "lgaId": 717,
+    "capacity": 500
+  },
+  {
+    "name": "Shagari Ward 001",
+    "code": "SO/SH/001",
+    "lgaId": 718,
+    "capacity": 500
+  },
+  {
+    "name": "Silame Ward 001",
+    "code": "SO/SI/001",
+    "lgaId": 719,
+    "capacity": 500
+  },
+  {
+    "name": "Sokoto North Ward 001",
+    "code": "SO/SO/001",
+    "lgaId": 720,
+    "capacity": 500
+  },
+  {
+    "name": "Sokoto South Ward 001",
+    "code": "SO/SO/001",
+    "lgaId": 721,
+    "capacity": 500
+  },
+  {
+    "name": "Tambuwal Ward 001",
+    "code": "SO/TA/001",
+    "lgaId": 722,
+    "capacity": 500
+  },
+  {
+    "name": "Tangaza Ward 001",
+    "code": "SO/TA/001",
+    "lgaId": 723,
+    "capacity": 500
+  },
+  {
+    "name": "Tureta Ward 001",
+    "code": "SO/TU/001",
+    "lgaId": 724,
+    "capacity": 500
+  },
+  {
+    "name": "Wamako Ward 001",
+    "code": "SO/WA/001",
+    "lgaId": 725,
+    "capacity": 500
+  },
+  {
+    "name": "Wurno Ward 001",
+    "code": "SO/WU/001",
+    "lgaId": 726,
+    "capacity": 500
+  },
+  {
+    "name": "Yabo Ward 001",
+    "code": "SO/YA/001",
+    "lgaId": 727,
+    "capacity": 500
+  },
+  {
+    "name": "Ardo Kola Ward 001",
+    "code": "TA/AR/001",
+    "lgaId": 728,
+    "capacity": 500
+  },
+  {
+    "name": "Bali Ward 001",
+    "code": "TA/BA/001",
+    "lgaId": 729,
+    "capacity": 500
+  },
+  {
+    "name": "Donga Ward 001",
+    "code": "TA/DO/001",
+    "lgaId": 730,
+    "capacity": 500
+  },
+  {
+    "name": "Gashaka Ward 001",
+    "code": "TA/GA/001",
+    "lgaId": 731,
+    "capacity": 500
+  },
+  {
+    "name": "Gassol Ward 001",
+    "code": "TA/GA/001",
+    "lgaId": 732,
+    "capacity": 500
+  },
+  {
+    "name": "Ibi Ward 001",
+    "code": "TA/IB/001",
+    "lgaId": 733,
+    "capacity": 500
+  },
+  {
+    "name": "Jalingo Ward 001",
+    "code": "TA/JA/001",
+    "lgaId": 734,
+    "capacity": 500
+  },
+  {
+    "name": "Karim Lamido Ward 001",
+    "code": "TA/KA/001",
+    "lgaId": 735,
+    "capacity": 500
+  },
+  {
+    "name": "Kumi Ward 001",
+    "code": "TA/KU/001",
+    "lgaId": 736,
+    "capacity": 500
+  },
+  {
+    "name": "Lau Ward 001",
+    "code": "TA/LA/001",
+    "lgaId": 737,
+    "capacity": 500
+  },
+  {
+    "name": "Sardauna Ward 001",
+    "code": "TA/SA/001",
+    "lgaId": 738,
+    "capacity": 500
+  },
+  {
+    "name": "Takum Ward 001",
+    "code": "TA/TA/001",
+    "lgaId": 739,
+    "capacity": 500
+  },
+  {
+    "name": "Ussa Ward 001",
+    "code": "TA/US/001",
+    "lgaId": 740,
+    "capacity": 500
+  },
+  {
+    "name": "Wukari Ward 001",
+    "code": "TA/WU/001",
+    "lgaId": 741,
+    "capacity": 500
+  },
+  {
+    "name": "Yorro Ward 001",
+    "code": "TA/YO/001",
+    "lgaId": 742,
+    "capacity": 500
+  },
+  {
+    "name": "Zing Ward 001",
+    "code": "TA/ZI/001",
+    "lgaId": 743,
+    "capacity": 500
+  },
+  {
+    "name": "Bade Ward 001",
+    "code": "YO/BA/001",
+    "lgaId": 744,
+    "capacity": 500
+  },
+  {
+    "name": "Bursari Ward 001",
+    "code": "YO/BU/001",
+    "lgaId": 745,
+    "capacity": 500
+  },
+  {
+    "name": "Damaturu Ward 001",
+    "code": "YO/DA/001",
+    "lgaId": 746,
+    "capacity": 500
+  },
+  {
+    "name": "Fika Ward 001",
+    "code": "YO/FI/001",
+    "lgaId": 747,
+    "capacity": 500
+  },
+  {
+    "name": "Fune Ward 001",
+    "code": "YO/FU/001",
+    "lgaId": 748,
+    "capacity": 500
+  },
+  {
+    "name": "Geidam Ward 001",
+    "code": "YO/GE/001",
+    "lgaId": 749,
+    "capacity": 500
+  },
+  {
+    "name": "Gujba Ward 001",
+    "code": "YO/GU/001",
+    "lgaId": 750,
+    "capacity": 500
+  },
+  {
+    "name": "Gulani Ward 001",
+    "code": "YO/GU/001",
+    "lgaId": 751,
+    "capacity": 500
+  },
+  {
+    "name": "Jakusko Ward 001",
+    "code": "YO/JA/001",
+    "lgaId": 752,
+    "capacity": 500
+  },
+  {
+    "name": "Karasuwa Ward 001",
+    "code": "YO/KA/001",
+    "lgaId": 753,
+    "capacity": 500
+  },
+  {
+    "name": "Machina Ward 001",
+    "code": "YO/MA/001",
+    "lgaId": 754,
+    "capacity": 500
+  },
+  {
+    "name": "Nangere Ward 001",
+    "code": "YO/NA/001",
+    "lgaId": 755,
+    "capacity": 500
+  },
+  {
+    "name": "Nguru Ward 001",
+    "code": "YO/NG/001",
+    "lgaId": 756,
+    "capacity": 500
+  },
+  {
+    "name": "Potiskum Ward 001",
+    "code": "YO/PO/001",
+    "lgaId": 757,
+    "capacity": 500
+  },
+  {
+    "name": "Tarmuwa Ward 001",
+    "code": "YO/TA/001",
+    "lgaId": 758,
+    "capacity": 500
+  },
+  {
+    "name": "Yunusari Ward 001",
+    "code": "YO/YU/001",
+    "lgaId": 759,
+    "capacity": 500
+  },
+  {
+    "name": "Yusufari Ward 001",
+    "code": "YO/YU/001",
+    "lgaId": 760,
+    "capacity": 500
+  },
+  {
+    "name": "Anka Ward 001",
+    "code": "ZA/AN/001",
+    "lgaId": 761,
+    "capacity": 500
+  },
+  {
+    "name": "Bakura Ward 001",
+    "code": "ZA/BA/001",
+    "lgaId": 762,
+    "capacity": 500
+  },
+  {
+    "name": "Birnin Magaji/Kiyaw Ward 001",
+    "code": "ZA/BI/001",
+    "lgaId": 763,
+    "capacity": 500
+  },
+  {
+    "name": "Bukkuyum Ward 001",
+    "code": "ZA/BU/001",
+    "lgaId": 764,
+    "capacity": 500
+  },
+  {
+    "name": "Bungudu Ward 001",
+    "code": "ZA/BU/001",
+    "lgaId": 765,
+    "capacity": 500
+  },
+  {
+    "name": "Gummi Ward 001",
+    "code": "ZA/GU/001",
+    "lgaId": 766,
+    "capacity": 500
+  },
+  {
+    "name": "Gusau Ward 001",
+    "code": "ZA/GU/001",
+    "lgaId": 767,
+    "capacity": 500
+  },
+  {
+    "name": "Kaura Namoda Ward 001",
+    "code": "ZA/KA/001",
+    "lgaId": 768,
+    "capacity": 500
+  },
+  {
+    "name": "Maradun Ward 001",
+    "code": "ZA/MA/001",
+    "lgaId": 769,
+    "capacity": 500
+  },
+  {
+    "name": "Maru Ward 001",
+    "code": "ZA/MA/001",
+    "lgaId": 770,
+    "capacity": 500
+  },
+  {
+    "name": "Shinkafi Ward 001",
+    "code": "ZA/SH/001",
+    "lgaId": 771,
+    "capacity": 500
+  },
+  {
+    "name": "Talata Mafara Ward 001",
+    "code": "ZA/TA/001",
+    "lgaId": 772,
+    "capacity": 500
+  },
+  {
+    "name": "Tsafe Ward 001",
+    "code": "ZA/TS/001",
+    "lgaId": 773,
+    "capacity": 500
+  },
+  {
+    "name": "Zurmi Ward 001",
+    "code": "ZA/ZU/001",
+    "lgaId": 774,
+    "capacity": 500
+  }
+]

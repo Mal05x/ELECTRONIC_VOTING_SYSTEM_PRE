@@ -1,0 +1,31 @@
+version: '3.9'
+
+services:
+
+  # ── Python Liveness Service ────────────────────────────────────────────────
+  liveness:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: evoting-liveness
+    # Bind to 127.0.0.1 only — not accessible from outside the host.
+    # Spring Boot reaches it at http://liveness:5001 inside the compose network,
+    # or at http://127.0.0.1:5001 when running Spring Boot directly on the host.
+    ports:
+      - "127.0.0.1:5001:5001"
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    # Resource limits — ONNX inference is CPU-bound
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 512M

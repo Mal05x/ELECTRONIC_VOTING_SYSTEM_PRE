@@ -1,0 +1,4646 @@
+[
+  {
+    "name": "Ward 001 (LGA 1)",
+    "code": "NG/LGA-001/001",
+    "lgaId": 1,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 2)",
+    "code": "NG/LGA-002/001",
+    "lgaId": 2,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 3)",
+    "code": "NG/LGA-003/001",
+    "lgaId": 3,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 4)",
+    "code": "NG/LGA-004/001",
+    "lgaId": 4,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 5)",
+    "code": "NG/LGA-005/001",
+    "lgaId": 5,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 6)",
+    "code": "NG/LGA-006/001",
+    "lgaId": 6,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 7)",
+    "code": "NG/LGA-007/001",
+    "lgaId": 7,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 8)",
+    "code": "NG/LGA-008/001",
+    "lgaId": 8,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 9)",
+    "code": "NG/LGA-009/001",
+    "lgaId": 9,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 10)",
+    "code": "NG/LGA-010/001",
+    "lgaId": 10,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 11)",
+    "code": "NG/LGA-011/001",
+    "lgaId": 11,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 12)",
+    "code": "NG/LGA-012/001",
+    "lgaId": 12,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 13)",
+    "code": "NG/LGA-013/001",
+    "lgaId": 13,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 14)",
+    "code": "NG/LGA-014/001",
+    "lgaId": 14,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 15)",
+    "code": "NG/LGA-015/001",
+    "lgaId": 15,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 16)",
+    "code": "NG/LGA-016/001",
+    "lgaId": 16,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 17)",
+    "code": "NG/LGA-017/001",
+    "lgaId": 17,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 18)",
+    "code": "NG/LGA-018/001",
+    "lgaId": 18,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 19)",
+    "code": "NG/LGA-019/001",
+    "lgaId": 19,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 20)",
+    "code": "NG/LGA-020/001",
+    "lgaId": 20,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 21)",
+    "code": "NG/LGA-021/001",
+    "lgaId": 21,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 22)",
+    "code": "NG/LGA-022/001",
+    "lgaId": 22,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 23)",
+    "code": "NG/LGA-023/001",
+    "lgaId": 23,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 24)",
+    "code": "NG/LGA-024/001",
+    "lgaId": 24,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 25)",
+    "code": "NG/LGA-025/001",
+    "lgaId": 25,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 26)",
+    "code": "NG/LGA-026/001",
+    "lgaId": 26,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 27)",
+    "code": "NG/LGA-027/001",
+    "lgaId": 27,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 28)",
+    "code": "NG/LGA-028/001",
+    "lgaId": 28,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 29)",
+    "code": "NG/LGA-029/001",
+    "lgaId": 29,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 30)",
+    "code": "NG/LGA-030/001",
+    "lgaId": 30,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 31)",
+    "code": "NG/LGA-031/001",
+    "lgaId": 31,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 32)",
+    "code": "NG/LGA-032/001",
+    "lgaId": 32,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 33)",
+    "code": "NG/LGA-033/001",
+    "lgaId": 33,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 34)",
+    "code": "NG/LGA-034/001",
+    "lgaId": 34,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 35)",
+    "code": "NG/LGA-035/001",
+    "lgaId": 35,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 36)",
+    "code": "NG/LGA-036/001",
+    "lgaId": 36,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 37)",
+    "code": "NG/LGA-037/001",
+    "lgaId": 37,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 38)",
+    "code": "NG/LGA-038/001",
+    "lgaId": 38,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 39)",
+    "code": "NG/LGA-039/001",
+    "lgaId": 39,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 40)",
+    "code": "NG/LGA-040/001",
+    "lgaId": 40,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 41)",
+    "code": "NG/LGA-041/001",
+    "lgaId": 41,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 42)",
+    "code": "NG/LGA-042/001",
+    "lgaId": 42,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 43)",
+    "code": "NG/LGA-043/001",
+    "lgaId": 43,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 44)",
+    "code": "NG/LGA-044/001",
+    "lgaId": 44,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 45)",
+    "code": "NG/LGA-045/001",
+    "lgaId": 45,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 46)",
+    "code": "NG/LGA-046/001",
+    "lgaId": 46,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 47)",
+    "code": "NG/LGA-047/001",
+    "lgaId": 47,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 48)",
+    "code": "NG/LGA-048/001",
+    "lgaId": 48,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 49)",
+    "code": "NG/LGA-049/001",
+    "lgaId": 49,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 50)",
+    "code": "NG/LGA-050/001",
+    "lgaId": 50,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 51)",
+    "code": "NG/LGA-051/001",
+    "lgaId": 51,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 52)",
+    "code": "NG/LGA-052/001",
+    "lgaId": 52,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 53)",
+    "code": "NG/LGA-053/001",
+    "lgaId": 53,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 54)",
+    "code": "NG/LGA-054/001",
+    "lgaId": 54,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 55)",
+    "code": "NG/LGA-055/001",
+    "lgaId": 55,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 56)",
+    "code": "NG/LGA-056/001",
+    "lgaId": 56,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 57)",
+    "code": "NG/LGA-057/001",
+    "lgaId": 57,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 58)",
+    "code": "NG/LGA-058/001",
+    "lgaId": 58,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 59)",
+    "code": "NG/LGA-059/001",
+    "lgaId": 59,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 60)",
+    "code": "NG/LGA-060/001",
+    "lgaId": 60,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 61)",
+    "code": "NG/LGA-061/001",
+    "lgaId": 61,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 62)",
+    "code": "NG/LGA-062/001",
+    "lgaId": 62,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 63)",
+    "code": "NG/LGA-063/001",
+    "lgaId": 63,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 64)",
+    "code": "NG/LGA-064/001",
+    "lgaId": 64,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 65)",
+    "code": "NG/LGA-065/001",
+    "lgaId": 65,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 66)",
+    "code": "NG/LGA-066/001",
+    "lgaId": 66,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 67)",
+    "code": "NG/LGA-067/001",
+    "lgaId": 67,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 68)",
+    "code": "NG/LGA-068/001",
+    "lgaId": 68,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 69)",
+    "code": "NG/LGA-069/001",
+    "lgaId": 69,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 70)",
+    "code": "NG/LGA-070/001",
+    "lgaId": 70,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 71)",
+    "code": "NG/LGA-071/001",
+    "lgaId": 71,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 72)",
+    "code": "NG/LGA-072/001",
+    "lgaId": 72,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 73)",
+    "code": "NG/LGA-073/001",
+    "lgaId": 73,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 74)",
+    "code": "NG/LGA-074/001",
+    "lgaId": 74,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 75)",
+    "code": "NG/LGA-075/001",
+    "lgaId": 75,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 76)",
+    "code": "NG/LGA-076/001",
+    "lgaId": 76,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 77)",
+    "code": "NG/LGA-077/001",
+    "lgaId": 77,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 78)",
+    "code": "NG/LGA-078/001",
+    "lgaId": 78,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 79)",
+    "code": "NG/LGA-079/001",
+    "lgaId": 79,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 80)",
+    "code": "NG/LGA-080/001",
+    "lgaId": 80,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 81)",
+    "code": "NG/LGA-081/001",
+    "lgaId": 81,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 82)",
+    "code": "NG/LGA-082/001",
+    "lgaId": 82,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 83)",
+    "code": "NG/LGA-083/001",
+    "lgaId": 83,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 84)",
+    "code": "NG/LGA-084/001",
+    "lgaId": 84,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 85)",
+    "code": "NG/LGA-085/001",
+    "lgaId": 85,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 86)",
+    "code": "NG/LGA-086/001",
+    "lgaId": 86,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 87)",
+    "code": "NG/LGA-087/001",
+    "lgaId": 87,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 88)",
+    "code": "NG/LGA-088/001",
+    "lgaId": 88,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 89)",
+    "code": "NG/LGA-089/001",
+    "lgaId": 89,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 90)",
+    "code": "NG/LGA-090/001",
+    "lgaId": 90,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 91)",
+    "code": "NG/LGA-091/001",
+    "lgaId": 91,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 92)",
+    "code": "NG/LGA-092/001",
+    "lgaId": 92,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 93)",
+    "code": "NG/LGA-093/001",
+    "lgaId": 93,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 94)",
+    "code": "NG/LGA-094/001",
+    "lgaId": 94,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 95)",
+    "code": "NG/LGA-095/001",
+    "lgaId": 95,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 96)",
+    "code": "NG/LGA-096/001",
+    "lgaId": 96,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 97)",
+    "code": "NG/LGA-097/001",
+    "lgaId": 97,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 98)",
+    "code": "NG/LGA-098/001",
+    "lgaId": 98,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 99)",
+    "code": "NG/LGA-099/001",
+    "lgaId": 99,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 100)",
+    "code": "NG/LGA-100/001",
+    "lgaId": 100,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 101)",
+    "code": "NG/LGA-101/001",
+    "lgaId": 101,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 102)",
+    "code": "NG/LGA-102/001",
+    "lgaId": 102,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 103)",
+    "code": "NG/LGA-103/001",
+    "lgaId": 103,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 104)",
+    "code": "NG/LGA-104/001",
+    "lgaId": 104,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 105)",
+    "code": "NG/LGA-105/001",
+    "lgaId": 105,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 106)",
+    "code": "NG/LGA-106/001",
+    "lgaId": 106,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 107)",
+    "code": "NG/LGA-107/001",
+    "lgaId": 107,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 108)",
+    "code": "NG/LGA-108/001",
+    "lgaId": 108,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 109)",
+    "code": "NG/LGA-109/001",
+    "lgaId": 109,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 110)",
+    "code": "NG/LGA-110/001",
+    "lgaId": 110,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 111)",
+    "code": "NG/LGA-111/001",
+    "lgaId": 111,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 112)",
+    "code": "NG/LGA-112/001",
+    "lgaId": 112,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 113)",
+    "code": "NG/LGA-113/001",
+    "lgaId": 113,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 114)",
+    "code": "NG/LGA-114/001",
+    "lgaId": 114,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 115)",
+    "code": "NG/LGA-115/001",
+    "lgaId": 115,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 116)",
+    "code": "NG/LGA-116/001",
+    "lgaId": 116,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 117)",
+    "code": "NG/LGA-117/001",
+    "lgaId": 117,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 118)",
+    "code": "NG/LGA-118/001",
+    "lgaId": 118,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 119)",
+    "code": "NG/LGA-119/001",
+    "lgaId": 119,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 120)",
+    "code": "NG/LGA-120/001",
+    "lgaId": 120,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 121)",
+    "code": "NG/LGA-121/001",
+    "lgaId": 121,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 122)",
+    "code": "NG/LGA-122/001",
+    "lgaId": 122,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 123)",
+    "code": "NG/LGA-123/001",
+    "lgaId": 123,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 124)",
+    "code": "NG/LGA-124/001",
+    "lgaId": 124,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 125)",
+    "code": "NG/LGA-125/001",
+    "lgaId": 125,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 126)",
+    "code": "NG/LGA-126/001",
+    "lgaId": 126,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 127)",
+    "code": "NG/LGA-127/001",
+    "lgaId": 127,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 128)",
+    "code": "NG/LGA-128/001",
+    "lgaId": 128,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 129)",
+    "code": "NG/LGA-129/001",
+    "lgaId": 129,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 130)",
+    "code": "NG/LGA-130/001",
+    "lgaId": 130,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 131)",
+    "code": "NG/LGA-131/001",
+    "lgaId": 131,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 132)",
+    "code": "NG/LGA-132/001",
+    "lgaId": 132,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 133)",
+    "code": "NG/LGA-133/001",
+    "lgaId": 133,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 134)",
+    "code": "NG/LGA-134/001",
+    "lgaId": 134,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 135)",
+    "code": "NG/LGA-135/001",
+    "lgaId": 135,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 136)",
+    "code": "NG/LGA-136/001",
+    "lgaId": 136,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 137)",
+    "code": "NG/LGA-137/001",
+    "lgaId": 137,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 138)",
+    "code": "NG/LGA-138/001",
+    "lgaId": 138,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 139)",
+    "code": "NG/LGA-139/001",
+    "lgaId": 139,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 140)",
+    "code": "NG/LGA-140/001",
+    "lgaId": 140,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 141)",
+    "code": "NG/LGA-141/001",
+    "lgaId": 141,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 142)",
+    "code": "NG/LGA-142/001",
+    "lgaId": 142,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 143)",
+    "code": "NG/LGA-143/001",
+    "lgaId": 143,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 144)",
+    "code": "NG/LGA-144/001",
+    "lgaId": 144,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 145)",
+    "code": "NG/LGA-145/001",
+    "lgaId": 145,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 146)",
+    "code": "NG/LGA-146/001",
+    "lgaId": 146,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 147)",
+    "code": "NG/LGA-147/001",
+    "lgaId": 147,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 148)",
+    "code": "NG/LGA-148/001",
+    "lgaId": 148,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 149)",
+    "code": "NG/LGA-149/001",
+    "lgaId": 149,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 150)",
+    "code": "NG/LGA-150/001",
+    "lgaId": 150,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 151)",
+    "code": "NG/LGA-151/001",
+    "lgaId": 151,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 152)",
+    "code": "NG/LGA-152/001",
+    "lgaId": 152,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 153)",
+    "code": "NG/LGA-153/001",
+    "lgaId": 153,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 154)",
+    "code": "NG/LGA-154/001",
+    "lgaId": 154,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 155)",
+    "code": "NG/LGA-155/001",
+    "lgaId": 155,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 156)",
+    "code": "NG/LGA-156/001",
+    "lgaId": 156,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 157)",
+    "code": "NG/LGA-157/001",
+    "lgaId": 157,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 158)",
+    "code": "NG/LGA-158/001",
+    "lgaId": 158,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 159)",
+    "code": "NG/LGA-159/001",
+    "lgaId": 159,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 160)",
+    "code": "NG/LGA-160/001",
+    "lgaId": 160,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 161)",
+    "code": "NG/LGA-161/001",
+    "lgaId": 161,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 162)",
+    "code": "NG/LGA-162/001",
+    "lgaId": 162,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 163)",
+    "code": "NG/LGA-163/001",
+    "lgaId": 163,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 164)",
+    "code": "NG/LGA-164/001",
+    "lgaId": 164,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 165)",
+    "code": "NG/LGA-165/001",
+    "lgaId": 165,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 166)",
+    "code": "NG/LGA-166/001",
+    "lgaId": 166,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 167)",
+    "code": "NG/LGA-167/001",
+    "lgaId": 167,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 168)",
+    "code": "NG/LGA-168/001",
+    "lgaId": 168,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 169)",
+    "code": "NG/LGA-169/001",
+    "lgaId": 169,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 170)",
+    "code": "NG/LGA-170/001",
+    "lgaId": 170,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 171)",
+    "code": "NG/LGA-171/001",
+    "lgaId": 171,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 172)",
+    "code": "NG/LGA-172/001",
+    "lgaId": 172,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 173)",
+    "code": "NG/LGA-173/001",
+    "lgaId": 173,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 174)",
+    "code": "NG/LGA-174/001",
+    "lgaId": 174,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 175)",
+    "code": "NG/LGA-175/001",
+    "lgaId": 175,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 176)",
+    "code": "NG/LGA-176/001",
+    "lgaId": 176,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 177)",
+    "code": "NG/LGA-177/001",
+    "lgaId": 177,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 178)",
+    "code": "NG/LGA-178/001",
+    "lgaId": 178,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 179)",
+    "code": "NG/LGA-179/001",
+    "lgaId": 179,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 180)",
+    "code": "NG/LGA-180/001",
+    "lgaId": 180,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 181)",
+    "code": "NG/LGA-181/001",
+    "lgaId": 181,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 182)",
+    "code": "NG/LGA-182/001",
+    "lgaId": 182,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 183)",
+    "code": "NG/LGA-183/001",
+    "lgaId": 183,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 184)",
+    "code": "NG/LGA-184/001",
+    "lgaId": 184,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 185)",
+    "code": "NG/LGA-185/001",
+    "lgaId": 185,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 186)",
+    "code": "NG/LGA-186/001",
+    "lgaId": 186,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 187)",
+    "code": "NG/LGA-187/001",
+    "lgaId": 187,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 188)",
+    "code": "NG/LGA-188/001",
+    "lgaId": 188,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 189)",
+    "code": "NG/LGA-189/001",
+    "lgaId": 189,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 190)",
+    "code": "NG/LGA-190/001",
+    "lgaId": 190,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 191)",
+    "code": "NG/LGA-191/001",
+    "lgaId": 191,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 192)",
+    "code": "NG/LGA-192/001",
+    "lgaId": 192,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 193)",
+    "code": "NG/LGA-193/001",
+    "lgaId": 193,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 194)",
+    "code": "NG/LGA-194/001",
+    "lgaId": 194,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 195)",
+    "code": "NG/LGA-195/001",
+    "lgaId": 195,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 196)",
+    "code": "NG/LGA-196/001",
+    "lgaId": 196,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 197)",
+    "code": "NG/LGA-197/001",
+    "lgaId": 197,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 198)",
+    "code": "NG/LGA-198/001",
+    "lgaId": 198,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 199)",
+    "code": "NG/LGA-199/001",
+    "lgaId": 199,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 200)",
+    "code": "NG/LGA-200/001",
+    "lgaId": 200,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 201)",
+    "code": "NG/LGA-201/001",
+    "lgaId": 201,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 202)",
+    "code": "NG/LGA-202/001",
+    "lgaId": 202,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 203)",
+    "code": "NG/LGA-203/001",
+    "lgaId": 203,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 204)",
+    "code": "NG/LGA-204/001",
+    "lgaId": 204,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 205)",
+    "code": "NG/LGA-205/001",
+    "lgaId": 205,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 206)",
+    "code": "NG/LGA-206/001",
+    "lgaId": 206,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 207)",
+    "code": "NG/LGA-207/001",
+    "lgaId": 207,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 208)",
+    "code": "NG/LGA-208/001",
+    "lgaId": 208,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 209)",
+    "code": "NG/LGA-209/001",
+    "lgaId": 209,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 210)",
+    "code": "NG/LGA-210/001",
+    "lgaId": 210,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 211)",
+    "code": "NG/LGA-211/001",
+    "lgaId": 211,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 212)",
+    "code": "NG/LGA-212/001",
+    "lgaId": 212,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 213)",
+    "code": "NG/LGA-213/001",
+    "lgaId": 213,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 214)",
+    "code": "NG/LGA-214/001",
+    "lgaId": 214,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 215)",
+    "code": "NG/LGA-215/001",
+    "lgaId": 215,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 216)",
+    "code": "NG/LGA-216/001",
+    "lgaId": 216,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 217)",
+    "code": "NG/LGA-217/001",
+    "lgaId": 217,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 218)",
+    "code": "NG/LGA-218/001",
+    "lgaId": 218,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 219)",
+    "code": "NG/LGA-219/001",
+    "lgaId": 219,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 220)",
+    "code": "NG/LGA-220/001",
+    "lgaId": 220,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 221)",
+    "code": "NG/LGA-221/001",
+    "lgaId": 221,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 222)",
+    "code": "NG/LGA-222/001",
+    "lgaId": 222,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 223)",
+    "code": "NG/LGA-223/001",
+    "lgaId": 223,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 224)",
+    "code": "NG/LGA-224/001",
+    "lgaId": 224,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 225)",
+    "code": "NG/LGA-225/001",
+    "lgaId": 225,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 226)",
+    "code": "NG/LGA-226/001",
+    "lgaId": 226,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 227)",
+    "code": "NG/LGA-227/001",
+    "lgaId": 227,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 228)",
+    "code": "NG/LGA-228/001",
+    "lgaId": 228,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 229)",
+    "code": "NG/LGA-229/001",
+    "lgaId": 229,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 230)",
+    "code": "NG/LGA-230/001",
+    "lgaId": 230,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 231)",
+    "code": "NG/LGA-231/001",
+    "lgaId": 231,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 232)",
+    "code": "NG/LGA-232/001",
+    "lgaId": 232,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 233)",
+    "code": "NG/LGA-233/001",
+    "lgaId": 233,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 234)",
+    "code": "NG/LGA-234/001",
+    "lgaId": 234,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 235)",
+    "code": "NG/LGA-235/001",
+    "lgaId": 235,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 236)",
+    "code": "NG/LGA-236/001",
+    "lgaId": 236,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 237)",
+    "code": "NG/LGA-237/001",
+    "lgaId": 237,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 238)",
+    "code": "NG/LGA-238/001",
+    "lgaId": 238,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 239)",
+    "code": "NG/LGA-239/001",
+    "lgaId": 239,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 240)",
+    "code": "NG/LGA-240/001",
+    "lgaId": 240,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 241)",
+    "code": "NG/LGA-241/001",
+    "lgaId": 241,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 242)",
+    "code": "NG/LGA-242/001",
+    "lgaId": 242,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 243)",
+    "code": "NG/LGA-243/001",
+    "lgaId": 243,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 244)",
+    "code": "NG/LGA-244/001",
+    "lgaId": 244,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 245)",
+    "code": "NG/LGA-245/001",
+    "lgaId": 245,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 246)",
+    "code": "NG/LGA-246/001",
+    "lgaId": 246,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 247)",
+    "code": "NG/LGA-247/001",
+    "lgaId": 247,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 248)",
+    "code": "NG/LGA-248/001",
+    "lgaId": 248,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 249)",
+    "code": "NG/LGA-249/001",
+    "lgaId": 249,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 250)",
+    "code": "NG/LGA-250/001",
+    "lgaId": 250,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 251)",
+    "code": "NG/LGA-251/001",
+    "lgaId": 251,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 252)",
+    "code": "NG/LGA-252/001",
+    "lgaId": 252,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 253)",
+    "code": "NG/LGA-253/001",
+    "lgaId": 253,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 254)",
+    "code": "NG/LGA-254/001",
+    "lgaId": 254,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 255)",
+    "code": "NG/LGA-255/001",
+    "lgaId": 255,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 256)",
+    "code": "NG/LGA-256/001",
+    "lgaId": 256,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 257)",
+    "code": "NG/LGA-257/001",
+    "lgaId": 257,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 258)",
+    "code": "NG/LGA-258/001",
+    "lgaId": 258,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 259)",
+    "code": "NG/LGA-259/001",
+    "lgaId": 259,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 260)",
+    "code": "NG/LGA-260/001",
+    "lgaId": 260,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 261)",
+    "code": "NG/LGA-261/001",
+    "lgaId": 261,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 262)",
+    "code": "NG/LGA-262/001",
+    "lgaId": 262,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 263)",
+    "code": "NG/LGA-263/001",
+    "lgaId": 263,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 264)",
+    "code": "NG/LGA-264/001",
+    "lgaId": 264,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 265)",
+    "code": "NG/LGA-265/001",
+    "lgaId": 265,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 266)",
+    "code": "NG/LGA-266/001",
+    "lgaId": 266,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 267)",
+    "code": "NG/LGA-267/001",
+    "lgaId": 267,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 268)",
+    "code": "NG/LGA-268/001",
+    "lgaId": 268,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 269)",
+    "code": "NG/LGA-269/001",
+    "lgaId": 269,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 270)",
+    "code": "NG/LGA-270/001",
+    "lgaId": 270,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 271)",
+    "code": "NG/LGA-271/001",
+    "lgaId": 271,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 272)",
+    "code": "NG/LGA-272/001",
+    "lgaId": 272,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 273)",
+    "code": "NG/LGA-273/001",
+    "lgaId": 273,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 274)",
+    "code": "NG/LGA-274/001",
+    "lgaId": 274,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 275)",
+    "code": "NG/LGA-275/001",
+    "lgaId": 275,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 276)",
+    "code": "NG/LGA-276/001",
+    "lgaId": 276,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 277)",
+    "code": "NG/LGA-277/001",
+    "lgaId": 277,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 278)",
+    "code": "NG/LGA-278/001",
+    "lgaId": 278,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 279)",
+    "code": "NG/LGA-279/001",
+    "lgaId": 279,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 280)",
+    "code": "NG/LGA-280/001",
+    "lgaId": 280,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 281)",
+    "code": "NG/LGA-281/001",
+    "lgaId": 281,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 282)",
+    "code": "NG/LGA-282/001",
+    "lgaId": 282,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 283)",
+    "code": "NG/LGA-283/001",
+    "lgaId": 283,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 284)",
+    "code": "NG/LGA-284/001",
+    "lgaId": 284,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 285)",
+    "code": "NG/LGA-285/001",
+    "lgaId": 285,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 286)",
+    "code": "NG/LGA-286/001",
+    "lgaId": 286,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 287)",
+    "code": "NG/LGA-287/001",
+    "lgaId": 287,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 288)",
+    "code": "NG/LGA-288/001",
+    "lgaId": 288,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 289)",
+    "code": "NG/LGA-289/001",
+    "lgaId": 289,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 290)",
+    "code": "NG/LGA-290/001",
+    "lgaId": 290,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 291)",
+    "code": "NG/LGA-291/001",
+    "lgaId": 291,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 292)",
+    "code": "NG/LGA-292/001",
+    "lgaId": 292,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 293)",
+    "code": "NG/LGA-293/001",
+    "lgaId": 293,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 294)",
+    "code": "NG/LGA-294/001",
+    "lgaId": 294,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 295)",
+    "code": "NG/LGA-295/001",
+    "lgaId": 295,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 296)",
+    "code": "NG/LGA-296/001",
+    "lgaId": 296,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 297)",
+    "code": "NG/LGA-297/001",
+    "lgaId": 297,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 298)",
+    "code": "NG/LGA-298/001",
+    "lgaId": 298,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 299)",
+    "code": "NG/LGA-299/001",
+    "lgaId": 299,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 300)",
+    "code": "NG/LGA-300/001",
+    "lgaId": 300,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 301)",
+    "code": "NG/LGA-301/001",
+    "lgaId": 301,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 302)",
+    "code": "NG/LGA-302/001",
+    "lgaId": 302,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 303)",
+    "code": "NG/LGA-303/001",
+    "lgaId": 303,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 304)",
+    "code": "NG/LGA-304/001",
+    "lgaId": 304,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 305)",
+    "code": "NG/LGA-305/001",
+    "lgaId": 305,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 306)",
+    "code": "NG/LGA-306/001",
+    "lgaId": 306,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 307)",
+    "code": "NG/LGA-307/001",
+    "lgaId": 307,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 308)",
+    "code": "NG/LGA-308/001",
+    "lgaId": 308,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 309)",
+    "code": "NG/LGA-309/001",
+    "lgaId": 309,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 310)",
+    "code": "NG/LGA-310/001",
+    "lgaId": 310,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 311)",
+    "code": "NG/LGA-311/001",
+    "lgaId": 311,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 312)",
+    "code": "NG/LGA-312/001",
+    "lgaId": 312,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 313)",
+    "code": "NG/LGA-313/001",
+    "lgaId": 313,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 314)",
+    "code": "NG/LGA-314/001",
+    "lgaId": 314,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 315)",
+    "code": "NG/LGA-315/001",
+    "lgaId": 315,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 316)",
+    "code": "NG/LGA-316/001",
+    "lgaId": 316,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 317)",
+    "code": "NG/LGA-317/001",
+    "lgaId": 317,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 318)",
+    "code": "NG/LGA-318/001",
+    "lgaId": 318,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 319)",
+    "code": "NG/LGA-319/001",
+    "lgaId": 319,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 320)",
+    "code": "NG/LGA-320/001",
+    "lgaId": 320,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 321)",
+    "code": "NG/LGA-321/001",
+    "lgaId": 321,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 322)",
+    "code": "NG/LGA-322/001",
+    "lgaId": 322,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 323)",
+    "code": "NG/LGA-323/001",
+    "lgaId": 323,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 324)",
+    "code": "NG/LGA-324/001",
+    "lgaId": 324,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 325)",
+    "code": "NG/LGA-325/001",
+    "lgaId": 325,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 326)",
+    "code": "NG/LGA-326/001",
+    "lgaId": 326,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 327)",
+    "code": "NG/LGA-327/001",
+    "lgaId": 327,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 328)",
+    "code": "NG/LGA-328/001",
+    "lgaId": 328,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 329)",
+    "code": "NG/LGA-329/001",
+    "lgaId": 329,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 330)",
+    "code": "NG/LGA-330/001",
+    "lgaId": 330,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 331)",
+    "code": "NG/LGA-331/001",
+    "lgaId": 331,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 332)",
+    "code": "NG/LGA-332/001",
+    "lgaId": 332,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 333)",
+    "code": "NG/LGA-333/001",
+    "lgaId": 333,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 334)",
+    "code": "NG/LGA-334/001",
+    "lgaId": 334,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 335)",
+    "code": "NG/LGA-335/001",
+    "lgaId": 335,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 336)",
+    "code": "NG/LGA-336/001",
+    "lgaId": 336,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 337)",
+    "code": "NG/LGA-337/001",
+    "lgaId": 337,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 338)",
+    "code": "NG/LGA-338/001",
+    "lgaId": 338,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 339)",
+    "code": "NG/LGA-339/001",
+    "lgaId": 339,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 340)",
+    "code": "NG/LGA-340/001",
+    "lgaId": 340,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 341)",
+    "code": "NG/LGA-341/001",
+    "lgaId": 341,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 342)",
+    "code": "NG/LGA-342/001",
+    "lgaId": 342,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 343)",
+    "code": "NG/LGA-343/001",
+    "lgaId": 343,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 344)",
+    "code": "NG/LGA-344/001",
+    "lgaId": 344,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 345)",
+    "code": "NG/LGA-345/001",
+    "lgaId": 345,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 346)",
+    "code": "NG/LGA-346/001",
+    "lgaId": 346,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 347)",
+    "code": "NG/LGA-347/001",
+    "lgaId": 347,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 348)",
+    "code": "NG/LGA-348/001",
+    "lgaId": 348,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 349)",
+    "code": "NG/LGA-349/001",
+    "lgaId": 349,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 350)",
+    "code": "NG/LGA-350/001",
+    "lgaId": 350,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 351)",
+    "code": "NG/LGA-351/001",
+    "lgaId": 351,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 352)",
+    "code": "NG/LGA-352/001",
+    "lgaId": 352,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 353)",
+    "code": "NG/LGA-353/001",
+    "lgaId": 353,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 354)",
+    "code": "NG/LGA-354/001",
+    "lgaId": 354,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 355)",
+    "code": "NG/LGA-355/001",
+    "lgaId": 355,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 356)",
+    "code": "NG/LGA-356/001",
+    "lgaId": 356,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 357)",
+    "code": "NG/LGA-357/001",
+    "lgaId": 357,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 358)",
+    "code": "NG/LGA-358/001",
+    "lgaId": 358,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 359)",
+    "code": "NG/LGA-359/001",
+    "lgaId": 359,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 360)",
+    "code": "NG/LGA-360/001",
+    "lgaId": 360,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 361)",
+    "code": "NG/LGA-361/001",
+    "lgaId": 361,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 362)",
+    "code": "NG/LGA-362/001",
+    "lgaId": 362,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 363)",
+    "code": "NG/LGA-363/001",
+    "lgaId": 363,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 364)",
+    "code": "NG/LGA-364/001",
+    "lgaId": 364,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 365)",
+    "code": "NG/LGA-365/001",
+    "lgaId": 365,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 366)",
+    "code": "NG/LGA-366/001",
+    "lgaId": 366,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 367)",
+    "code": "NG/LGA-367/001",
+    "lgaId": 367,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 368)",
+    "code": "NG/LGA-368/001",
+    "lgaId": 368,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 369)",
+    "code": "NG/LGA-369/001",
+    "lgaId": 369,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 370)",
+    "code": "NG/LGA-370/001",
+    "lgaId": 370,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 371)",
+    "code": "NG/LGA-371/001",
+    "lgaId": 371,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 372)",
+    "code": "NG/LGA-372/001",
+    "lgaId": 372,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 373)",
+    "code": "NG/LGA-373/001",
+    "lgaId": 373,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 374)",
+    "code": "NG/LGA-374/001",
+    "lgaId": 374,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 375)",
+    "code": "NG/LGA-375/001",
+    "lgaId": 375,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 376)",
+    "code": "NG/LGA-376/001",
+    "lgaId": 376,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 377)",
+    "code": "NG/LGA-377/001",
+    "lgaId": 377,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 378)",
+    "code": "NG/LGA-378/001",
+    "lgaId": 378,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 379)",
+    "code": "NG/LGA-379/001",
+    "lgaId": 379,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 380)",
+    "code": "NG/LGA-380/001",
+    "lgaId": 380,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 381)",
+    "code": "NG/LGA-381/001",
+    "lgaId": 381,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 382)",
+    "code": "NG/LGA-382/001",
+    "lgaId": 382,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 383)",
+    "code": "NG/LGA-383/001",
+    "lgaId": 383,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 384)",
+    "code": "NG/LGA-384/001",
+    "lgaId": 384,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 385)",
+    "code": "NG/LGA-385/001",
+    "lgaId": 385,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 386)",
+    "code": "NG/LGA-386/001",
+    "lgaId": 386,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 387)",
+    "code": "NG/LGA-387/001",
+    "lgaId": 387,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 388)",
+    "code": "NG/LGA-388/001",
+    "lgaId": 388,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 389)",
+    "code": "NG/LGA-389/001",
+    "lgaId": 389,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 390)",
+    "code": "NG/LGA-390/001",
+    "lgaId": 390,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 391)",
+    "code": "NG/LGA-391/001",
+    "lgaId": 391,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 392)",
+    "code": "NG/LGA-392/001",
+    "lgaId": 392,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 393)",
+    "code": "NG/LGA-393/001",
+    "lgaId": 393,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 394)",
+    "code": "NG/LGA-394/001",
+    "lgaId": 394,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 395)",
+    "code": "NG/LGA-395/001",
+    "lgaId": 395,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 396)",
+    "code": "NG/LGA-396/001",
+    "lgaId": 396,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 397)",
+    "code": "NG/LGA-397/001",
+    "lgaId": 397,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 398)",
+    "code": "NG/LGA-398/001",
+    "lgaId": 398,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 399)",
+    "code": "NG/LGA-399/001",
+    "lgaId": 399,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 400)",
+    "code": "NG/LGA-400/001",
+    "lgaId": 400,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 401)",
+    "code": "NG/LGA-401/001",
+    "lgaId": 401,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 402)",
+    "code": "NG/LGA-402/001",
+    "lgaId": 402,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 403)",
+    "code": "NG/LGA-403/001",
+    "lgaId": 403,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 404)",
+    "code": "NG/LGA-404/001",
+    "lgaId": 404,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 405)",
+    "code": "NG/LGA-405/001",
+    "lgaId": 405,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 406)",
+    "code": "NG/LGA-406/001",
+    "lgaId": 406,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 407)",
+    "code": "NG/LGA-407/001",
+    "lgaId": 407,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 408)",
+    "code": "NG/LGA-408/001",
+    "lgaId": 408,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 409)",
+    "code": "NG/LGA-409/001",
+    "lgaId": 409,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 410)",
+    "code": "NG/LGA-410/001",
+    "lgaId": 410,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 411)",
+    "code": "NG/LGA-411/001",
+    "lgaId": 411,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 412)",
+    "code": "NG/LGA-412/001",
+    "lgaId": 412,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 413)",
+    "code": "NG/LGA-413/001",
+    "lgaId": 413,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 414)",
+    "code": "NG/LGA-414/001",
+    "lgaId": 414,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 415)",
+    "code": "NG/LGA-415/001",
+    "lgaId": 415,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 416)",
+    "code": "NG/LGA-416/001",
+    "lgaId": 416,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 417)",
+    "code": "NG/LGA-417/001",
+    "lgaId": 417,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 418)",
+    "code": "NG/LGA-418/001",
+    "lgaId": 418,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 419)",
+    "code": "NG/LGA-419/001",
+    "lgaId": 419,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 420)",
+    "code": "NG/LGA-420/001",
+    "lgaId": 420,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 421)",
+    "code": "NG/LGA-421/001",
+    "lgaId": 421,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 422)",
+    "code": "NG/LGA-422/001",
+    "lgaId": 422,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 423)",
+    "code": "NG/LGA-423/001",
+    "lgaId": 423,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 424)",
+    "code": "NG/LGA-424/001",
+    "lgaId": 424,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 425)",
+    "code": "NG/LGA-425/001",
+    "lgaId": 425,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 426)",
+    "code": "NG/LGA-426/001",
+    "lgaId": 426,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 427)",
+    "code": "NG/LGA-427/001",
+    "lgaId": 427,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 428)",
+    "code": "NG/LGA-428/001",
+    "lgaId": 428,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 429)",
+    "code": "NG/LGA-429/001",
+    "lgaId": 429,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 430)",
+    "code": "NG/LGA-430/001",
+    "lgaId": 430,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 431)",
+    "code": "NG/LGA-431/001",
+    "lgaId": 431,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 432)",
+    "code": "NG/LGA-432/001",
+    "lgaId": 432,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 433)",
+    "code": "NG/LGA-433/001",
+    "lgaId": 433,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 434)",
+    "code": "NG/LGA-434/001",
+    "lgaId": 434,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 435)",
+    "code": "NG/LGA-435/001",
+    "lgaId": 435,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 436)",
+    "code": "NG/LGA-436/001",
+    "lgaId": 436,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 437)",
+    "code": "NG/LGA-437/001",
+    "lgaId": 437,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 438)",
+    "code": "NG/LGA-438/001",
+    "lgaId": 438,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 439)",
+    "code": "NG/LGA-439/001",
+    "lgaId": 439,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 440)",
+    "code": "NG/LGA-440/001",
+    "lgaId": 440,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 441)",
+    "code": "NG/LGA-441/001",
+    "lgaId": 441,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 442)",
+    "code": "NG/LGA-442/001",
+    "lgaId": 442,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 443)",
+    "code": "NG/LGA-443/001",
+    "lgaId": 443,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 444)",
+    "code": "NG/LGA-444/001",
+    "lgaId": 444,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 445)",
+    "code": "NG/LGA-445/001",
+    "lgaId": 445,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 446)",
+    "code": "NG/LGA-446/001",
+    "lgaId": 446,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 447)",
+    "code": "NG/LGA-447/001",
+    "lgaId": 447,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 448)",
+    "code": "NG/LGA-448/001",
+    "lgaId": 448,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 449)",
+    "code": "NG/LGA-449/001",
+    "lgaId": 449,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 450)",
+    "code": "NG/LGA-450/001",
+    "lgaId": 450,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 451)",
+    "code": "NG/LGA-451/001",
+    "lgaId": 451,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 452)",
+    "code": "NG/LGA-452/001",
+    "lgaId": 452,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 453)",
+    "code": "NG/LGA-453/001",
+    "lgaId": 453,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 454)",
+    "code": "NG/LGA-454/001",
+    "lgaId": 454,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 455)",
+    "code": "NG/LGA-455/001",
+    "lgaId": 455,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 456)",
+    "code": "NG/LGA-456/001",
+    "lgaId": 456,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 457)",
+    "code": "NG/LGA-457/001",
+    "lgaId": 457,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 458)",
+    "code": "NG/LGA-458/001",
+    "lgaId": 458,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 459)",
+    "code": "NG/LGA-459/001",
+    "lgaId": 459,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 460)",
+    "code": "NG/LGA-460/001",
+    "lgaId": 460,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 461)",
+    "code": "NG/LGA-461/001",
+    "lgaId": 461,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 462)",
+    "code": "NG/LGA-462/001",
+    "lgaId": 462,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 463)",
+    "code": "NG/LGA-463/001",
+    "lgaId": 463,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 464)",
+    "code": "NG/LGA-464/001",
+    "lgaId": 464,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 465)",
+    "code": "NG/LGA-465/001",
+    "lgaId": 465,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 466)",
+    "code": "NG/LGA-466/001",
+    "lgaId": 466,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 467)",
+    "code": "NG/LGA-467/001",
+    "lgaId": 467,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 468)",
+    "code": "NG/LGA-468/001",
+    "lgaId": 468,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 469)",
+    "code": "NG/LGA-469/001",
+    "lgaId": 469,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 470)",
+    "code": "NG/LGA-470/001",
+    "lgaId": 470,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 471)",
+    "code": "NG/LGA-471/001",
+    "lgaId": 471,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 472)",
+    "code": "NG/LGA-472/001",
+    "lgaId": 472,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 473)",
+    "code": "NG/LGA-473/001",
+    "lgaId": 473,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 474)",
+    "code": "NG/LGA-474/001",
+    "lgaId": 474,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 475)",
+    "code": "NG/LGA-475/001",
+    "lgaId": 475,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 476)",
+    "code": "NG/LGA-476/001",
+    "lgaId": 476,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 477)",
+    "code": "NG/LGA-477/001",
+    "lgaId": 477,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 478)",
+    "code": "NG/LGA-478/001",
+    "lgaId": 478,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 479)",
+    "code": "NG/LGA-479/001",
+    "lgaId": 479,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 480)",
+    "code": "NG/LGA-480/001",
+    "lgaId": 480,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 481)",
+    "code": "NG/LGA-481/001",
+    "lgaId": 481,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 482)",
+    "code": "NG/LGA-482/001",
+    "lgaId": 482,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 483)",
+    "code": "NG/LGA-483/001",
+    "lgaId": 483,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 484)",
+    "code": "NG/LGA-484/001",
+    "lgaId": 484,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 485)",
+    "code": "NG/LGA-485/001",
+    "lgaId": 485,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 486)",
+    "code": "NG/LGA-486/001",
+    "lgaId": 486,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 487)",
+    "code": "NG/LGA-487/001",
+    "lgaId": 487,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 488)",
+    "code": "NG/LGA-488/001",
+    "lgaId": 488,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 489)",
+    "code": "NG/LGA-489/001",
+    "lgaId": 489,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 490)",
+    "code": "NG/LGA-490/001",
+    "lgaId": 490,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 491)",
+    "code": "NG/LGA-491/001",
+    "lgaId": 491,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 492)",
+    "code": "NG/LGA-492/001",
+    "lgaId": 492,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 493)",
+    "code": "NG/LGA-493/001",
+    "lgaId": 493,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 494)",
+    "code": "NG/LGA-494/001",
+    "lgaId": 494,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 495)",
+    "code": "NG/LGA-495/001",
+    "lgaId": 495,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 496)",
+    "code": "NG/LGA-496/001",
+    "lgaId": 496,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 497)",
+    "code": "NG/LGA-497/001",
+    "lgaId": 497,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 498)",
+    "code": "NG/LGA-498/001",
+    "lgaId": 498,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 499)",
+    "code": "NG/LGA-499/001",
+    "lgaId": 499,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 500)",
+    "code": "NG/LGA-500/001",
+    "lgaId": 500,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 501)",
+    "code": "NG/LGA-501/001",
+    "lgaId": 501,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 502)",
+    "code": "NG/LGA-502/001",
+    "lgaId": 502,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 503)",
+    "code": "NG/LGA-503/001",
+    "lgaId": 503,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 504)",
+    "code": "NG/LGA-504/001",
+    "lgaId": 504,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 505)",
+    "code": "NG/LGA-505/001",
+    "lgaId": 505,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 506)",
+    "code": "NG/LGA-506/001",
+    "lgaId": 506,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 507)",
+    "code": "NG/LGA-507/001",
+    "lgaId": 507,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 508)",
+    "code": "NG/LGA-508/001",
+    "lgaId": 508,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 509)",
+    "code": "NG/LGA-509/001",
+    "lgaId": 509,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 510)",
+    "code": "NG/LGA-510/001",
+    "lgaId": 510,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 511)",
+    "code": "NG/LGA-511/001",
+    "lgaId": 511,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 512)",
+    "code": "NG/LGA-512/001",
+    "lgaId": 512,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 513)",
+    "code": "NG/LGA-513/001",
+    "lgaId": 513,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 514)",
+    "code": "NG/LGA-514/001",
+    "lgaId": 514,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 515)",
+    "code": "NG/LGA-515/001",
+    "lgaId": 515,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 516)",
+    "code": "NG/LGA-516/001",
+    "lgaId": 516,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 517)",
+    "code": "NG/LGA-517/001",
+    "lgaId": 517,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 518)",
+    "code": "NG/LGA-518/001",
+    "lgaId": 518,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 519)",
+    "code": "NG/LGA-519/001",
+    "lgaId": 519,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 520)",
+    "code": "NG/LGA-520/001",
+    "lgaId": 520,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 521)",
+    "code": "NG/LGA-521/001",
+    "lgaId": 521,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 522)",
+    "code": "NG/LGA-522/001",
+    "lgaId": 522,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 523)",
+    "code": "NG/LGA-523/001",
+    "lgaId": 523,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 524)",
+    "code": "NG/LGA-524/001",
+    "lgaId": 524,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 525)",
+    "code": "NG/LGA-525/001",
+    "lgaId": 525,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 526)",
+    "code": "NG/LGA-526/001",
+    "lgaId": 526,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 527)",
+    "code": "NG/LGA-527/001",
+    "lgaId": 527,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 528)",
+    "code": "NG/LGA-528/001",
+    "lgaId": 528,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 529)",
+    "code": "NG/LGA-529/001",
+    "lgaId": 529,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 530)",
+    "code": "NG/LGA-530/001",
+    "lgaId": 530,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 531)",
+    "code": "NG/LGA-531/001",
+    "lgaId": 531,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 532)",
+    "code": "NG/LGA-532/001",
+    "lgaId": 532,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 533)",
+    "code": "NG/LGA-533/001",
+    "lgaId": 533,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 534)",
+    "code": "NG/LGA-534/001",
+    "lgaId": 534,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 535)",
+    "code": "NG/LGA-535/001",
+    "lgaId": 535,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 536)",
+    "code": "NG/LGA-536/001",
+    "lgaId": 536,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 537)",
+    "code": "NG/LGA-537/001",
+    "lgaId": 537,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 538)",
+    "code": "NG/LGA-538/001",
+    "lgaId": 538,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 539)",
+    "code": "NG/LGA-539/001",
+    "lgaId": 539,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 540)",
+    "code": "NG/LGA-540/001",
+    "lgaId": 540,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 541)",
+    "code": "NG/LGA-541/001",
+    "lgaId": 541,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 542)",
+    "code": "NG/LGA-542/001",
+    "lgaId": 542,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 543)",
+    "code": "NG/LGA-543/001",
+    "lgaId": 543,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 544)",
+    "code": "NG/LGA-544/001",
+    "lgaId": 544,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 545)",
+    "code": "NG/LGA-545/001",
+    "lgaId": 545,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 546)",
+    "code": "NG/LGA-546/001",
+    "lgaId": 546,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 547)",
+    "code": "NG/LGA-547/001",
+    "lgaId": 547,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 548)",
+    "code": "NG/LGA-548/001",
+    "lgaId": 548,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 549)",
+    "code": "NG/LGA-549/001",
+    "lgaId": 549,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 550)",
+    "code": "NG/LGA-550/001",
+    "lgaId": 550,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 551)",
+    "code": "NG/LGA-551/001",
+    "lgaId": 551,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 552)",
+    "code": "NG/LGA-552/001",
+    "lgaId": 552,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 553)",
+    "code": "NG/LGA-553/001",
+    "lgaId": 553,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 554)",
+    "code": "NG/LGA-554/001",
+    "lgaId": 554,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 555)",
+    "code": "NG/LGA-555/001",
+    "lgaId": 555,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 556)",
+    "code": "NG/LGA-556/001",
+    "lgaId": 556,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 557)",
+    "code": "NG/LGA-557/001",
+    "lgaId": 557,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 558)",
+    "code": "NG/LGA-558/001",
+    "lgaId": 558,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 559)",
+    "code": "NG/LGA-559/001",
+    "lgaId": 559,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 560)",
+    "code": "NG/LGA-560/001",
+    "lgaId": 560,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 561)",
+    "code": "NG/LGA-561/001",
+    "lgaId": 561,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 562)",
+    "code": "NG/LGA-562/001",
+    "lgaId": 562,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 563)",
+    "code": "NG/LGA-563/001",
+    "lgaId": 563,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 564)",
+    "code": "NG/LGA-564/001",
+    "lgaId": 564,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 565)",
+    "code": "NG/LGA-565/001",
+    "lgaId": 565,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 566)",
+    "code": "NG/LGA-566/001",
+    "lgaId": 566,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 567)",
+    "code": "NG/LGA-567/001",
+    "lgaId": 567,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 568)",
+    "code": "NG/LGA-568/001",
+    "lgaId": 568,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 569)",
+    "code": "NG/LGA-569/001",
+    "lgaId": 569,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 570)",
+    "code": "NG/LGA-570/001",
+    "lgaId": 570,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 571)",
+    "code": "NG/LGA-571/001",
+    "lgaId": 571,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 572)",
+    "code": "NG/LGA-572/001",
+    "lgaId": 572,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 573)",
+    "code": "NG/LGA-573/001",
+    "lgaId": 573,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 574)",
+    "code": "NG/LGA-574/001",
+    "lgaId": 574,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 575)",
+    "code": "NG/LGA-575/001",
+    "lgaId": 575,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 576)",
+    "code": "NG/LGA-576/001",
+    "lgaId": 576,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 577)",
+    "code": "NG/LGA-577/001",
+    "lgaId": 577,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 578)",
+    "code": "NG/LGA-578/001",
+    "lgaId": 578,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 579)",
+    "code": "NG/LGA-579/001",
+    "lgaId": 579,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 580)",
+    "code": "NG/LGA-580/001",
+    "lgaId": 580,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 581)",
+    "code": "NG/LGA-581/001",
+    "lgaId": 581,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 582)",
+    "code": "NG/LGA-582/001",
+    "lgaId": 582,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 583)",
+    "code": "NG/LGA-583/001",
+    "lgaId": 583,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 584)",
+    "code": "NG/LGA-584/001",
+    "lgaId": 584,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 585)",
+    "code": "NG/LGA-585/001",
+    "lgaId": 585,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 586)",
+    "code": "NG/LGA-586/001",
+    "lgaId": 586,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 587)",
+    "code": "NG/LGA-587/001",
+    "lgaId": 587,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 588)",
+    "code": "NG/LGA-588/001",
+    "lgaId": 588,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 589)",
+    "code": "NG/LGA-589/001",
+    "lgaId": 589,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 590)",
+    "code": "NG/LGA-590/001",
+    "lgaId": 590,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 591)",
+    "code": "NG/LGA-591/001",
+    "lgaId": 591,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 592)",
+    "code": "NG/LGA-592/001",
+    "lgaId": 592,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 593)",
+    "code": "NG/LGA-593/001",
+    "lgaId": 593,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 594)",
+    "code": "NG/LGA-594/001",
+    "lgaId": 594,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 595)",
+    "code": "NG/LGA-595/001",
+    "lgaId": 595,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 596)",
+    "code": "NG/LGA-596/001",
+    "lgaId": 596,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 597)",
+    "code": "NG/LGA-597/001",
+    "lgaId": 597,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 598)",
+    "code": "NG/LGA-598/001",
+    "lgaId": 598,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 599)",
+    "code": "NG/LGA-599/001",
+    "lgaId": 599,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 600)",
+    "code": "NG/LGA-600/001",
+    "lgaId": 600,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 601)",
+    "code": "NG/LGA-601/001",
+    "lgaId": 601,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 602)",
+    "code": "NG/LGA-602/001",
+    "lgaId": 602,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 603)",
+    "code": "NG/LGA-603/001",
+    "lgaId": 603,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 604)",
+    "code": "NG/LGA-604/001",
+    "lgaId": 604,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 605)",
+    "code": "NG/LGA-605/001",
+    "lgaId": 605,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 606)",
+    "code": "NG/LGA-606/001",
+    "lgaId": 606,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 607)",
+    "code": "NG/LGA-607/001",
+    "lgaId": 607,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 608)",
+    "code": "NG/LGA-608/001",
+    "lgaId": 608,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 609)",
+    "code": "NG/LGA-609/001",
+    "lgaId": 609,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 610)",
+    "code": "NG/LGA-610/001",
+    "lgaId": 610,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 611)",
+    "code": "NG/LGA-611/001",
+    "lgaId": 611,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 612)",
+    "code": "NG/LGA-612/001",
+    "lgaId": 612,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 613)",
+    "code": "NG/LGA-613/001",
+    "lgaId": 613,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 614)",
+    "code": "NG/LGA-614/001",
+    "lgaId": 614,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 615)",
+    "code": "NG/LGA-615/001",
+    "lgaId": 615,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 616)",
+    "code": "NG/LGA-616/001",
+    "lgaId": 616,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 617)",
+    "code": "NG/LGA-617/001",
+    "lgaId": 617,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 618)",
+    "code": "NG/LGA-618/001",
+    "lgaId": 618,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 619)",
+    "code": "NG/LGA-619/001",
+    "lgaId": 619,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 620)",
+    "code": "NG/LGA-620/001",
+    "lgaId": 620,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 621)",
+    "code": "NG/LGA-621/001",
+    "lgaId": 621,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 622)",
+    "code": "NG/LGA-622/001",
+    "lgaId": 622,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 623)",
+    "code": "NG/LGA-623/001",
+    "lgaId": 623,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 624)",
+    "code": "NG/LGA-624/001",
+    "lgaId": 624,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 625)",
+    "code": "NG/LGA-625/001",
+    "lgaId": 625,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 626)",
+    "code": "NG/LGA-626/001",
+    "lgaId": 626,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 627)",
+    "code": "NG/LGA-627/001",
+    "lgaId": 627,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 628)",
+    "code": "NG/LGA-628/001",
+    "lgaId": 628,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 629)",
+    "code": "NG/LGA-629/001",
+    "lgaId": 629,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 630)",
+    "code": "NG/LGA-630/001",
+    "lgaId": 630,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 631)",
+    "code": "NG/LGA-631/001",
+    "lgaId": 631,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 632)",
+    "code": "NG/LGA-632/001",
+    "lgaId": 632,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 633)",
+    "code": "NG/LGA-633/001",
+    "lgaId": 633,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 634)",
+    "code": "NG/LGA-634/001",
+    "lgaId": 634,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 635)",
+    "code": "NG/LGA-635/001",
+    "lgaId": 635,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 636)",
+    "code": "NG/LGA-636/001",
+    "lgaId": 636,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 637)",
+    "code": "NG/LGA-637/001",
+    "lgaId": 637,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 638)",
+    "code": "NG/LGA-638/001",
+    "lgaId": 638,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 639)",
+    "code": "NG/LGA-639/001",
+    "lgaId": 639,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 640)",
+    "code": "NG/LGA-640/001",
+    "lgaId": 640,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 641)",
+    "code": "NG/LGA-641/001",
+    "lgaId": 641,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 642)",
+    "code": "NG/LGA-642/001",
+    "lgaId": 642,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 643)",
+    "code": "NG/LGA-643/001",
+    "lgaId": 643,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 644)",
+    "code": "NG/LGA-644/001",
+    "lgaId": 644,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 645)",
+    "code": "NG/LGA-645/001",
+    "lgaId": 645,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 646)",
+    "code": "NG/LGA-646/001",
+    "lgaId": 646,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 647)",
+    "code": "NG/LGA-647/001",
+    "lgaId": 647,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 648)",
+    "code": "NG/LGA-648/001",
+    "lgaId": 648,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 649)",
+    "code": "NG/LGA-649/001",
+    "lgaId": 649,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 650)",
+    "code": "NG/LGA-650/001",
+    "lgaId": 650,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 651)",
+    "code": "NG/LGA-651/001",
+    "lgaId": 651,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 652)",
+    "code": "NG/LGA-652/001",
+    "lgaId": 652,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 653)",
+    "code": "NG/LGA-653/001",
+    "lgaId": 653,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 654)",
+    "code": "NG/LGA-654/001",
+    "lgaId": 654,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 655)",
+    "code": "NG/LGA-655/001",
+    "lgaId": 655,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 656)",
+    "code": "NG/LGA-656/001",
+    "lgaId": 656,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 657)",
+    "code": "NG/LGA-657/001",
+    "lgaId": 657,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 658)",
+    "code": "NG/LGA-658/001",
+    "lgaId": 658,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 659)",
+    "code": "NG/LGA-659/001",
+    "lgaId": 659,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 660)",
+    "code": "NG/LGA-660/001",
+    "lgaId": 660,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 661)",
+    "code": "NG/LGA-661/001",
+    "lgaId": 661,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 662)",
+    "code": "NG/LGA-662/001",
+    "lgaId": 662,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 663)",
+    "code": "NG/LGA-663/001",
+    "lgaId": 663,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 664)",
+    "code": "NG/LGA-664/001",
+    "lgaId": 664,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 665)",
+    "code": "NG/LGA-665/001",
+    "lgaId": 665,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 666)",
+    "code": "NG/LGA-666/001",
+    "lgaId": 666,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 667)",
+    "code": "NG/LGA-667/001",
+    "lgaId": 667,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 668)",
+    "code": "NG/LGA-668/001",
+    "lgaId": 668,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 669)",
+    "code": "NG/LGA-669/001",
+    "lgaId": 669,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 670)",
+    "code": "NG/LGA-670/001",
+    "lgaId": 670,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 671)",
+    "code": "NG/LGA-671/001",
+    "lgaId": 671,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 672)",
+    "code": "NG/LGA-672/001",
+    "lgaId": 672,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 673)",
+    "code": "NG/LGA-673/001",
+    "lgaId": 673,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 674)",
+    "code": "NG/LGA-674/001",
+    "lgaId": 674,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 675)",
+    "code": "NG/LGA-675/001",
+    "lgaId": 675,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 676)",
+    "code": "NG/LGA-676/001",
+    "lgaId": 676,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 677)",
+    "code": "NG/LGA-677/001",
+    "lgaId": 677,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 678)",
+    "code": "NG/LGA-678/001",
+    "lgaId": 678,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 679)",
+    "code": "NG/LGA-679/001",
+    "lgaId": 679,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 680)",
+    "code": "NG/LGA-680/001",
+    "lgaId": 680,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 681)",
+    "code": "NG/LGA-681/001",
+    "lgaId": 681,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 682)",
+    "code": "NG/LGA-682/001",
+    "lgaId": 682,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 683)",
+    "code": "NG/LGA-683/001",
+    "lgaId": 683,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 684)",
+    "code": "NG/LGA-684/001",
+    "lgaId": 684,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 685)",
+    "code": "NG/LGA-685/001",
+    "lgaId": 685,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 686)",
+    "code": "NG/LGA-686/001",
+    "lgaId": 686,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 687)",
+    "code": "NG/LGA-687/001",
+    "lgaId": 687,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 688)",
+    "code": "NG/LGA-688/001",
+    "lgaId": 688,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 689)",
+    "code": "NG/LGA-689/001",
+    "lgaId": 689,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 690)",
+    "code": "NG/LGA-690/001",
+    "lgaId": 690,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 691)",
+    "code": "NG/LGA-691/001",
+    "lgaId": 691,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 692)",
+    "code": "NG/LGA-692/001",
+    "lgaId": 692,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 693)",
+    "code": "NG/LGA-693/001",
+    "lgaId": 693,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 694)",
+    "code": "NG/LGA-694/001",
+    "lgaId": 694,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 695)",
+    "code": "NG/LGA-695/001",
+    "lgaId": 695,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 696)",
+    "code": "NG/LGA-696/001",
+    "lgaId": 696,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 697)",
+    "code": "NG/LGA-697/001",
+    "lgaId": 697,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 698)",
+    "code": "NG/LGA-698/001",
+    "lgaId": 698,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 699)",
+    "code": "NG/LGA-699/001",
+    "lgaId": 699,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 700)",
+    "code": "NG/LGA-700/001",
+    "lgaId": 700,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 701)",
+    "code": "NG/LGA-701/001",
+    "lgaId": 701,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 702)",
+    "code": "NG/LGA-702/001",
+    "lgaId": 702,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 703)",
+    "code": "NG/LGA-703/001",
+    "lgaId": 703,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 704)",
+    "code": "NG/LGA-704/001",
+    "lgaId": 704,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 705)",
+    "code": "NG/LGA-705/001",
+    "lgaId": 705,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 706)",
+    "code": "NG/LGA-706/001",
+    "lgaId": 706,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 707)",
+    "code": "NG/LGA-707/001",
+    "lgaId": 707,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 708)",
+    "code": "NG/LGA-708/001",
+    "lgaId": 708,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 709)",
+    "code": "NG/LGA-709/001",
+    "lgaId": 709,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 710)",
+    "code": "NG/LGA-710/001",
+    "lgaId": 710,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 711)",
+    "code": "NG/LGA-711/001",
+    "lgaId": 711,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 712)",
+    "code": "NG/LGA-712/001",
+    "lgaId": 712,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 713)",
+    "code": "NG/LGA-713/001",
+    "lgaId": 713,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 714)",
+    "code": "NG/LGA-714/001",
+    "lgaId": 714,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 715)",
+    "code": "NG/LGA-715/001",
+    "lgaId": 715,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 716)",
+    "code": "NG/LGA-716/001",
+    "lgaId": 716,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 717)",
+    "code": "NG/LGA-717/001",
+    "lgaId": 717,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 718)",
+    "code": "NG/LGA-718/001",
+    "lgaId": 718,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 719)",
+    "code": "NG/LGA-719/001",
+    "lgaId": 719,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 720)",
+    "code": "NG/LGA-720/001",
+    "lgaId": 720,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 721)",
+    "code": "NG/LGA-721/001",
+    "lgaId": 721,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 722)",
+    "code": "NG/LGA-722/001",
+    "lgaId": 722,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 723)",
+    "code": "NG/LGA-723/001",
+    "lgaId": 723,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 724)",
+    "code": "NG/LGA-724/001",
+    "lgaId": 724,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 725)",
+    "code": "NG/LGA-725/001",
+    "lgaId": 725,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 726)",
+    "code": "NG/LGA-726/001",
+    "lgaId": 726,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 727)",
+    "code": "NG/LGA-727/001",
+    "lgaId": 727,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 728)",
+    "code": "NG/LGA-728/001",
+    "lgaId": 728,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 729)",
+    "code": "NG/LGA-729/001",
+    "lgaId": 729,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 730)",
+    "code": "NG/LGA-730/001",
+    "lgaId": 730,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 731)",
+    "code": "NG/LGA-731/001",
+    "lgaId": 731,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 732)",
+    "code": "NG/LGA-732/001",
+    "lgaId": 732,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 733)",
+    "code": "NG/LGA-733/001",
+    "lgaId": 733,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 734)",
+    "code": "NG/LGA-734/001",
+    "lgaId": 734,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 735)",
+    "code": "NG/LGA-735/001",
+    "lgaId": 735,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 736)",
+    "code": "NG/LGA-736/001",
+    "lgaId": 736,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 737)",
+    "code": "NG/LGA-737/001",
+    "lgaId": 737,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 738)",
+    "code": "NG/LGA-738/001",
+    "lgaId": 738,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 739)",
+    "code": "NG/LGA-739/001",
+    "lgaId": 739,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 740)",
+    "code": "NG/LGA-740/001",
+    "lgaId": 740,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 741)",
+    "code": "NG/LGA-741/001",
+    "lgaId": 741,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 742)",
+    "code": "NG/LGA-742/001",
+    "lgaId": 742,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 743)",
+    "code": "NG/LGA-743/001",
+    "lgaId": 743,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 744)",
+    "code": "NG/LGA-744/001",
+    "lgaId": 744,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 745)",
+    "code": "NG/LGA-745/001",
+    "lgaId": 745,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 746)",
+    "code": "NG/LGA-746/001",
+    "lgaId": 746,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 747)",
+    "code": "NG/LGA-747/001",
+    "lgaId": 747,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 748)",
+    "code": "NG/LGA-748/001",
+    "lgaId": 748,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 749)",
+    "code": "NG/LGA-749/001",
+    "lgaId": 749,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 750)",
+    "code": "NG/LGA-750/001",
+    "lgaId": 750,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 751)",
+    "code": "NG/LGA-751/001",
+    "lgaId": 751,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 752)",
+    "code": "NG/LGA-752/001",
+    "lgaId": 752,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 753)",
+    "code": "NG/LGA-753/001",
+    "lgaId": 753,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 754)",
+    "code": "NG/LGA-754/001",
+    "lgaId": 754,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 755)",
+    "code": "NG/LGA-755/001",
+    "lgaId": 755,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 756)",
+    "code": "NG/LGA-756/001",
+    "lgaId": 756,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 757)",
+    "code": "NG/LGA-757/001",
+    "lgaId": 757,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 758)",
+    "code": "NG/LGA-758/001",
+    "lgaId": 758,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 759)",
+    "code": "NG/LGA-759/001",
+    "lgaId": 759,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 760)",
+    "code": "NG/LGA-760/001",
+    "lgaId": 760,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 761)",
+    "code": "NG/LGA-761/001",
+    "lgaId": 761,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 762)",
+    "code": "NG/LGA-762/001",
+    "lgaId": 762,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 763)",
+    "code": "NG/LGA-763/001",
+    "lgaId": 763,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 764)",
+    "code": "NG/LGA-764/001",
+    "lgaId": 764,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 765)",
+    "code": "NG/LGA-765/001",
+    "lgaId": 765,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 766)",
+    "code": "NG/LGA-766/001",
+    "lgaId": 766,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 767)",
+    "code": "NG/LGA-767/001",
+    "lgaId": 767,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 768)",
+    "code": "NG/LGA-768/001",
+    "lgaId": 768,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 769)",
+    "code": "NG/LGA-769/001",
+    "lgaId": 769,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 770)",
+    "code": "NG/LGA-770/001",
+    "lgaId": 770,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 771)",
+    "code": "NG/LGA-771/001",
+    "lgaId": 771,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 772)",
+    "code": "NG/LGA-772/001",
+    "lgaId": 772,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 773)",
+    "code": "NG/LGA-773/001",
+    "lgaId": 773,
+    "capacity": 500
+  },
+  {
+    "name": "Ward 001 (LGA 774)",
+    "code": "NG/LGA-774/001",
+    "lgaId": 774,
+    "capacity": 500
+  }
+]
