@@ -1,13 +1,5 @@
 /**
  * ChatWidget — WhatsApp-style admin messaging
- *
- * Features:
- *   - Admin ↔ Admin real-time broadcast via /topic/chat (WebSocket)
- *   - Admin → Terminal alerts via /app/chat.terminal
- *   - Every message logged in backend audit trail (ChatController.java)
- *   - Message delivery status ticks (sent → delivered)
- *   - Unread count badge when chat is closed
- *   - Terminal selector dropdown for pushing alerts to a specific terminal
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Ic, Spinner } from "./ui.jsx";
@@ -15,7 +7,8 @@ import { useAuth } from "../context/AuthContext.jsx";
 import SockJS from "sockjs-client";
 import Stomp from "stompjs";
 
-const WS_BASE = import.meta.env.VITE_WS_URL || "";
+// THE FIX: Grab the Render URL dynamically from Vercel's environment variables
+const WS_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_WS_URL || "";
 
 function getTime() {
   return new Date().toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" });
@@ -41,18 +34,23 @@ export function ChatWidget({ isOpen, onClose, setView }) {
     const connect = () => {
       if (cancelled) return;
       try {
-        const base  = WS_BASE.endsWith("/") ? WS_BASE.slice(0, -1) : WS_BASE;
-        //const sock  = new SockJS(`${base}/ws`);
-        const sock  = new SockJS(`/ws`);
+        // THE FIX: Safely format the URL to point to Render in Production, localhost in Dev
+        const cleanUrl = WS_BASE.endsWith('/') ? WS_BASE.slice(0, -1) : WS_BASE;
+        const sockPath = cleanUrl ? `${cleanUrl}/ws` : "/ws";
+
+        const sock  = new SockJS(sockPath);
         const stomp = Stomp.over(sock);
         stomp.debug = () => {};
+
         const token = localStorage.getItem("evoting_jwt") ||
                       sessionStorage.getItem("evoting_jwt") || "";
+
         if (!token) {
           console.warn("[Chat] No JWT found — cannot connect");
           if (!cancelled) setTimeout(connect, 5000);
           return;
         }
+
         stomp.connect(
           { Authorization: `Bearer ${token}` },
           () => {
@@ -63,9 +61,7 @@ export function ChatWidget({ isOpen, onClose, setView }) {
               try {
                 const data = JSON.parse(msg.body);
                 setMessages(prev => {
-                  // Avoid duplicates (our own echo back)
                   if (prev.find(m => m.id === data.id)) {
-                    // Update status of our sent message to "delivered"
                     return prev.map(m =>
                       m.id === data.id ? { ...m, status: "delivered" } : m);
                   }
@@ -80,7 +76,7 @@ export function ChatWidget({ isOpen, onClose, setView }) {
             if (msg.includes("401") || msg.includes("Unauthorized")) {
               console.warn("[Chat] Auth failed — JWT expired");
             } else {
-              console.warn("[Chat] WS connect failed — check https://localhost:8443 cert trust");
+              console.warn("[Chat] WS connect failed.");
             }
             if (!cancelled) setTimeout(connect, 5000);
           }
@@ -138,7 +134,6 @@ export function ChatWidget({ isOpen, onClose, setView }) {
         stompRef.current.send("/app/chat.send", {}, JSON.stringify(msg));
       }
     } else {
-      // Not connected — mark as failed
       setMessages(prev => prev.map(m =>
         m.id === msgId ? { ...m, status: "failed" } : m));
     }
@@ -175,16 +170,10 @@ export function ChatWidget({ isOpen, onClose, setView }) {
             <div className="text-[10px] font-semibold flex items-center gap-1.5"
                  style={{ color: connected ? "#34D399" : "#FCD34D" }}>
               {connected ? "Secure Channel • Live" : "Connecting…"}
-              {!connected && (
-                <span className="text-[9px] text-muted font-normal block">
-                  Trust cert: visit https://localhost:8443
-                </span>
-              )}
             </div>
           </div>
         </div>
         <div className="flex items-center gap-1.5">
-          {/* Toggle alert mode */}
           <button
             onClick={() => setAlertMode(v => !v)}
             title={alertMode ? "Switch to chat mode" : "Send terminal alert"}
@@ -238,13 +227,11 @@ export function ChatWidget({ isOpen, onClose, setView }) {
             <div key={msg.id}
                  className={`flex flex-col max-w-[85%]
                              ${isMe ? "self-end items-end" : "self-start items-start"}`}>
-              {/* Sender name for others */}
               {!isMe && (
                 <span className="text-[10px] text-purple-400 font-semibold mb-1 px-1">
                   {msg.sender}
                 </span>
               )}
-              {/* Terminal alert label */}
               {isTerminalAlert && (
                 <span className="text-[9px] text-orange-400 font-bold mb-0.5 px-1 flex items-center gap-1">
                   <Ic n="chip" s={8} c="#fb923c" />
@@ -260,7 +247,6 @@ export function ChatWidget({ isOpen, onClose, setView }) {
                                  : "bg-elevated border border-white/5 text-purple-50 rounded-bl-sm"}`}>
                 {msg.text || msg.alert}
               </div>
-              {/* Time + status ticks */}
               <div className="flex items-center gap-1.5 mt-1 px-1">
                 <span className="text-[9px] text-muted">{msg.time}</span>
                 {isMe && (
