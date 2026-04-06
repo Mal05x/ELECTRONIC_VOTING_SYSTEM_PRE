@@ -1,70 +1,77 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
-import fs from 'fs';
-import https from 'https';
+import fs from "fs";
+import https from "https";
 
 export default defineConfig(({ command }) => {
-  // ====================================================================
-  // PRODUCTION (VERCEL): Clean config, no SSL certificates required
-  // ====================================================================
-  if (command === 'build') {
+  // ==========================================
+  // 1. BASE CONFIG (Applies to everywhere)
+  // ==========================================
+  const baseConfig = {
+    plugins: [react()],
+    resolve: {
+      alias: { "@": path.resolve(__dirname, "./src") },
+    },
+  };
+
+  // ==========================================
+  // 2. VERCEL DEPLOYMENT (Clean Build)
+  // ==========================================
+  // If Vercel is building the app, completely ignore the C:/ drive!
+  if (command === "build" || process.env.VERCEL) {
     return {
-      plugins: [react()],
-      resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
+      ...baseConfig,
       build: {
         outDir: "dist",
         sourcemap: false,
-        rollupOptions: {
-          output: {
-            manualChunks: { vendor: ["react", "react-dom", "react-router-dom"], charts: ["recharts"] },
-          },
-        },
       },
     };
   }
 
-  // ====================================================================
-  // LOCAL DEV: Load mTLS certificates wrapped in a safety Try/Catch
-  // ====================================================================
-  let localKey = null;
-  let localCert = null;
-  let mtlsAgent = undefined;
+  // ==========================================
+  // 3. LOCAL DEVELOPMENT (Your Laptop Only)
+  // ==========================================
+  let localServerConfig = { port: 3000 };
 
   try {
-    localKey = fs.readFileSync('C:/evoting_certs/frontend_localhost.key');
-    localCert = fs.readFileSync('C:/evoting_certs/frontend_localhost.crt');
-    mtlsAgent = new https.Agent({
+    const localKey = fs.readFileSync("C:/evoting_certs/frontend_localhost.key");
+    const localCert = fs.readFileSync("C:/evoting_certs/frontend_localhost.crt");
+
+    const mtlsAgent = new https.Agent({
       key: localKey,
       cert: localCert,
       rejectUnauthorized: false
     });
-  } catch (error) {
-    console.warn("⚠️ Local certificates not found. Running without mTLS.");
-  }
 
-  return {
-    plugins: [react()],
-    resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
-    server: {
+    localServerConfig = {
       port: 3000,
-      // Only enable HTTPS locally if the certs were successfully loaded
-      ...(localKey && localCert ? { https: { key: localKey, cert: localCert } } : {}),
+      https: { key: localKey, cert: localCert },
       proxy: {
         "/api": {
-          target: process.env.VITE_API_URL || "https://localhost:8443",
+          target: "https://localhost:8443",
           changeOrigin: true,
           secure: false,
-          ...(localKey ? { key: localKey, cert: localCert } : {})
+          key: localKey,
+          cert: localCert
         },
         "/ws": {
-          target: process.env.VITE_API_URL || "https://localhost:8443",
+          target: "https://localhost:8443",
           changeOrigin: true,
           ws: true,
           secure: false,
-          ...(mtlsAgent ? { agent: mtlsAgent, key: localKey, cert: localCert } : {})
-        },
-      },
-    },
+          agent: mtlsAgent,
+          key: localKey,
+          cert: localCert
+        }
+      }
+    };
+  } catch (err) {
+    console.warn("⚠️ Local certificates not found. Starting without mTLS.");
+  }
+
+  return {
+    ...baseConfig,
+    server: localServerConfig
   };
 });
