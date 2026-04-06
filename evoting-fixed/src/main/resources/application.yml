@@ -1,0 +1,110 @@
+server:
+  port: 8443
+  # Fix B-06: TLS enabled — HTTPS required for all connections.
+  # For mTLS (terminal mutual authentication), set client-auth: need
+  # and provision a trust-store with the election CA certificate.
+  ssl:
+    enabled: true
+    key-store: file:///C:/evoting_certs/evoting-keystore.p12
+    key-store-password: ${SSL_KEYSTORE_PASSWORD:password}
+    key-store-type: PKCS12
+    # mTLS: uncomment for terminal mutual authentication
+    trust-store: file:///C:/evoting_certs/truststore.p12
+    trust-store-password: ${MTLS_TRUSTSTORE_PASSWORD:password}
+    client-auth: want
+
+spring:
+  application:
+    name: evoting-backend
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:evoting_db}?sslmode=disable
+    username: evoting
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 12MB
+
+security:
+  demographics-key: ${DEMOGRAPHICS_KEY:CHANGE_THIS_DEMOGRAPHICS_KEY_IN_PRODUCTION}
+  aes:
+    # Fix B-15: No CHANGE_ME default — application refuses to start if not set.
+    # Generate with: openssl rand -base64 32
+    secret-key: ${AES_256_SECRET}
+  jwt:
+    # Fix B-15: No CHANGE_ME default — application refuses to start if not set.
+    # Generate with: openssl rand -base64 64
+    secret: ${JWT_SECRET}
+  cors:
+    # Fix B-12: Externalised CORS origin — set to production dashboard URL in deployment.
+    # Comma-separated list accepted. Defaults cover local dev on all common ports + HTTPS variants.
+    # e.g. CORS_ALLOWED_ORIGIN=https://dashboard.evoting.gov.ng,http://localhost:3000
+    allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:3000,http://localhost:5173,https://localhost:3000,https://localhost:5173,http://localhost:4173,https://localhost:4173,https://192.168.0.159:3000}
+
+aws:
+  # Optional — only required for S3 candidate photo uploads.
+  # If not set, image upload endpoints return 503; all other features work normally.
+  access-key-id: ${AWS_ACCESS_KEY_ID:NOT_SET}
+  secret-access-key: ${AWS_SECRET_ACCESS_KEY:NOT_SET}
+  s3:
+    bucket: ${AWS_S3_BUCKET:evoting-media}
+    region: ${AWS_REGION:eu-west-1}
+    presigned-url-expiry-hours: 168   # 7 days
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+
+websocket:
+  allowed-origin: ${WEBSOCKET_ALLOWED_ORIGIN:http://localhost:3000,http://localhost:5173,https://localhost:3000,https://localhost:5173,http://localhost:4173,https://localhost:4173,https://192.168.0.159:3000}
+
+# Self-hosted Silent-Face-Anti-Spoofing liveness microservice
+# Run: cd liveness-service && docker-compose up -d
+liveness:
+  service:
+    url: ${LIVENESS_SERVICE_URL:http://127.0.0.1:5001}
+    timeout-ms: ${LIVENESS_TIMEOUT_MS:12000}
+    # If the Python service is down, fail-open allows V1 livenessFlag fallback
+    # Set to false in production to enforce AI evaluation always
+    fail-open: ${LIVENESS_FAIL_OPEN:true}
+
+
+logging:
+  level:
+    com.evoting: INFO
+    org.springframework.security: WARN
+    org.apache.tomcat.util.net: DEBUG
+    org.flywaydb: INFO
+    software.amazon.awssdk: WARN
