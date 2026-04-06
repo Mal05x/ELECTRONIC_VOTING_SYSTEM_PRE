@@ -5,44 +5,21 @@ import fs from "fs";
 import https from "https";
 
 export default defineConfig(({ command }) => {
-  // ==========================================
-  // 1. BASE CONFIG (Applies to everywhere)
-  // ==========================================
-  const baseConfig = {
-    plugins: [react()],
-    resolve: {
-      alias: { "@": path.resolve(__dirname, "./src") },
-    },
-  };
-
-  // ==========================================
-  // 2. VERCEL DEPLOYMENT (Clean Build)
-  // ==========================================
   // If Vercel is building the app, completely ignore the C:/ drive!
   if (command === "build" || process.env.VERCEL) {
     return {
-      ...baseConfig,
-      build: {
-        outDir: "dist",
-        sourcemap: false,
-      },
+      plugins: [react()],
+      resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
+      build: { outDir: "dist", sourcemap: false },
     };
   }
 
-  // ==========================================
-  // 3. LOCAL DEVELOPMENT (Your Laptop Only)
-  // ==========================================
+  // Local Development Only
   let localServerConfig = { port: 3000 };
 
   try {
     const localKey = fs.readFileSync("C:/evoting_certs/frontend_localhost.key");
     const localCert = fs.readFileSync("C:/evoting_certs/frontend_localhost.crt");
-
-    const mtlsAgent = new https.Agent({
-      key: localKey,
-      cert: localCert,
-      rejectUnauthorized: false
-    });
 
     localServerConfig = {
       port: 3000,
@@ -54,24 +31,16 @@ export default defineConfig(({ command }) => {
           secure: false,
           key: localKey,
           cert: localCert
-        },
-        "/ws": {
-          target: "https://localhost:8443",
-          changeOrigin: true,
-          ws: true,
-          secure: false,
-          agent: mtlsAgent,
-          key: localKey,
-          cert: localCert
         }
       }
     };
   } catch (err) {
-    console.warn("⚠️ Local certificates not found. Starting without mTLS.");
+    console.warn("Local certificates not found.");
   }
 
   return {
-    ...baseConfig,
+    plugins: [react()],
+    resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
     server: localServerConfig
   };
 });
