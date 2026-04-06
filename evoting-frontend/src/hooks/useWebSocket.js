@@ -1,12 +1,9 @@
 import { useEffect, useRef, useCallback, useState } from "react";
-// 1. We import these statically at the top now!
 import SockJS from "sockjs-client";
 import Stomp from "stompjs";
 
-// Empty string = use Vite proxy (/ws → backend). VITE_WS_URL only needed in production.
-const WS_BASE = import.meta.env.VITE_WS_URL || "";
-// To this (force the relative path):
-//const WS_BASE = "";
+// 1. Grab the Render URL from Vercel's environment variables (same as Axios)
+const WS_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_WS_URL || "";
 const DEMO    = import.meta.env.VITE_DEMO_MODE === "true";
 
 export function useWebSocket(topic, onMessage) {
@@ -40,11 +37,12 @@ export function useWebSocket(topic, onMessage) {
       try {
         if (cancelled) return;
 
+        // 2. Format the URL safely
         const cleanUrl = WS_BASE.endsWith('/') ? WS_BASE.slice(0, -1) : WS_BASE;
 
-        // 2. We use the imported libraries directly
-        //const sock  = new SockJS(`${cleanUrl}/ws`);
-        const sock  = new SockJS("/ws");
+        // 3. THE FIX: Dynamically route to Render in production, localhost in dev
+        const sockPath = cleanUrl ? `${cleanUrl}/ws` : "/ws";
+        const sock  = new SockJS(sockPath);
         const stomp = Stomp.over(sock);
 
         stomp.debug = () => {};
@@ -102,12 +100,7 @@ export function useWebSocket(topic, onMessage) {
 }
 
 // Keep useTallyPolling exactly as it was below this line...
-/**
- * Hook that polls the tally endpoint every N seconds as a fallback
- * when WebSocket is unavailable (e.g., network proxies that block WS).
- */
 export function useTallyPolling(electionId, fetchFn, interval = 5000) {
-  // ... (Keep this exactly as you had it!)
   const [data,  setData]  = useState(null);
   const [error, setError] = useState(null);
 
