@@ -2,9 +2,8 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import SockJS from "sockjs-client";
 import Stomp from "stompjs";
 
-// 1. Grab the Render URL from Vercel's environment variables (same as Axios)
+// 1. Grab the Render URL from Vercel's environment variables
 const WS_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_WS_URL || "";
-const DEMO    = import.meta.env.VITE_DEMO_MODE === "true";
 
 export function useWebSocket(topic, onMessage) {
   const stompRef  = useRef(null);
@@ -99,7 +98,6 @@ export function useWebSocket(topic, onMessage) {
   return { connected, sendMessage };
 }
 
-// Keep useTallyPolling exactly as it was below this line...
 export function useTallyPolling(electionId, fetchFn, interval = 5000) {
   const [data,  setData]  = useState(null);
   const [error, setError] = useState(null);
