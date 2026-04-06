@@ -2,17 +2,27 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import fs from 'fs';
-import https from 'https'; // <-- 1. Add this import
+import https from 'https';
 
-// 2. Create a custom agent holding your certificates
-const mtlsAgent = new https.Agent({
-  key: fs.readFileSync('C:/evoting_certs/frontend_localhost.key'),
-  cert: fs.readFileSync('C:/evoting_certs/frontend_localhost.crt'),
-  rejectUnauthorized: false // Bypasses self-signed cert issues for this agent
-});
+// 1. Define where your local certs live
+const keyPath = 'C:/evoting_certs/frontend_localhost.key';
+const certPath = 'C:/evoting_certs/frontend_localhost.crt';
+
+// 2. Safely check if they actually exist on this computer (True locally, False on Vercel)
+const useHttps = fs.existsSync(keyPath) && fs.existsSync(certPath);
+
+// 3. Only read the files if they exist
+const localKey = useHttps ? fs.readFileSync(keyPath) : null;
+const localCert = useHttps ? fs.readFileSync(certPath) : null;
+
+// 4. Only create the mTLS agent if we are running locally
+const mtlsAgent = useHttps ? new https.Agent({
+  key: localKey,
+  cert: localCert,
+  rejectUnauthorized: false
+}) : undefined;
 
 export default defineConfig({
-  // FIX: Closed the plugins array properly!
   plugins: [react()],
 
   resolve: {
@@ -21,34 +31,30 @@ export default defineConfig({
     },
   },
 
-  // Proxy API calls to Spring Boot backend during local dev.
-  // In production (Vercel), VITE_API_URL env var is used directly.
   server: {
     port: 3000,
-    https: {
-      // Point Node.js to your actual INEC certificate files!
-     key: fs.readFileSync('C:/evoting_certs/frontend_localhost.key'),
-     cert: fs.readFileSync('C:/evoting_certs/frontend_localhost.crt'),
-    },
+    // Only turn on HTTPS locally
+    ...(useHttps ? {
+      https: {
+        key: localKey,
+        cert: localCert,
+      }
+    } : {}),
     proxy: {
       "/api": {
         target: process.env.VITE_API_URL || "https://localhost:8443",
         changeOrigin: true,
-        secure: false, // allow self-signed certs in dev
-        // 2. This secures Vite <--> Spring Boot (mTLS!)
-                key: fs.readFileSync('C:/evoting_certs/frontend_localhost.key'),
-                cert: fs.readFileSync('C:/evoting_certs/frontend_localhost.crt'),
+        secure: false,
+        // Only inject mTLS keys into the proxy if running locally
+        ...(useHttps ? { key: localKey, cert: localCert } : {})
       },
       "/ws": {
         target: process.env.VITE_API_URL || "https://localhost:8443",
         changeOrigin: true,
         ws: true,
         secure: false,
-         // 3. Remove the old key/cert lines here and use the agent instead!
-        agent: mtlsAgent,
-        // 2. The raw Key/Cert secures the actual WebSocket Upgrade connection!
-                key: fs.readFileSync('C:/evoting_certs/frontend_localhost.key'),
-                cert: fs.readFileSync('C:/evoting_certs/frontend_localhost.crt')
+        // Only inject mTLS agent and keys if running locally
+        ...(useHttps ? { agent: mtlsAgent, key: localKey, cert: localCert } : {})
       },
     },
   },
