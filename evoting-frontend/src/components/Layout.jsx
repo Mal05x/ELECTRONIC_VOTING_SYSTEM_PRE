@@ -344,7 +344,7 @@ const CATS = {
                 </div>
 
               {/* Scrollable list */}
-              <div className="overflow-y-auto divide-y divide-border/40 flex-1 min-h-0">
+             <div className="overflow-y-auto overscroll-contain divide-y divide-border/40 flex-1 min-h-0">
 
              {filteredNotifs.map(n => (
                <div key={n.id}
@@ -472,7 +472,7 @@ const CATS = {
 
       {/* Single backdrop — closes whatever panel is open */}
       {openPanel && openPanel !== "chat" && (
-        <div className="fixed inset-0 z-[115]" onClick={closeAll} />
+        <div className="fixed inset-0 z-40" onClick={closeAll} />
       )}
 
       {/* Chat widget — separate panel below topbar */}
