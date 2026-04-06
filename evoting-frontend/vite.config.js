@@ -4,71 +4,67 @@ import path from "path";
 import fs from 'fs';
 import https from 'https';
 
-// 1. Define where your local certs live
-const keyPath = 'C:/evoting_certs/frontend_localhost.key';
-const certPath = 'C:/evoting_certs/frontend_localhost.crt';
-
-// 2. Safely check if they actually exist on this computer (True locally, False on Vercel)
-const useHttps = fs.existsSync(keyPath) && fs.existsSync(certPath);
-
-// 3. Only read the files if they exist
-const localKey = useHttps ? fs.readFileSync(keyPath) : null;
-const localCert = useHttps ? fs.readFileSync(certPath) : null;
-
-// 4. Only create the mTLS agent if we are running locally
-const mtlsAgent = useHttps ? new https.Agent({
-  key: localKey,
-  cert: localCert,
-  rejectUnauthorized: false
-}) : undefined;
-
-export default defineConfig({
-  plugins: [react()],
-
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-
-  server: {
-    port: 3000,
-    // Only turn on HTTPS locally
-    ...(useHttps ? {
-      https: {
-        key: localKey,
-        cert: localCert,
-      }
-    } : {}),
-    proxy: {
-      "/api": {
-        target: process.env.VITE_API_URL || "https://localhost:8443",
-        changeOrigin: true,
-        secure: false,
-        // Only inject mTLS keys into the proxy if running locally
-        ...(useHttps ? { key: localKey, cert: localCert } : {})
+export default defineConfig(({ command }) => {
+  // ====================================================================
+  // PRODUCTION (VERCEL): Clean config, no SSL certificates required
+  // ====================================================================
+  if (command === 'build') {
+    return {
+      plugins: [react()],
+      resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
+      build: {
+        outDir: "dist",
+        sourcemap: false,
+        rollupOptions: {
+          output: {
+            manualChunks: { vendor: ["react", "react-dom", "react-router-dom"], charts: ["recharts"] },
+          },
+        },
       },
-      "/ws": {
-        target: process.env.VITE_API_URL || "https://localhost:8443",
-        changeOrigin: true,
-        ws: true,
-        secure: false,
-        // Only inject mTLS agent and keys if running locally
-        ...(useHttps ? { agent: mtlsAgent, key: localKey, cert: localCert } : {})
-      },
-    },
-  },
+    };
+  }
 
-  build: {
-    outDir: "dist",
-    sourcemap: false,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ["react", "react-dom", "react-router-dom"],
-          charts: ["recharts"],
+  // ====================================================================
+  // LOCAL DEV: Load mTLS certificates wrapped in a safety Try/Catch
+  // ====================================================================
+  let localKey = null;
+  let localCert = null;
+  let mtlsAgent = undefined;
+
+  try {
+    localKey = fs.readFileSync('C:/evoting_certs/frontend_localhost.key');
+    localCert = fs.readFileSync('C:/evoting_certs/frontend_localhost.crt');
+    mtlsAgent = new https.Agent({
+      key: localKey,
+      cert: localCert,
+      rejectUnauthorized: false
+    });
+  } catch (error) {
+    console.warn("⚠️ Local certificates not found. Running without mTLS.");
+  }
+
+  return {
+    plugins: [react()],
+    resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
+    server: {
+      port: 3000,
+      // Only enable HTTPS locally if the certs were successfully loaded
+      ...(localKey && localCert ? { https: { key: localKey, cert: localCert } } : {}),
+      proxy: {
+        "/api": {
+          target: process.env.VITE_API_URL || "https://localhost:8443",
+          changeOrigin: true,
+          secure: false,
+          ...(localKey ? { key: localKey, cert: localCert } : {})
+        },
+        "/ws": {
+          target: process.env.VITE_API_URL || "https://localhost:8443",
+          changeOrigin: true,
+          ws: true,
+          secure: false,
+          ...(mtlsAgent ? { agent: mtlsAgent, key: localKey, cert: localCert } : {})
         },
       },
     },
-  },
+  };
 });
