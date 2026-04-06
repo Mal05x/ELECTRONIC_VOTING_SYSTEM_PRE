@@ -1,22 +1,19 @@
 /**
  * Axios client — Spring Boot backend
- *
- * HTTPS / CORS setup:
- * Dev:  Leave VITE_API_URL empty in .env.local — Vite proxy routes /api/* to
- * https://localhost:8443, handling the self-signed cert transparently.
- * Prod: Set VITE_API_URL=[https://your-backend.com](https://your-backend.com) (valid TLS cert required).
- * Set CORS_ALLOWED_ORIGIN=[https://your-frontend.vercel.app](https://your-frontend.vercel.app) on the backend.
  */
 import axios from "axios";
 
-// FORCING the relative path to bypass any cached .env variables
-const BASE = "/api";
+// THE FIX:
+// 1. In Production (Vercel): Uses the Render URL from your Vercel Environment Variables.
+// 2. In Local Dev: Falls back to "/api" so your Vite proxy can handle the local SSL certificates.
+const API_URL = import.meta.env.VITE_API_URL || "";
+const BASE = API_URL ? `${API_URL}/api` : "/api";
 
 const client = axios.create({
   baseURL:  BASE,
   timeout:  20_000,
   headers:  { "Content-Type": "application/json" },
-  withCredentials: false,
+  withCredentials: false, // Set to true ONLY if you are using cookies instead of LocalStorage for JWTs
 });
 
 /*
@@ -51,10 +48,8 @@ client.interceptors.response.use(
     const status = err.response?.status;
     const url    = err.config?.url || "";
 
-    // Is this one of the auth endpoints? Never redirect on these.
     const isAuthEndpoint = AUTH_PATHS.some(p => url.includes(p));
 
-    /* Network error (no response object at all) */
     if (!err.response) {
       if (import.meta.env.DEV) {
         console.error(
@@ -68,9 +63,6 @@ client.interceptors.response.use(
       return Promise.reject(err);
     }
 
-    /* * THE FIX: Only redirect to /login on 401 (token missing/expired).
-     * We removed 403 so Step-Up authentication can properly show cryptography errors!
-     */
     if (!isAuthEndpoint && status === 401) {
       localStorage.removeItem("evoting_jwt");
       localStorage.removeItem("evoting_user");
