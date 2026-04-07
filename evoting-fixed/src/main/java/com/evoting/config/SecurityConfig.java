@@ -2,6 +2,8 @@ package com.evoting.config;
 import com.evoting.security.JwtAuthFilter;
 import com.evoting.security.StepUpAuthFilter;
 import com.evoting.security.RateLimitFilter;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -19,6 +21,9 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.*;
 import java.util.List;
+import com.evoting.model.AdminUser;
+import com.evoting.repository.AdminUserRepository;
+import com.evoting.security.JwtTokenProvider;
 
 @Configuration
 @EnableWebSecurity
@@ -27,6 +32,11 @@ public class SecurityConfig {
 
     @Autowired private JwtAuthFilter   jwtFilter;
     @Autowired private RateLimitFilter rateLimitFilter;
+    @Autowired
+    private AdminUserRepository adminRepo;
+
+    @Autowired
+    private JwtTokenProvider jwtProvider; // Again, rename this if your class is called JwtTokenProvider
 
     /**
      * CORS allowed origins — comma-separated list.
@@ -43,6 +53,9 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsSource()))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
+                .oauth2Login(oauth -> oauth
+                        .successHandler(oauthSuccessHandler())
+                )
                 /*
                  * Return 401 (not 403) for unauthenticated requests to protected endpoints.
                  * Without this, Spring Security 6 defaults to 403 for any rejected request,
@@ -135,5 +148,32 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
         src.registerCorsConfiguration("/**", cfg);
         return src;
+    }
+    @Bean
+    public AuthenticationSuccessHandler oauthSuccessHandler() {
+        return (request, response, authentication) -> {
+            OidcUser oidcUser = (OidcUser) authentication.getPrincipal();
+            String email = oidcUser.getEmail();
+
+            // Find existing admin, or auto-create as OBSERVER
+            AdminUser admin = adminRepo.findByEmailIgnoreCase(email)
+                    .orElseGet(() -> {
+                        AdminUser newAdmin = AdminUser.builder()
+                                .username(email)
+                                .email(email)
+                                .role(AdminUser.AdminRole.OBSERVER)
+                                .active(true)
+                                .build();
+                        return adminRepo.save(newAdmin);
+                    });
+
+            // Generate your standard JWT token
+            String token = jwtProvider.generateToken(admin.getUsername(), admin.getRole().name());
+
+            // Redirect to your Vercel frontend, passing the token in the URL
+            response.sendRedirect("https://electronic-voting-system-pre.vercel.app/oauth-callback?token=" + token
+                    + "&role=" + admin.getRole().name()
+                    + "&username=" + admin.getUsername());
+        };
     }
 }

@@ -109,6 +109,15 @@ export default function LoginPage() {
         </div>
       </div>
 
+      {/*  oauth */}
+      <a
+        href="https://mfa-evoting-backend-xxxx.onrender.com/oauth2/authorization/google"
+        className="w-full flex items-center justify-center gap-3 px-4 py-2.5 bg-white text-gray-800 rounded-xl font-semibold border border-gray-300 hover:bg-gray-50 transition-colors shadow-sm"
+      >
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width={20} alt="Google" />
+        Sign in with Google
+      </a>
+
       {/* ── RIGHT PANEL: Login Form ────────────────────────── */}
       <div className="w-full lg:w-1/2 relative flex items-center justify-center p-8 sm:p-12 bg-[#07070E]">
 

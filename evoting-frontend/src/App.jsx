@@ -20,6 +20,7 @@ import ErrorBoundary      from "./components/ErrorBoundary.jsx";
 import ApprovalsView      from "./pages/ApprovalsView.jsx";
 import RegistrationView   from "./pages/RegistrationView.jsx";
 import ResetPasswordPage  from "./pages/ResetPasswordPage.jsx";
+import OAuthCallback      from "./components/OAuthCallback";
 
 function RequireAuth({ children }) {
   const { user } = useAuth();
@@ -109,6 +110,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login"        element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+       <Route path="/oauth-callback" element={<OAuthCallback />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/verify"    element={<ReceiptTrackerView />} />
       <Route path="/simulator" element={<HardwareSimulator />} />
