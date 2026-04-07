@@ -69,14 +69,14 @@ public class TerminalController {
     }
 
     @PostMapping("/heartbeat")
-    public ResponseEntity<?> receiveHeartbeat(HttpServletRequest request, @RequestBody TerminalHeartbeat payload) {
-        String terminalSubject = extractTerminalIdFromCert(request);
-        if (terminalSubject == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    public ResponseEntity<?> receiveHeartbeat(@RequestBody TerminalHeartbeat payload) {
+        // THE FIX: Grab the terminal ID directly from the JSON payload
+        // because the cloud load balancer swallows the mTLS certificate!
+        String cleanTerminalId = payload.getTerminalId();
 
-        // Extract "TERM-KD-001"
-        String cleanTerminalId = terminalSubject;
-        if (terminalSubject.contains("CN=")) {
-            cleanTerminalId = terminalSubject.split("CN=")[1].split(",")[0];
+        if (cleanTerminalId == null || cleanTerminalId.isEmpty()) {
+            log.warn("Heartbeat rejected: Missing terminalId in payload");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
         // UPSERT LOGIC: Find existing terminal, or use the new one if it doesn't exist
