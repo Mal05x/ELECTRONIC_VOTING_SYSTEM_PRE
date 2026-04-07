@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import com.evoting.model.TerminalHeartbeat;
 import com.evoting.repository.TerminalHeartbeatRepository;
+import com.evoting.service.VoteProcessingService;
+import com.evoting.dto.VoteReceiptDTO;
+import com.evoting.exception.InvalidSessionException;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
@@ -40,6 +43,20 @@ public class TerminalController {
     @Autowired private SimpMessagingTemplate messagingTemplate;
     // --> ADD THIS LINE RIGHT HERE! <--
     @Autowired private TerminalHeartbeatRepository terminalHeartbeatRepo;
+
+    /**
+     * PATCH-3: Wired to VoteProcessingService — replaces the stub that
+     * logged and discarded the vote. VoteProcessingService handles:
+     *   - Idempotency (duplicate detection)
+     *   - Session token validation
+     *   - markAsVotedAndLock (atomic DB update)
+     *   - ECDSA card burn-proof verification
+     *   - Ballot persistence to ballot_box
+     *   - Tally increment
+     *   - Merkle root update
+     *   - Anomaly detection recording
+     */
+    @Autowired private VoteProcessingService voteService;
 
     // --- AES Key (Must match the ESP32 firmware) ---
     private static final byte[] BACKEND_AES_KEY = {
@@ -100,47 +117,64 @@ public class TerminalController {
 
 
 
+    /**
+     * POST /api/terminal/vote
+     *
+     * PATCH-3: Stub replaced — now routes through VoteProcessingService for
+     * full ballot persistence, idempotency, card locking, and tally update.
+     *
+     * Expected body: { "payload": "<AES-256-GCM encrypted VotePacketDTO>" }
+     *
+     * The AES key is read from application.yml (security.aes.secret-key),
+     * NOT the hardcoded BACKEND_AES_KEY — that key has been removed from the
+     * final vote path. See note below.
+     *
+     * ⚠️  SECURITY NOTE — HARDCODED KEY:
+     * BACKEND_AES_KEY (0x01..0x20) is still present in this class for the
+     * /authenticate endpoint decryption. That key MUST be rotated before
+     * production deployment and moved to application.yml / env var.
+     * Track as a separate task.
+     */
     @PostMapping("/vote")
-    public ResponseEntity<?> submitVote(HttpServletRequest request, @RequestBody Map<String, String> payload) {
+    public ResponseEntity<?> submitVote(
+            HttpServletRequest request,
+            @RequestBody Map<String, String> body) {
 
-        // 1. Verify mTLS Certificate
+        // 1. Verify mTLS certificate — terminal must be provisioned
         String terminalSubject = extractTerminalIdFromCert(request);
         if (terminalSubject == null) {
-            log.warn("Unauthorized vote attempt: Missing mTLS certificate");
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            log.warn("[VOTE] Rejected: missing mTLS certificate");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Terminal certificate required"));
+        }
+
+        String encryptedPayload = body.get("payload");
+        if (encryptedPayload == null || encryptedPayload.isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Missing 'payload' field"));
         }
 
         try {
-            // 2. Extract the outer unencrypted envelope
-            String sessionToken = payload.get("sessionToken");
-            String electionId = payload.get("electionId");
-            String areaId = payload.get("areaId");
-            String encryptedVoteChoice = payload.get("encryptedVoteChoice");
+            // 2. Delegate to VoteProcessingService — handles all persistence logic
+            VoteReceiptDTO receipt = voteService.processVote(encryptedPayload);
+            log.info("[VOTE] Accepted from terminal {} — TxID={}", terminalSubject, receipt.getTransactionId());
+            return ResponseEntity.ok(Map.of(
+                    "transactionId",      receipt.getTransactionId(),
+                    "encryptedAck",       receipt.getEncryptedAck(),
+                    "message",            receipt.getMessage()
+            ));
 
-            if (encryptedVoteChoice == null) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Missing encrypted vote payload"));
-            }
-
-            // 3. Decrypt the actual ballot (the candidate ID)
-            String decryptedVoteJson = decryptAESGCM(encryptedVoteChoice);
-
-            log.info("🗳️ SECURE VOTE RECEIVED 🗳️");
-            log.info("Terminal: {}", terminalSubject);
-            log.info("Area ID: {}", areaId);
-            log.info("Decrypted Ballot: {}", decryptedVoteJson);
-
-            // TODO: Parse the decryptedVoteJson (which looks like {"candidateId":"..."})
-            // and securely save the anonymous vote to your PostgreSQL database.
-
-            // 4. Generate the transaction ID receipt expected by the ESP32
-            String transactionId = "TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-
-            return ResponseEntity.ok(Map.of("transactionId", transactionId));
+        } catch (InvalidSessionException e) {
+            // Session expired, already used, or voter already voted — do not leak detail
+            log.warn("[VOTE] Rejected from terminal {}: {}", terminalSubject, e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Vote submission failed"));
 
         } catch (Exception e) {
-            log.error("❌ Failed to process encrypted vote", e);
+            // Unexpected error — log full detail server-side only
+            log.error("[VOTE] Processing error from terminal {}", terminalSubject, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Vote processing failed due to encryption error"));
+                    .body(Map.of("error", "Vote processing failed"));
         }
     }
 

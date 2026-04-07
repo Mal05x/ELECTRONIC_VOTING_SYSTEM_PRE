@@ -28,6 +28,11 @@ public class ElectionExecutionService {
     @Transactional
     public void activateElection(UUID id) {
         Election e = electionRepo.findById(id).orElseThrow();
+        // PATCH-2: Guard — prevents replayed/stale multisig from reopening a closed election
+        if (e.getStatus() != Election.ElectionStatus.PENDING) {
+            throw new IllegalStateException(
+                    "Cannot activate election '" + e.getName() + "': expected PENDING, got " + e.getStatus());
+        }
         e.setStatus(Election.ElectionStatus.ACTIVE);
         electionRepo.save(e);
         auditLog.log("ELECTION_ACTIVATED", "SYSTEM[MULTISIG]", e.getName());
@@ -37,6 +42,11 @@ public class ElectionExecutionService {
     @Transactional
     public void closeElection(UUID id) {
         Election e = electionRepo.findById(id).orElseThrow();
+        // PATCH-2: Guard — prevents closing an already-closed or still-pending election
+        if (e.getStatus() != Election.ElectionStatus.ACTIVE) {
+            throw new IllegalStateException(
+                    "Cannot close election '" + e.getName() + "': expected ACTIVE, got " + e.getStatus());
+        }
         e.setStatus(Election.ElectionStatus.CLOSED);
         electionRepo.save(e);
         voterRepo.unlockAllCardsForElection(id);

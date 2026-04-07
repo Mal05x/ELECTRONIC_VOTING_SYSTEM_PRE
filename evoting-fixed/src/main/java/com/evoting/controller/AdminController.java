@@ -87,30 +87,105 @@ public class AdminController {
 
 
 
+    /**
+     * PUT /api/admin/elections/{id}/activate
+     *
+     * PATCH-1: Direct status write REMOVED. Activation is now gated behind
+     * multi-signature approval. This endpoint initiates a pending state change
+     * and records the requesting admin's first ECDSA signature.
+     *
+     * The frontend (ElectionsView.jsx) already calls the MultiSigController
+     * path — this endpoint now enforces the same flow for any direct API callers.
+     *
+     * Requires:  SUPER_ADMIN + registered ECDSA keypair
+     * Body:      { "signature": "<base64-ecdsa-sig-of-changeId>" }  (optional at initiation)
+     * Returns:   pending state change status
+     */
     @PutMapping("/elections/{id}/activate")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    public ResponseEntity<Election> activate(@PathVariable UUID id, Authentication auth) {
-        Election e = electionRepo.findById(id).orElseThrow();
-        e.setStatus(Election.ElectionStatus.ACTIVE);
-        electionRepo.save(e);
-        auditLog.log("ELECTION_ACTIVATED", auth.getName(), id.toString());
-        return ResponseEntity.ok(e);
+    public ResponseEntity<?> activate(
+            @PathVariable UUID id,
+            @RequestBody(required = false) Map<String, String> body,
+            Authentication auth) {
+
+        Election e = electionRepo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Election not found: " + id));
+
+        if (e.getStatus() != Election.ElectionStatus.PENDING) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Election must be in PENDING status to activate. Current: " + e.getStatus()));
+        }
+
+        AdminUser admin = adminRepo.findByUsernameAndActiveTrue(auth.getName())
+                .orElseThrow(() -> new IllegalStateException("Admin not found: " + auth.getName()));
+
+        String signature = (body != null) ? body.get("signature") : null;
+
+        com.evoting.model.PendingStateChange change = multiSigService.initiate(
+                "ACTIVATE_ELECTION",
+                id.toString(),
+                "Activate election: " + e.getName(),
+                Map.of("electionId", id.toString(), "electionName", e.getName()),
+                admin.getId(),
+                signature
+        );
+
+        return ResponseEntity.accepted().body(Map.of(
+                "changeId",  change.getId().toString(),
+                "message",   change.isExecuted()
+                        ? "Election activated (single-admin bootstrap mode)"
+                        : "Activation initiated — awaiting co-signature in Pending Approvals",
+                "status",    multiSigService.getStatus(change.getId())
+        ));
     }
 
-    /** Closing an election auto-unlocks all registered cards. */
+    /**
+     * PUT /api/admin/elections/{id}/close
+     *
+     * PATCH-1: Direct status write REMOVED. Closing is now gated behind
+     * multi-signature approval. Card unlocking happens inside
+     * ElectionExecutionService.closeElection() once the threshold is met.
+     *
+     * Requires:  SUPER_ADMIN + registered ECDSA keypair
+     * Body:      { "signature": "<base64-ecdsa-sig-of-changeId>" }  (optional at initiation)
+     * Returns:   pending state change status
+     */
     @PutMapping("/elections/{id}/close")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    public ResponseEntity<Map<String, Object>> close(
-            @PathVariable UUID id, Authentication auth) {
-        Election e = electionRepo.findById(id).orElseThrow();
-        e.setStatus(Election.ElectionStatus.CLOSED);
-        electionRepo.save(e);
-        auditLog.log("ELECTION_CLOSED", auth.getName(), id.toString());
-        int unlocked = cardService.bulkUnlockForElection(id, "AUTO_CLOSE");
-        return ResponseEntity.ok(Map.of(
-                "election",      e,
-                "cardsUnlocked", unlocked,
-                "message",       "Election closed. " + unlocked + " smart cards unlocked."));
+    public ResponseEntity<?> close(
+            @PathVariable UUID id,
+            @RequestBody(required = false) Map<String, String> body,
+            Authentication auth) {
+
+        Election e = electionRepo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Election not found: " + id));
+
+        if (e.getStatus() != Election.ElectionStatus.ACTIVE) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Election must be ACTIVE to close. Current: " + e.getStatus()));
+        }
+
+        AdminUser admin = adminRepo.findByUsernameAndActiveTrue(auth.getName())
+                .orElseThrow(() -> new IllegalStateException("Admin not found: " + auth.getName()));
+
+        String signature = (body != null) ? body.get("signature") : null;
+
+        com.evoting.model.PendingStateChange change = multiSigService.initiate(
+                "CLOSE_ELECTION",
+                id.toString(),
+                "Close election: " + e.getName(),
+                Map.of("electionId", id.toString(), "electionName", e.getName()),
+                admin.getId(),
+                signature
+        );
+
+        return ResponseEntity.accepted().body(Map.of(
+                "changeId",  change.getId().toString(),
+                "message",   change.isExecuted()
+                        ? "Election closed and cards unlocked (single-admin bootstrap mode)"
+                        : "Closure initiated — awaiting co-signature in Pending Approvals",
+                "status",    multiSigService.getStatus(change.getId())
+        ));
     }
 
     /** Returns all elections — small table, no pagination needed. */
