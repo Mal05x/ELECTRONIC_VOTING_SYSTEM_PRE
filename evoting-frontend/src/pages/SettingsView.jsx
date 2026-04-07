@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth, getAvatarColor, AVATAR_COLORS } from "../context/AuthContext.jsx";
 import { useTheme } from "../context/ThemeContext.jsx";
 import { SectionHeader, Ic, Spinner } from "../components/ui.jsx";
@@ -73,6 +74,7 @@ export default function SettingsView() {
     generating, generateAndRegister, signChallenge,
   } = useKeypair();
   const { user, updateProfile, changePassword, pwStatus, setPwStatus } = useAuth();
+  const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
 
   const [activeTab, setActiveTab] = useState("profile");
@@ -86,8 +88,11 @@ export default function SettingsView() {
   };
 
   /* ── Profile state ── */
-  //const [username, setUsername] = useState(user?.username || "");
-  const [username, setUsername] = useState(user?.displayName || user?.username || "");
+  // FIX-S1: displayName is the editable label; username is read-only (login credential).
+  // Separating them prevents the UI from showing the login username as an editable field
+  // that appears to let users rename their account (it only edits displayName).
+  const [displayName, setDisplayName] = useState(user?.displayName || "");
+  const [username,    setUsername]    = useState(user?.displayName || user?.username || "");
   const [email,    setEmail]    = useState(user?.email    || "");
 
   /* ── Security state ── */
@@ -216,11 +221,14 @@ export default function SettingsView() {
 
   const saveProfile = async () => {
     setSaving(true);
-    const result = await updateProfile({ email, displayName: username });
+    // FIX-S1: send displayName explicitly — username field in state is a display alias,
+    // actual login username is immutable (server rejects changes to it)
+    const result = await updateProfile({ email, displayName: displayName || username });
     setSaving(false);
     if (result?.ok === false) {
       showToast(result.error || "Failed to update profile", "error");
     } else {
+      setUsername(displayName || username); // keep display in sync
       showToast("Profile updated successfully");
     }
   };
@@ -307,19 +315,50 @@ export default function SettingsView() {
      }
    };
 
+  // FIX-S2: Audit export is now gated behind multisig approval.
+  // Step 1: initiate the EXPORT_AUDIT_LOG pending state change.
+  // Step 2: sign the changeId with the admin's ECDSA key.
+  // Step 3: if threshold met immediately (single-admin), download now.
+  //         Otherwise redirect to Approvals for co-signature.
+  // Step 4: once executed=true, hit /audit-log/export/download?changeId=...
   const exportAuditLog = async () => {
     try {
-      const res = await client.get("/admin/audit-log?page=0&size=200", {
-        responseType: "blob",
-      });
-      const url = URL.createObjectURL(new Blob([res.data]));
-      const a = document.createElement("a");
-      a.href = url; a.download = "audit-log.json"; a.click();
-      URL.revokeObjectURL(url);
-      showToast("Audit log exported");
-    } catch (_) {
-      // Fallback: open in new tab via normal fetch
-      window.open(`${client.defaults.baseURL}/admin/audit-log?page=0&size=200`, "_blank");
+      // Step 1 — initiate
+      const initRes = await client.post("/admin/audit-log/export/initiate");
+      const changeId = initRes.data.changeId;
+      if (!changeId) { showToast("Export initiation failed", "error"); return; }
+
+      // Step 2 — sign
+      let executed = initRes.data.executed;
+      if (!executed && signChallenge) {
+        try {
+          const sig = await signChallenge(changeId);
+          if (sig) {
+            const signRes = await client.post(`/admin/state-changes/${changeId}/sign`, { signature: sig });
+            executed = signRes.data.executed;
+          }
+        } catch (signErr) {
+          console.warn("[Export] Auto-sign failed:", signErr.message);
+        }
+      }
+
+      // Step 3 — download if approved, else redirect
+      if (executed) {
+        const dlRes = await client.get(
+          `/admin/audit-log/export/download?changeId=${changeId}&size=500`,
+          { responseType: "blob" }
+        );
+        const url = URL.createObjectURL(new Blob([dlRes.data], { type: "application/json" }));
+        const a = document.createElement("a");
+        a.href = url; a.download = "audit-log-export.json"; a.click();
+        URL.revokeObjectURL(url);
+        showToast("Audit log exported");
+      } else {
+        showToast("Export initiated — go to Approvals to co-sign", "warning");
+        setTimeout(() => navigate("/approvals"), 1200);
+      }
+    } catch (e) {
+      showToast(e.response?.data?.error || "Export failed", "error");
     }
   };
 
@@ -395,9 +434,12 @@ export default function SettingsView() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <Label>Username (display name)</Label>
-                  <input className="inp inp-md" value={username}
-                    onChange={e => setUsername(e.target.value)}
+                  <input
+                    className="inp inp-md"
+                    value={displayName}
+                    onChange={e => setDisplayName(e.target.value)}
                     placeholder="How your name appears in the dashboard" />
+                  {/* FIX-S1: this input edits displayName only — login credential is read-only below */}
                   <p className="text-[11px] text-muted mt-1">
                     Stored as <span className="mono text-purple-300">display_name</span> in admin_users
                   </p>

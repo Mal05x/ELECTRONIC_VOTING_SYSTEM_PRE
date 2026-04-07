@@ -235,6 +235,9 @@ public class MultiSigService {
                         .publishMerkle(UUID.fromString(change.getTargetId()));
                 case "REMOVE_CANDIDATE"    -> ctx.getBean(com.evoting.service.CandidateRemovalService.class)
                         .removeCandidate(UUID.fromString(change.getTargetId()), change.getTargetLabel());
+                case "EXPORT_AUDIT_LOG"    -> log.info("[MULTISIG] EXPORT_AUDIT_LOG approved — " +
+                        "audit export token released for change {}", change.getId());
+                // Actual file delivery happens in AdminController which polls executed status
                 default -> log.error("[MULTISIG] Unknown action type: {}", change.getActionType());
             }
             auditLog.log("STATE_CHANGE_EXECUTED", "SYSTEM",
@@ -266,7 +269,7 @@ public class MultiSigService {
             KeyFactory kf  = KeyFactory.getInstance("EC");
             PublicKey  pub = kf.generatePublic(new X509EncodedKeySpec(pubKeyBytes));
 
-         //   Signature verifier = Signature.getInstance("SHA256withECDSA");
+            //   Signature verifier = Signature.getInstance("SHA256withECDSA");
             Signature verifier = Signature.getInstance("SHA256withECDSAinP1363Format");
             verifier.initVerify(pub);
             verifier.update(payload.getBytes(java.nio.charset.StandardCharsets.UTF_8));

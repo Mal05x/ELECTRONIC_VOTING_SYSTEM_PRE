@@ -786,6 +786,86 @@ public class AdminController {
     }
 
     /**
+     * POST /api/admin/audit-log/export/initiate
+     *
+     * Initiates a multi-signature approval to export the full audit log.
+     * The actual download is only released once threshold is met.
+     * Returns { changeId, status } — frontend polls /state-changes/{id}/status
+     * until executed=true, then calls /audit-log/export/download?changeId=...
+     *
+     * Requires: SUPER_ADMIN + registered ECDSA keypair
+     */
+    @PostMapping("/audit-log/export/initiate")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<?> initiateAuditExport(
+            @RequestBody(required = false) Map<String, String> body,
+            Authentication auth) {
+
+        AdminUser admin = adminRepo.findByUsernameAndActiveTrue(auth.getName())
+                .orElseThrow(() -> new IllegalStateException("Admin not found"));
+
+        String signature = body != null ? body.get("signature") : null;
+
+        com.evoting.model.PendingStateChange change = multiSigService.initiate(
+                "EXPORT_AUDIT_LOG",
+                "AUDIT-LOG",
+                "Export full audit log",
+                Map.of("requestedBy", auth.getName()),
+                admin.getId(),
+                signature
+        );
+
+        return ResponseEntity.accepted().body(Map.of(
+                "changeId", change.getId().toString(),
+                "executed", change.isExecuted(),
+                "message",  change.isExecuted()
+                        ? "Export approved — call /audit-log/export/download?changeId=" + change.getId()
+                        : "Export initiated — awaiting co-signature in Pending Approvals",
+                "status",   multiSigService.getStatus(change.getId())
+        ));
+    }
+
+    /**
+     * GET /api/admin/audit-log/export/download?changeId={uuid}
+     *
+     * Downloads the audit log JSON ONLY if the referenced PendingStateChange
+     * is in executed=true state. Prevents download without multisig approval.
+     */
+    @GetMapping("/audit-log/export/download")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<?> downloadAuditLog(
+            @RequestParam java.util.UUID changeId,
+            @RequestParam(defaultValue = "0")  int page,
+            @RequestParam(defaultValue = "200") int size,
+            Authentication auth) {
+
+        Map<String, Object> status = multiSigService.getStatus(changeId);
+        Boolean executed = (Boolean) status.get("executed");
+        if (!Boolean.TRUE.equals(executed)) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "error", "Audit log export has not been approved yet. " +
+                            "Complete the multisig approval first."));
+        }
+
+        // Validate changeId still belongs to EXPORT_AUDIT_LOG (not another action)
+        if (!"EXPORT_AUDIT_LOG".equals(status.get("actionType"))) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid export approval ID"));
+        }
+
+        Pageable p = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), MAX_PAGE_SIZE),
+                Sort.by("sequenceNumber").descending());
+        org.springframework.data.domain.Page<AuditLog> logs = auditLogRepo.findAll(p);
+
+        auditLog.log("AUDIT_LOG_EXPORTED", auth.getName(),
+                "ChangeId=" + changeId + " records=" + logs.getTotalElements());
+
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=\"audit-log-export.json\"")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .body(logs);
+    }
+
+    /**
      * POST /api/admin/merkle/publish?electionId={uuid}
      * Manually re-computes and publishes the Merkle root for an election.
      * Called by the "Publish Merkle Root Now" button in System Settings.

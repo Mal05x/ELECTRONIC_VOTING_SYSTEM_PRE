@@ -106,7 +106,8 @@ public class MultiSigController {
 
         Set<String> validActions = Set.of(
                 "ACTIVATE_ELECTION", "CLOSE_ELECTION", "BULK_UNLOCK_CARDS",
-                "DEACTIVATE_ADMIN", "ACTIVATE_ADMIN", "PUBLISH_MERKLE_ROOT"
+                "DEACTIVATE_ADMIN", "ACTIVATE_ADMIN", "PUBLISH_MERKLE_ROOT",
+                "EXPORT_AUDIT_LOG"  // added: multisig-gated audit export
         );
         if (!validActions.contains(action.toUpperCase()))
             return ResponseEntity.badRequest()

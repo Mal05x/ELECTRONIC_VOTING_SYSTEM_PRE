@@ -19,6 +19,7 @@ import ImportView         from "./pages/ImportView.jsx";
 import ErrorBoundary      from "./components/ErrorBoundary.jsx";
 import ApprovalsView      from "./pages/ApprovalsView.jsx";
 import RegistrationView   from "./pages/RegistrationView.jsx";
+import ResetPasswordPage  from "./pages/ResetPasswordPage.jsx";
 
 function RequireAuth({ children }) {
   const { user } = useAuth();
@@ -107,7 +108,8 @@ export default function App() {
   const { user } = useAuth();
   return (
     <Routes>
-      <Route path="/login"     element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+      <Route path="/login"        element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/verify"    element={<ReceiptTrackerView />} />
       <Route path="/simulator" element={<HardwareSimulator />} />
       <Route path="/*" element={

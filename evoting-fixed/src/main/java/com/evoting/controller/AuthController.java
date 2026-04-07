@@ -18,24 +18,16 @@ import java.util.Map;
 @RequestMapping("/api")
 public class AuthController {
 
-    @Autowired private AuthenticationService       authService;
-    @Autowired private AdminUserService            adminService;
-    @Autowired private AuditLogService             auditLog;
-    @Autowired private JwtTokenProvider            jwt;
-    @Autowired private TerminalHeartbeatRepository heartbeatRepo;
-    @Autowired private AdminUserRepository         adminRepo;
-    @Autowired private PasswordEncoder             passwordEncoder;
-
-    /** POST /api/terminal/authenticate */
-    /*@PostMapping("/terminal/authenticate")
-    public ResponseEntity<SessionTokenDTO> authenticate(@RequestBody Map<String, String> body) throws Exception {
-        return ResponseEntity.ok(authService.authenticate(body.get("payload")));
-    }*/
+    @Autowired private AuthenticationService   authService;
+    @Autowired private AdminUserService        adminService;
+    @Autowired private AuditLogService         auditLog;
+    @Autowired private JwtTokenProvider        jwt;
+    @Autowired private AdminUserRepository     adminRepo;
+    @Autowired private PasswordEncoder         passwordEncoder;
+    @Autowired private PasswordResetService    passwordResetService;
 
     /**
      * POST /api/auth/login
-     * Returns { token, role, username, email } so the frontend can
-     * display the correct name and avatar colour immediately.
      */
     @PostMapping("/auth/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody @Valid LoginRequestDTO req) {
@@ -50,7 +42,7 @@ public class AuthController {
         ));
     }
 
-    /** POST /api/auth/logout — client-side token discard; server logs it */
+    /** POST /api/auth/logout */
     @PostMapping("/auth/logout")
     public ResponseEntity<Map<String, String>> logout(Authentication auth) {
         String actor = auth != null ? auth.getName() : "unknown";
@@ -88,34 +80,56 @@ public class AuthController {
 
     /**
      * POST /api/auth/forgot-password
-     * Body: { "email": "..." }
-     * Records the request in the audit log. In production, wire to
-     * an email service (SendGrid/SMTP). For now returns acknowledgement.
+     * Body: { "email": "admin@example.com" }
+     *
+     * Generates a one-time reset token and emails a reset link.
+     * Always returns 200 to prevent email enumeration.
      */
     @PostMapping("/auth/forgot-password")
-    public ResponseEntity<Map<String, String>> forgotPassword(@RequestBody Map<String, String> body) {
+    public ResponseEntity<Map<String, String>> forgotPassword(
+            @RequestBody Map<String, String> body) {
         String email = body.get("email");
         if (email == null || email.isBlank())
             return ResponseEntity.badRequest().body(Map.of("error", "Email is required"));
-        // Log the request — email delivery wired separately
-        auditLog.log("PASSWORD_RESET_REQUESTED", "SYSTEM", "Email: " + email);
-        // Always return success so as not to reveal whether email exists
+
+        // Fire-and-forget — never reveals whether email exists
+        try {
+            passwordResetService.generateAndSendResetToken(email.trim().toLowerCase());
+        } catch (Exception e) {
+            // Swallow — keep response identical regardless of outcome
+        }
+
         return ResponseEntity.ok(Map.of(
                 "message", "If that email is registered, a reset link has been sent."
         ));
     }
 
-    /** POST /api/terminal/heartbeat */
-    /*@PostMapping("/terminal/heartbeat")
-    public ResponseEntity<Map<String, String>> heartbeat(@RequestBody HeartbeatDTO dto) {
-        heartbeatRepo.save(TerminalHeartbeat.builder()
-                .terminalId(dto.getTerminalId())
-                .batteryLevel(dto.getBatteryLevel())
-                .tamperFlag(dto.isTamperFlag())
-                .ipAddress(dto.getIpAddress())
-                .build());
-        if (dto.isTamperFlag())
-            auditLog.log("TERMINAL_TAMPER_ALERT", dto.getTerminalId(), "TAMPER FLAG SET");
-        return ResponseEntity.ok(Map.of("status", "OK"));
-    }*/
+    /**
+     * POST /api/auth/reset-password
+     * Body: { "token": "...", "newPassword": "..." }
+     *
+     * Consumes the one-time token and resets the password.
+     */
+    @PostMapping("/auth/reset-password")
+    public ResponseEntity<Map<String, String>> resetPassword(
+            @RequestBody Map<String, String> body) {
+        String token       = body.get("token");
+        String newPassword = body.get("newPassword");
+
+        if (token == null || token.isBlank())
+            return ResponseEntity.badRequest().body(Map.of("error", "token is required"));
+        if (newPassword == null || newPassword.length() < 8)
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "newPassword must be at least 8 characters"));
+
+        try {
+            passwordResetService.consumeTokenAndReset(token, newPassword);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Password reset successfully. Please log in with your new password."));
+        } catch (SecurityException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }

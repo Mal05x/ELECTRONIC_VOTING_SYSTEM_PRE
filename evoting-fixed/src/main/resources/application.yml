@@ -32,7 +32,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -112,3 +112,48 @@ logging:
     org.apache.tomcat.util.net: DEBUG
     org.flywaydb: INFO
     software.amazon.awssdk: WARN
+
+# ── Email / SMTP (for password reset) ──────────────────────────────────────
+# Provider options:
+#   SendGrid:  host=smtp.sendgrid.net  port=587  username=apikey  password=<SG.key>
+#   Gmail dev: host=smtp.gmail.com     port=587  username=you@gmail.com password=<app-password>
+#   AWS SES:   host=email-smtp.<region>.amazonaws.com port=587
+#spring:
+  mail:
+    host: ${SMTP_HOST:smtp.sendgrid.net}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:apikey}
+    password: ${SMTP_PASSWORD:}
+    from: ${SMTP_FROM:noreply@evoting.gov.ng}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+# ── Application identity (used in email templates + reset links) ────────────
+app:
+  base-url: ${APP_BASE_URL:https://localhost:5173}
+  name: ${APP_NAME:MFA E-Voting System}
+
+# ── Google OAuth2 (optional — uncomment and fill in after GCP Console setup)
+# See GOOGLE_OAUTH_SETUP.md in project root for step-by-step instructions.
+#
+# spring:
+#   security:
+#     oauth2:
+#       client:
+#         registration:
+#           google:
+#             client-id: ${GOOGLE_CLIENT_ID}
+#             client-secret: ${GOOGLE_CLIENT_SECRET}
+#             scope: openid,profile,email
+#             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+#         provider:
+#           google:
+#             authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+#             token-uri: https://oauth2.googleapis.com/token
+#             user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+#             user-name-attribute: email

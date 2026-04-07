@@ -19,9 +19,8 @@ const SIGN_ALG = { name: "ECDSA", hash: { name: "SHA-256" } };
  * Returns { publicKeyB64 } — the Base64 public key to send to the server.
  */
 export async function generateAndStoreKeypair() {
-  const keypair = await window.crypto.subtle.generateKey(
-    ALG, true, ["sign", "verify"]
-  );
+ const keypair = await window.crypto.subtle.generateKey(ALG, false, ["sign","verify"]);
+ // Store keypair.privateKey object in IndexedDB — it cannot be exported
 
   // Export private key as JWK for localStorage storage
   const privateJwk = await window.crypto.subtle.exportKey("jwk", keypair.privateKey);

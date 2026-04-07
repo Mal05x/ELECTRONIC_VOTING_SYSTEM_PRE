@@ -242,7 +242,7 @@ export default function LoginPage() {
                 <div className="text-4xl mb-4">✉️</div>
                 <div className="text-sm font-bold text-white mb-2">Reset link sent</div>
                 <div className="text-xs text-sub leading-relaxed">
-                  Check your inbox for a password reset link. It expires in 15 minutes.
+                  Check your inbox for a password reset link. It expires in 30 minutes.
                 </div>
                 <button
                   className="btn btn-primary btn-md mt-6 w-full justify-center"

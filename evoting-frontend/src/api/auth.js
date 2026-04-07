@@ -40,3 +40,9 @@ export async function updateProfile(fields) {
   const res = await client.put("/admin/me", fields);
   return res.data;
 }
+
+/** POST /api/auth/reset-password  { token, newPassword } */
+export async function resetPassword(token, newPassword) {
+  const res = await client.post("/auth/reset-password", { token, newPassword });
+  return res.data;
+}
