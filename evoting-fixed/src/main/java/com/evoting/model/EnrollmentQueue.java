@@ -35,7 +35,7 @@ public class EnrollmentQueue {
     private String cardStaticKey;
 
     /** SHA-256 of cardStaticKey — copied to voter_registry.card_static_key_hash */
-    @Column(name = "card_static_key_hash", columnDefinition = "char(64)")
+    @Column(name = "card_static_key_hash", columnDefinition = "bpchar")
     private String cardStaticKeyHash;
 
     @org.hibernate.annotations.CreationTimestamp
