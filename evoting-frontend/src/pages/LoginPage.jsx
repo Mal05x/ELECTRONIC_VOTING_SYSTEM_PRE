@@ -109,14 +109,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/*  oauth */}
-      <a
-        href="https://mfa-evoting-backend-xxxx.onrender.com/oauth2/authorization/google"
-        className="w-full flex items-center justify-center gap-3 px-4 py-2.5 bg-white text-gray-800 rounded-xl font-semibold border border-gray-300 hover:bg-gray-50 transition-colors shadow-sm"
-      >
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width={20} alt="Google" />
-        Sign in with Google
-      </a>
+    
 
       {/* ── RIGHT PANEL: Login Form ────────────────────────── */}
       <div className="w-full lg:w-1/2 relative flex items-center justify-center p-8 sm:p-12 bg-[#07070E]">
@@ -216,6 +209,21 @@ export default function LoginPage() {
                 : <><span>Secure Sign In</span><Ic n="lock" s={16} c="#fff" sw={2.5} /></>
               }
             </button>
+             {/* --- ADD FROM HERE --- */}
+            <div className="flex items-center gap-3 my-5">
+              <div className="flex-1 h-px bg-white/10"></div>
+              <div className="text-xs font-semibold text-sub uppercase tracking-wider">Or</div>
+              <div className="flex-1 h-px bg-white/10"></div>
+            </div>
+
+            <a
+              href="https://mfa-evoting-backend.onrender.com/oauth2/authorization/google"
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white text-gray-900 rounded-xl font-bold hover:bg-gray-200 transition-colors shadow-sm"
+            >
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width={20} alt="Google" />
+              Sign in with Google
+            </a>
+            {/* --- TO HERE --- */}
           </form>
 
 
