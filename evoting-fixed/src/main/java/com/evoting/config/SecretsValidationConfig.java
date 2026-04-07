@@ -27,6 +27,10 @@ public class SecretsValidationConfig {
     @Value("${security.jwt.secret}")
     private String jwtSecret;
 
+    // Demographics encryption key — required; voter PII is encrypted with this
+    @Value("${security.demographics-key}")
+    private String demographicsKey;
+
     // Optional — S3 photo uploads only; null if env var not set
     @Value("${aws.access-key-id:#{null}}")
     private String awsAccessKey;
@@ -46,6 +50,11 @@ public class SecretsValidationConfig {
         if (isInsecure(jwtSecret)) {
             failures.append("\n  - JWT_SECRET: not set or uses placeholder value. " +
                     "Generate with: openssl rand -base64 64");
+        }
+        if (isInsecure(demographicsKey)) {
+            failures.append("\n  - DEMOGRAPHICS_KEY: not set or uses placeholder value. " +
+                    "Generate with: openssl rand -base64 32  " +
+                    "(WARNING: changing this re-encrypts all voter demographics)");
         }
 
         if (failures.length() > 0) {

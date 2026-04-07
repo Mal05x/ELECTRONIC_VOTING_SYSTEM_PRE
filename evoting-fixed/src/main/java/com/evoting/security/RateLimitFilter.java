@@ -40,8 +40,15 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    private static final int WINDOW_SECONDS = 30;
-    private static final String KEY_PREFIX  = "ratelimit:";
+    // Terminal endpoints — 1 request per 30 seconds per IP
+    private static final int    TERMINAL_WINDOW_SECS = 30;
+    private static final int    TERMINAL_MAX_REQUESTS = 1;
+    private static final String TERMINAL_KEY_PREFIX  = "ratelimit:terminal:";
+
+    // Admin login — 5 attempts per 5 minutes per IP (brute-force protection)
+    private static final int    LOGIN_WINDOW_SECS    = 300;   // 5 minutes
+    private static final int    LOGIN_MAX_ATTEMPTS   = 5;
+    private static final String LOGIN_KEY_PREFIX     = "ratelimit:login:";
 
     @Autowired
     private StringRedisTemplate redis;
@@ -52,46 +59,63 @@ public class RateLimitFilter extends OncePerRequestFilter {
                                     FilterChain chain)
             throws ServletException, IOException {
 
-        if (!req.getRequestURI().startsWith("/api/terminal")) {
+        String uri      = req.getRequestURI();
+        String clientIp = getClientIp(req);
+
+        // ── Admin login brute-force protection ────────────────────────────
+        if (uri.equals("/api/auth/login") && "POST".equalsIgnoreCase(req.getMethod())) {
+            if (!checkRateLimit(res, LOGIN_KEY_PREFIX + clientIp,
+                    LOGIN_WINDOW_SECS, LOGIN_MAX_ATTEMPTS,
+                    "Too many login attempts. Please wait 5 minutes before trying again.")) {
+                return;
+            }
             chain.doFilter(req, res);
             return;
         }
 
-        String clientIp = getClientIp(req);
+        // ── Terminal endpoint rate limiting ───────────────────────────────
+        if (!uri.startsWith("/api/terminal")) {
+            chain.doFilter(req, res);
+            return;
+        }
 
-        try {
-            String key   = KEY_PREFIX + clientIp;
-            Long   count = redis.opsForValue().increment(key);
-
-            if (count != null && count == 1L) {
-                // First request in the window — set the TTL
-                redis.expire(key, WINDOW_SECONDS, TimeUnit.SECONDS);
-            }
-
-            if (count != null && count > 1L) {
-                // Rate limit exceeded
-                res.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-                res.setContentType("application/json");
-                res.getWriter().write(
-                    "{\"error\":\"Rate limit exceeded. One request per 30 seconds.\"}");
-                return;
-            }
-
-        } catch (Exception redisEx) {
-            // Fix B-17: Redis unavailable — log and allow the request through.
-            // Failing closed (blocking all requests) during a Redis outage would
-            // prevent voting, which is worse than temporarily relaxed rate limiting.
-            log.warn("Rate limit Redis unavailable — allowing request through: {}",
-                redisEx.getMessage());
+        if (!checkRateLimit(res, TERMINAL_KEY_PREFIX + clientIp,
+                TERMINAL_WINDOW_SECS, TERMINAL_MAX_REQUESTS,
+                "Rate limit exceeded. One request per 30 seconds.")) {
+            return;
         }
 
         chain.doFilter(req, res);
     }
 
+    /**
+     * Check the rate limit for a given Redis key.
+     * @return true if request is allowed, false if limit exceeded (response already written)
+     */
+    private boolean checkRateLimit(HttpServletResponse res, String key,
+                                   int windowSecs, int maxRequests, String message)
+            throws IOException {
+        try {
+            Long count = redis.opsForValue().increment(key);
+            if (count != null && count == 1L) {
+                redis.expire(key, windowSecs, TimeUnit.SECONDS);
+            }
+            if (count != null && count > maxRequests) {
+                res.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+                res.setContentType("application/json");
+                res.getWriter().write("{\"error\":\"" + message + "\"}");
+                log.warn("[RATE-LIMIT] Blocked key={} count={}", key, count);
+                return false;
+            }
+        } catch (Exception redisEx) {
+            log.warn("[RATE-LIMIT] Redis unavailable — allowing request: {}", redisEx.getMessage());
+        }
+        return true;
+    }
+
     private String getClientIp(HttpServletRequest req) {
         String forwarded = req.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {
-            // Take the first IP in the chain (the original client IP)
             return forwarded.split(",")[0].trim();
         }
         return req.getRemoteAddr();
