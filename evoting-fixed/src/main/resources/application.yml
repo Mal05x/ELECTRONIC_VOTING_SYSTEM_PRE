@@ -56,6 +56,21 @@ spring:
       max-file-size: 10MB
       max-request-size: 12MB
 
+
+  mail:
+     host: ${SMTP_HOST:smtp.sendgrid.net}
+     port: ${SMTP_PORT:587}
+     username: ${SMTP_USERNAME:apikey}
+     password: ${SMTP_PASSWORD:}
+     from: ${SMTP_FROM:noreply@evoting.gov.ng}
+     properties:
+      mail:
+        smtp:
+         auth: true
+        starttls:
+         enable: true
+         required: true
+
 security:
   demographics-key: ${DEMOGRAPHICS_KEY:CHANGE_THIS_DEMOGRAPHICS_KEY_IN_PRODUCTION}
   aes:
@@ -118,20 +133,6 @@ logging:
 #   SendGrid:  host=smtp.sendgrid.net  port=587  username=apikey  password=<SG.key>
 #   Gmail dev: host=smtp.gmail.com     port=587  username=you@gmail.com password=<app-password>
 #   AWS SES:   host=email-smtp.<region>.amazonaws.com port=587
-#spring:
-  mail:
-    host: ${SMTP_HOST:smtp.sendgrid.net}
-    port: ${SMTP_PORT:587}
-    username: ${SMTP_USERNAME:apikey}
-    password: ${SMTP_PASSWORD:}
-    from: ${SMTP_FROM:noreply@evoting.gov.ng}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
 
 # ── Application identity (used in email templates + reset links) ────────────
 app:
