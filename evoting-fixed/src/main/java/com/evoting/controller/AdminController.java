@@ -52,7 +52,9 @@ public class AdminController {
     @Autowired private EnrollmentQueueRepository      enrollmentQueueRepo;
     @Autowired private JdbcTemplate                   jdbcTemplate;
     @Autowired private com.evoting.service.AnomalyDetectionService anomalyService;
-    @Autowired private com.evoting.service.MultiSigService multiSigService;
+    @Autowired private com.evoting.service.MultiSigService    multiSigService;
+    @Autowired private com.evoting.service.TerminalAuthService   terminalAuthService;
+    @Autowired private com.evoting.repository.TerminalRegistryRepository terminalRegistryRepo;
     @Autowired private com.evoting.repository.BallotBoxRepository        ballotRepo;
     @Autowired private com.evoting.service.MerkleTreeService               merkleService;
 
@@ -863,6 +865,78 @@ public class AdminController {
                 .header("Content-Disposition", "attachment; filename=\"audit-log-export.json\"")
                 .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                 .body(logs);
+    }
+
+    // ── Terminal Provisioning ────────────────────────────────────────────────
+
+    /**
+     * POST /api/admin/terminals/provision
+     *
+     * Registers a terminal's ECDSA P-256 public key for application-layer signing.
+     * Replaces mTLS terminal identity for cloud deployments.
+     *
+     * The terminal generates a keypair on first boot (stored in NVS) and sends
+     * its public key to this endpoint during initial setup.
+     * Subsequent requests must carry a valid X-Terminal-Signature header.
+     *
+     * Body: { "terminalId": "TERM-KD-001", "publicKey": "<Base64 SPKI>",
+     *         "label": "Kaduna North Ward 3", "pollingUnitId": 42 }
+     *
+     * Idempotent — calling again rotates the terminal's key.
+     * Requires: SUPER_ADMIN
+     */
+    @PostMapping("/terminals/provision")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<Map<String, Object>> provisionTerminal(
+            @RequestBody Map<String, Object> body,
+            Authentication auth) {
+
+        String terminalId    = (String) body.get("terminalId");
+        String publicKey     = (String) body.get("publicKey");
+        String label         = (String) body.getOrDefault("label", terminalId);
+        Object puIdObj       = body.get("pollingUnitId");
+        Integer pollingUnitId = puIdObj != null ? Integer.valueOf(puIdObj.toString()) : null;
+
+        if (terminalId == null || terminalId.isBlank())
+            return ResponseEntity.badRequest().body(Map.of("error", "terminalId is required"));
+        if (publicKey == null || publicKey.isBlank())
+            return ResponseEntity.badRequest().body(Map.of("error", "publicKey is required"));
+
+        com.evoting.model.TerminalRegistry reg = terminalAuthService.register(
+                terminalId, publicKey, label, pollingUnitId, auth.getName());
+
+        return ResponseEntity.ok(Map.of(
+                "terminalId",    reg.getTerminalId(),
+                "label",         reg.getLabel() != null ? reg.getLabel() : "",
+                "pollingUnitId", reg.getPollingUnitId() != null ? reg.getPollingUnitId() : 0,
+                "registeredAt",  reg.getRegisteredAt().toString(),
+                "message",       "Terminal provisioned. Requests from this terminal " +
+                        "must now include X-Terminal-Signature headers."
+        ));
+    }
+
+    /**
+     * GET /api/admin/terminals/registry
+     *
+     * Lists all registered terminals and their status.
+     */
+    @GetMapping("/terminals/registry")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','OBSERVER')")
+    public ResponseEntity<java.util.List<Map<String, Object>>> listRegisteredTerminals() {
+        return ResponseEntity.ok(
+                terminalRegistryRepo.findAll().stream()
+                        .map(t -> {
+                            Map<String, Object> m = new java.util.LinkedHashMap<>();
+                            m.put("terminalId",   t.getTerminalId());
+                            m.put("label",        t.getLabel() != null ? t.getLabel() : "");
+                            m.put("pollingUnitId",t.getPollingUnitId());
+                            m.put("active",       t.isActive());
+                            m.put("registeredAt", t.getRegisteredAt().toString());
+                            m.put("registeredBy", t.getRegisteredBy());
+                            m.put("lastSeen",     t.getLastSeen() != null ? t.getLastSeen().toString() : null);
+                            return m;
+                        }).toList()
+        );
     }
 
     /**

@@ -68,9 +68,10 @@ public class TerminalController {
 
     @PostMapping("/authenticate")
     public ResponseEntity<?> authenticateTerminal(HttpServletRequest request, @RequestBody Map<String, String> body) {
-        String terminalSubject = extractTerminalIdFromCert(request);
-        if (terminalSubject == null) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Invalid or missing terminal certificate"));
+        String terminalSubject = request.getHeader("X-Terminal-Id");
+        if (terminalSubject == null || terminalSubject.isBlank()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Invalid or missing terminal certificate"));
         }
 
         try {
@@ -140,12 +141,13 @@ public class TerminalController {
             HttpServletRequest request,
             @RequestBody Map<String, String> body) {
 
-        // 1. Verify mTLS certificate — terminal must be provisioned
-        String terminalSubject = extractTerminalIdFromCert(request);
-        if (terminalSubject == null) {
-            log.warn("[VOTE] Rejected: missing mTLS certificate");
+        // Terminal identity verified upstream by TerminalAuthFilter (ECDSA app-layer signing).
+        // X-Terminal-Id header is trusted here — filter already validated the signature.
+        String terminalSubject = request.getHeader("X-Terminal-Id");
+        if (terminalSubject == null || terminalSubject.isBlank()) {
+            log.warn("[VOTE] Rejected: missing X-Terminal-Id header");
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Terminal certificate required"));
+                    .body(Map.of("error", "Terminal not identified"));
         }
 
         String encryptedPayload = body.get("payload");

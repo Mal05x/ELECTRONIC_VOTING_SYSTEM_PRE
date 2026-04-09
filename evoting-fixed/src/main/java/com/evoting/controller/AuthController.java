@@ -5,6 +5,7 @@ import com.evoting.repository.AdminUserRepository;
 import com.evoting.repository.TerminalHeartbeatRepository;
 import com.evoting.security.JwtTokenProvider;
 import com.evoting.service.*;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +26,7 @@ public class AuthController {
     @Autowired private AdminUserRepository     adminRepo;
     @Autowired private PasswordEncoder         passwordEncoder;
     @Autowired private PasswordResetService    passwordResetService;
+    @Autowired private JwtBlacklistService     blacklistService;
 
     /**
      * POST /api/auth/login
@@ -42,11 +44,32 @@ public class AuthController {
         ));
     }
 
-    /** POST /api/auth/logout */
+    /**
+     * POST /api/auth/logout
+     *
+     * Revokes the current JWT by adding its JTI to the Redis blacklist
+     * with TTL = remaining token lifetime. The token cannot be used again
+     * even though it hasn't naturally expired yet.
+     */
     @PostMapping("/auth/logout")
-    public ResponseEntity<Map<String, String>> logout(Authentication auth) {
+    public ResponseEntity<Map<String, String>> logout(
+            Authentication auth, HttpServletRequest request) {
         String actor = auth != null ? auth.getName() : "unknown";
-        auditLog.log("ADMIN_LOGOUT", actor, "Session ended");
+
+        // Extract and revoke the token
+        String header = request.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
+            String token = header.substring(7);
+            try {
+                String jti            = jwt.getJti(token);
+                long   remainingSecs  = jwt.getRemainingSeconds(token);
+                blacklistService.revoke(jti, remainingSecs);
+            } catch (Exception e) {
+                // Non-fatal — log and continue; token will expire naturally
+            }
+        }
+
+        auditLog.log("ADMIN_LOGOUT", actor, "Session ended and token revoked");
         return ResponseEntity.ok(Map.of("message", "Logged out"));
     }
 

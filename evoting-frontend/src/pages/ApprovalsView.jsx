@@ -70,7 +70,10 @@ export default function ApprovalsView() {
     }
     setSigning(change.changeId);
     try {
-      const sig = await signChallenge(change.changeId);
+      // Use canonical signing payload — binds signature to action type + target + changeId.
+      // Prevents a DB-level attacker from swapping targetId after signing.
+      const signingPayload = change.signingPayload || change.changeId;
+      const sig = await signChallenge(signingPayload);
       if (!sig) { showToast("Signing failed — key may be corrupted", "error"); return; }
 
       const res = await signStateChange(change.changeId, sig);

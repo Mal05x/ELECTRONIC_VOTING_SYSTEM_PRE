@@ -332,7 +332,9 @@ export default function SettingsView() {
       let executed = initRes.data.executed;
       if (!executed && signChallenge) {
         try {
-          const sig = await signChallenge(changeId);
+          // Use canonical signing payload from server response
+        const signingPayload = initRes.data?.status?.signingPayload || changeId;
+        const sig = await signChallenge(signingPayload);
           if (sig) {
             const signRes = await client.post(`/admin/state-changes/${changeId}/sign`, { signature: sig });
             executed = signRes.data.executed;
@@ -780,7 +782,7 @@ export default function SettingsView() {
                   <input className="inp inp-md" type="number" min="10" max="300"
                     value={heartbeat} onChange={e => setHeartbeat(e.target.value)} />
                   <p className="text-[11px] text-muted mt-1">
-                    How often terminals call <span className="mono text-purple-300">POST /api/terminal/heartbeat</span>
+                    How often terminals call <span className="mono text-purple-300">POST /api/terminal/heartbeat</span> <span className="text-amber-400">(firmware constant — update HEARTBEAT_INTERVAL_MS in firmware to take effect)</span>
                   </p>
                 </div>
                 <div>
@@ -910,7 +912,7 @@ export default function SettingsView() {
                             { auditRetention, backupSchedule, merklePublish, livenessFailOpen },
                             "System config");
                           try {
-                            await client.put("/admin/system/liveness-config", { failOpen: livenessFailOpen });
+                            await client.put("/camera/liveness-config", { failOpen: livenessFailOpen });
                           } catch (e) {
                             console.warn("Could not update liveness config at runtime:", e.message);
                           }

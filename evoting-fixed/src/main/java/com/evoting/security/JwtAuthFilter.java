@@ -2,6 +2,7 @@ package com.evoting.security;
 
 import com.evoting.repository.AdminUserRepository;
 import com.evoting.model.AdminUser;
+import com.evoting.service.JwtBlacklistService;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,16 +17,19 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * JWT authentication filter with:
+ *   1. Token signature + expiry validation (existing)
+ *   2. Active admin check — deactivated accounts rejected immediately (existing)
+ *   3. JWT blacklist check — revoked tokens (logged-out) rejected (NEW)
+ */
 @Component
 @Order(2)
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private JwtTokenProvider jwt;
-
-    // Inject your specific repository
-    @Autowired
-    private AdminUserRepository adminUserRepository;
+    @Autowired private JwtTokenProvider     jwt;
+    @Autowired private AdminUserRepository  adminUserRepository;
+    @Autowired private JwtBlacklistService  blacklist;
 
     @Override
     protected void doFilterInternal(HttpServletRequest req,
@@ -38,21 +42,27 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String token = header.substring(7);
 
             if (jwt.isValid(token)) {
+
+                // ── Blacklist check (revoked on logout) ───────────────────
+                String jti = jwt.getJti(token);
+                if (blacklist.isRevoked(jti)) {
+                    res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    res.setContentType("application/json");
+                    res.getWriter().write("{\"error\": \"Session has been revoked. Please log in again.\"}");
+                    return;
+                }
+
                 String username = jwt.getUsername(token);
 
-                // ZERO-TRUST CHECK: Use your exact repository method
-                // This only returns a user if they exist AND are currently active
+                // ── Zero-trust: only active admins ────────────────────────
                 Optional<AdminUser> activeAdmin = adminUserRepository.findByUsernameAndActiveTrue(username);
-
-                // If it's empty, they were either deleted or deactivated. Kick them out instantly.
                 if (activeAdmin.isEmpty()) {
                     res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     res.setContentType("application/json");
                     res.getWriter().write("{\"error\": \"Session invalid or account deactivated\"}");
-                    return; // Stop the request completely
+                    return;
                 }
 
-                // They are active! Set the security context.
                 var auth = new UsernamePasswordAuthenticationToken(
                         username, null,
                         List.of(new SimpleGrantedAuthority("ROLE_" + jwt.getRole(token))));

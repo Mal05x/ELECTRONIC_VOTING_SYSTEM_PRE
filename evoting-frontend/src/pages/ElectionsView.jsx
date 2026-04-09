@@ -117,7 +117,9 @@ export default function ElectionsView() {
 
       if (signChallenge && changeId) {
         try {
-          const sig = await signChallenge(changeId);
+          // Use canonical payload from server — actionType|targetId|changeId
+          const signingPayload = res.status?.signingPayload || changeId;
+          const sig = await signChallenge(signingPayload);
           if (sig) {
             const signRes = await signStateChange(changeId, sig);
             if (signRes.executed) {

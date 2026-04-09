@@ -11,7 +11,8 @@ server:
     # mTLS: uncomment for terminal mutual authentication
     trust-store: file:///C:/evoting_certs/truststore.p12
     trust-store-password: ${MTLS_TRUSTSTORE_PASSWORD:password}
-    client-auth: want
+    client-auth: ${MTLS_CLIENT_AUTH:want} # Set MTLS_CLIENT_AUTH=need in production once all terminals are provisioned
+
 
 spring:
   application:
@@ -150,6 +151,13 @@ logging:
 app:
   base-url: ${APP_BASE_URL:https://localhost:5173}
   name: ${APP_NAME:MFA E-Voting System}
+
+  # ── Terminal application-layer signing ─────────────────────────────────────────
+  # Set false ONLY during local development when firmware is not yet configured.
+  # Always true in production. See TerminalAuthFilter for the signing scheme.
+  terminal:
+    auth:
+      enabled: ${TERMINAL_AUTH_ENABLED:true}
 
 # ── Google OAuth2 (optional — uncomment and fill in after GCP Console setup)
 # See GOOGLE_OAUTH_SETUP.md in project root for step-by-step instructions.

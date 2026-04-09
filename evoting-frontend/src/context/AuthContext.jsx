@@ -6,6 +6,7 @@ import {
   getProfile,
   updateProfile as apiUpdateProfile,
 } from "../api/auth.js";
+import { clearStoredKeypair } from "../api/webcrypto.js";
 
 const AuthContext = createContext(null);
 
@@ -118,9 +119,12 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
+    // Clear the ECDSA private key from localStorage on logout —
+    // prevents key use after session ends if browser is left open
     try { await apiLogout(); } catch (_) {}
     localStorage.removeItem("evoting_jwt");
     localStorage.removeItem("evoting_user");
+    try { clearStoredKeypair(); } catch (_) {}
     localStorage.removeItem("evoting_remember");
     sessionStorage.removeItem("evoting_jwt");
     sessionStorage.removeItem("evoting_user");

@@ -1,9 +1,8 @@
 package com.evoting.config;
 import com.evoting.security.JwtAuthFilter;
+import com.evoting.security.TerminalAuthFilter;
 import com.evoting.security.StepUpAuthFilter;
 import com.evoting.security.RateLimitFilter;
-import org.springframework.security.oauth2.core.oidc.user.OidcUser;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -21,22 +20,15 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.*;
 import java.util.List;
-import com.evoting.model.AdminUser;
-import com.evoting.repository.AdminUserRepository;
-import com.evoting.security.JwtTokenProvider;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Autowired private JwtAuthFilter   jwtFilter;
+    @Autowired private JwtAuthFilter    jwtFilter;
+    @Autowired private TerminalAuthFilter terminalAuthFilter;
     @Autowired private RateLimitFilter rateLimitFilter;
-    @Autowired
-    private AdminUserRepository adminRepo;
-
-    @Autowired
-    private JwtTokenProvider jwtProvider; // Again, rename this if your class is called JwtTokenProvider
 
     /**
      * CORS allowed origins — comma-separated list.
@@ -53,9 +45,6 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsSource()))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                .oauth2Login(oauth -> oauth
-                        .successHandler(oauthSuccessHandler())
-                )
                 /*
                  * Return 401 (not 403) for unauthenticated requests to protected endpoints.
                  * Without this, Spring Security 6 defaults to 403 for any rejected request,
@@ -82,7 +71,12 @@ public class SecurityConfig {
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/auth/login").permitAll()
                         .requestMatchers("/api/auth/forgot-password").permitAll()
-                        .requestMatchers("/api/camera/**").permitAll()         // ESP32-CAM liveness stream (mTLS auth)
+                        // ESP32-CAM endpoints that require no JWT (authenticated by mTLS cert):
+                        //   POST /api/camera/liveness  — frame submission from ESP32-CAM
+                        //   GET  /api/camera/ping      — health check
+                        // NOT permitted: PUT /api/camera/liveness-config — requires SUPER_ADMIN JWT
+                        .requestMatchers("/api/camera/liveness").permitAll()
+                        .requestMatchers("/api/camera/ping").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         .anyRequest().authenticated()
                 )
@@ -96,7 +90,8 @@ public class SecurityConfig {
                  *   RateLimitFilter → JwtAuthFilter → Spring Security auth
                  */
                 .addFilterBefore(jwtFilter,       UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(rateLimitFilter, JwtAuthFilter.class);
+                .addFilterBefore(rateLimitFilter,     JwtAuthFilter.class)
+                .addFilterBefore(terminalAuthFilter, RateLimitFilter.class);
 
         return http.build();
     }
@@ -119,6 +114,13 @@ public class SecurityConfig {
     @Bean
     public FilterRegistrationBean<RateLimitFilter> rateLimitFilterRegistration(RateLimitFilter filter) {
         FilterRegistrationBean<RateLimitFilter> reg = new FilterRegistrationBean<>(filter);
+        reg.setEnabled(false);
+        return reg;
+    }
+
+    @Bean
+    public FilterRegistrationBean<TerminalAuthFilter> terminalAuthFilterRegistration(TerminalAuthFilter filter) {
+        FilterRegistrationBean<TerminalAuthFilter> reg = new FilterRegistrationBean<>(filter);
         reg.setEnabled(false);
         return reg;
     }
@@ -148,32 +150,5 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
         src.registerCorsConfiguration("/**", cfg);
         return src;
-    }
-    @Bean
-    public AuthenticationSuccessHandler oauthSuccessHandler() {
-        return (request, response, authentication) -> {
-            OidcUser oidcUser = (OidcUser) authentication.getPrincipal();
-            String email = oidcUser.getEmail();
-
-            // Find existing admin, or auto-create as OBSERVER
-            AdminUser admin = adminRepo.findByEmailIgnoreCase(email)
-                    .orElseGet(() -> {
-                        AdminUser newAdmin = AdminUser.builder()
-                                .username(email)
-                                .email(email)
-                                .role(AdminUser.AdminRole.OBSERVER)
-                                .active(true)
-                                .build();
-                        return adminRepo.save(newAdmin);
-                    });
-
-            // Generate your standard JWT token
-            String token = jwtProvider.generateToken(admin.getUsername(), admin.getRole().name());
-
-            // Redirect to your Vercel frontend, passing the token in the URL
-            response.sendRedirect("https://electronic-voting-system-pre.vercel.app/oauth-callback?token=" + token
-                    + "&role=" + admin.getRole().name()
-                    + "&username=" + admin.getUsername());
-        };
     }
 }

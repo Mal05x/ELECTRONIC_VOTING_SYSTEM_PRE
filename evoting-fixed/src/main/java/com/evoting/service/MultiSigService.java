@@ -21,7 +21,10 @@ import java.util.*;
  *
  * Threshold:  2-of-N active SUPER_ADMINs (bootstrap: 1-of-1 if only one exists)
  * Algorithm:  ECDSA with SHA-256 over P-256 curve (Web Crypto default)
- * Payload:    The pending_state_change UUID as UTF-8 bytes
+ * Payload:    Canonical string: "<actionType>|<targetId>|<changeId>"
+ *             This binds the signature to the specific operation and target,
+ *             preventing payload substitution attacks where a DB-level compromise
+ *             could swap the targetId of an existing signed pending change.
  * Expiry:     24 hours — expired pending changes are auto-cancelled
  *
  * Actions requiring multi-sig:
@@ -106,7 +109,9 @@ public class MultiSigService {
                 .orElseThrow(() -> new IllegalStateException(
                         "No registered keypair for admin. Please register your key first."));
 
-        if (!verifySignature(changeId.toString(), base64Signature, keypair.getPublicKey())) {
+        // Use canonical payload — binds sig to action type and target, not just the change UUID
+        String canonical = canonicalPayload(change.getActionType(), change.getTargetId(), changeId.toString());
+        if (!verifySignature(canonical, base64Signature, keypair.getPublicKey())) {
             auditLog.log("STATE_CHANGE_INVALID_SIGNATURE",
                     adminRepo.findById(adminId).map(AdminUser::getUsername).orElse("unknown"),
                     "ChangeId=" + changeId);
@@ -192,8 +197,12 @@ public class MultiSigService {
         status.put("remaining",  Math.max(0, change.getSignaturesRequired() - sigs.size()));
         status.put("executed",   change.isExecuted());
         status.put("cancelled",  change.isCancelled());
-        status.put("expiresAt",  change.getExpiresAt().toString());
-        status.put("signatures", sigDetails);
+        status.put("expiresAt",     change.getExpiresAt().toString());
+        status.put("signatures",    sigDetails);
+        // Include the canonical signing payload so the frontend knows exactly what to sign.
+        // Frontend: await signChallenge(status.signingPayload)
+        status.put("signingPayload", canonicalPayload(
+                change.getActionType(), change.getTargetId(), changeId.toString()));
         return status;
     }
 
@@ -258,6 +267,21 @@ public class MultiSigService {
                 .count();
         // Bootstrap: if only 1 SUPER_ADMIN exists, threshold = 1
         return activeSuperAdmins <= 1 ? 1 : 2;
+    }
+
+    // ── Canonical signing payload ────────────────────────────────────────
+    /**
+     * Returns the canonical string that admins must sign for a given state change.
+     *
+     * Format: "<actionType>|<targetId>|<changeId>"
+     *
+     * This binds the signature cryptographically to the specific action and target.
+     * Signing only the changeId UUID allowed a DB-level attacker to swap targetId
+     * on a pending change after it was signed — the signature would still verify.
+     * With this format, any tampering with actionType or targetId invalidates the sig.
+     */
+    static String canonicalPayload(String actionType, String targetId, String changeId) {
+        return actionType + "|" + targetId + "|" + changeId;
     }
 
     // ── ECDSA P-256 signature verification ───────────────────────────────
