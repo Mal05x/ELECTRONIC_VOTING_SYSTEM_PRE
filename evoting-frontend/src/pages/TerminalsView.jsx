@@ -2,13 +2,15 @@ import { useState, useEffect } from "react";
 import { getTerminals, resolveTamperAlert } from "../api/terminals.js";
 import { StatCard, StatusBadge, SectionHeader, EmptyState, Spinner } from "../components/ui.jsx";
 import { Ic } from "../components/ui.jsx";
+import client from "../api/client.js"; // <--- ADDED THIS IMPORT!
 
 export default function TerminalsView() {
   const [terminals, setTerminals] = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [resolving, setResolving] = useState(null);
   const [toast,     setToast]     = useState({ msg: "", type: "success" });
-  // NEW: Provisioning Modal State
+
+  // Provisioning Modal State
   const [showModal, setShowModal] = useState(false);
   const [provData, setProvData]   = useState({ terminalId: "", publicKey: "", label: "", pollingUnitId: "" });
   const [provisioning, setProvisioning] = useState(false);
@@ -22,7 +24,6 @@ export default function TerminalsView() {
     if (!silent) setLoading(true);
     try {
       const data = await getTerminals();
-      // Map backend TerminalHeartbeat fields to UI fields
       const mapped = data.map(t => ({
         id:        t.terminalId,
         battery:   t.batteryLevel ?? 0,
@@ -42,7 +43,6 @@ export default function TerminalsView() {
     }
   };
 
-  // Initial load + poll every 10 s
   useEffect(() => {
     load();
     const interval = setInterval(() => load(true), 10_000);
@@ -52,26 +52,24 @@ export default function TerminalsView() {
   const resolveTamper = async (id) => {
     setResolving(id);
     try {
-      // Optimistic update
       setTerminals(p => p.map(t => t.id === id ? { ...t, tamper: false, status: "ONLINE" } : t));
       await resolveTamperAlert(id);
       showToast(`Tamper alert cleared for ${id}`);
     } catch (e) {
       showToast("Failed to resolve alert: " + (e.response?.data?.error || e.message), "error");
-      load(true); // revert
+      load(true);
     } finally { setResolving(null); }
   };
 
-const handleProvision = async (e) => {
+  const handleProvision = async (e) => {
     e.preventDefault();
     setProvisioning(true);
     try {
-      // Assuming 'client' is an axios instance imported from your api config
       await client.post('/admin/terminals/provision', provData);
       showToast(`Successfully provisioned terminal: ${provData.terminalId}`);
       setShowModal(false);
       setProvData({ terminalId: "", publicKey: "", label: "", pollingUnitId: "" });
-      load(true); // Refresh the table
+      load(true);
     } catch (error) {
       showToast(error.response?.data?.error || "Provisioning failed", "error");
     } finally {
@@ -136,7 +134,6 @@ const handleProvision = async (e) => {
           }
         />
 
-        {/* Table header */}
         <div className="hidden xl:grid px-4 py-2 mb-1 gap-3"
           style={{ gridTemplateColumns: "120px 100px 120px 100px 140px 1fr" }}>
           {["Terminal ID", "Battery", "Status", "Tamper", "Last Heartbeat", "Action"].map(h => (
@@ -161,7 +158,6 @@ const handleProvision = async (e) => {
 
               <span className="mono text-[12px] font-bold text-purple-400">{t.id}</span>
 
-              {/* Battery bar */}
               <div className="flex items-center gap-2">
                 <div className="w-7 h-3.5 border border-sub/60 rounded-[3px] p-px relative bg-black/20 flex-shrink-0">
                   <div className={`h-full rounded-[2px] transition-all ${t.battery > 20 ? "bg-success" : "bg-danger"}`}
@@ -196,48 +192,50 @@ const handleProvision = async (e) => {
             </div>
           ))
         )}
-     {/* PROVISIONING MODAL */}
-                {showModal && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-card w-full max-w-md rounded-2xl border border-border shadow-2xl overflow-hidden">
-                      <div className="p-5 border-b border-border flex justify-between items-center bg-elevated">
-                        <h3 className="font-bold text-ink">Provision New Terminal</h3>
-                        <button onClick={() => setShowModal(false)} className="text-muted hover:text-sub"><Ic n="close" s={16} /></button>
-                      </div>
-                      <form onSubmit={handleProvision} className="p-5 flex flex-col gap-4">
-                        <div>
-                          <label className="block text-xs font-semibold text-sub mb-1 uppercase">Terminal ID</label>
-                          <input required className="inp inp-md" placeholder="e.g., TERM-KD-001"
-                            value={provData.terminalId} onChange={e => setProvData({...provData, terminalId: e.target.value})} />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-sub mb-1 uppercase">ECDSA Public Key (Base64)</label>
-                          <textarea required className="inp inp-md h-24 font-mono text-xs resize-none" placeholder="Paste the key output from the ESP32 serial monitor..."
-                            value={provData.publicKey} onChange={e => setProvData({...provData, publicKey: e.target.value})} />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-xs font-semibold text-sub mb-1 uppercase">Label (Optional)</label>
-                            <input className="inp inp-md" placeholder="e.g., Ward 3"
-                              value={provData.label} onChange={e => setProvData({...provData, label: e.target.value})} />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-sub mb-1 uppercase">PU ID (Optional)</label>
-                            <input type="number" className="inp inp-md" placeholder="42"
-                              value={provData.pollingUnitId} onChange={e => setProvData({...provData, pollingUnitId: e.target.value})} />
-                          </div>
-                        </div>
-                        <div className="flex justify-end gap-3 mt-4">
-                          <button type="button" className="btn btn-surface btn-md" onClick={() => setShowModal(false)}>Cancel</button>
-                          <button type="submit" className="btn btn-primary btn-md" disabled={provisioning}>
-                            {provisioning ? <Spinner s={16} /> : "Save to Registry"}
-                          </button>
-                        </div>
-                      </form>
-                    </div>
-                  </div>
-                )}
-      </div>
-    </div>
+      </div> {/* <--- CLOSES THE .c-card DIV */}
+
+      {/* PROVISIONING MODAL */}
+      {showModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-card w-full max-w-md rounded-2xl border border-border shadow-2xl overflow-hidden">
+            <div className="p-5 border-b border-border flex justify-between items-center bg-elevated">
+              <h3 className="font-bold text-ink">Provision New Terminal</h3>
+              <button onClick={() => setShowModal(false)} className="text-muted hover:text-sub"><Ic n="close" s={16} /></button>
+            </div>
+            <form onSubmit={handleProvision} className="p-5 flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-sub mb-1 uppercase">Terminal ID</label>
+                <input required className="inp inp-md" placeholder="e.g., TERM-KD-001"
+                  value={provData.terminalId} onChange={e => setProvData({...provData, terminalId: e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-sub mb-1 uppercase">ECDSA Public Key (Base64)</label>
+                <textarea required className="inp inp-md h-24 font-mono text-xs resize-none" placeholder="Paste the key output from the ESP32 serial monitor..."
+                  value={provData.publicKey} onChange={e => setProvData({...provData, publicKey: e.target.value})} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-sub mb-1 uppercase">Label (Optional)</label>
+                  <input className="inp inp-md" placeholder="e.g., Ward 3"
+                    value={provData.label} onChange={e => setProvData({...provData, label: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-sub mb-1 uppercase">PU ID (Optional)</label>
+                  <input type="number" className="inp inp-md" placeholder="42"
+                    value={provData.pollingUnitId} onChange={e => setProvData({...provData, pollingUnitId: e.target.value})} />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-4">
+                <button type="button" className="btn btn-surface btn-md" onClick={() => setShowModal(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary btn-md" disabled={provisioning}>
+                  {provisioning ? <Spinner s={16} /> : "Save to Registry"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div> /* <--- CLOSES THE MAIN PAGE CONTAINER (Only ONE of these now!) */
   );
 }
