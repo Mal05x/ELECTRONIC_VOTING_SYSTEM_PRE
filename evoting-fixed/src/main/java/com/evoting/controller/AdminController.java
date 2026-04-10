@@ -894,9 +894,15 @@ public class AdminController {
         String terminalId    = (String) body.get("terminalId");
         String publicKey     = (String) body.get("publicKey");
         String label         = (String) body.getOrDefault("label", terminalId);
-        Object puIdObj       = body.get("pollingUnitId");
-        Integer pollingUnitId = puIdObj != null ? Integer.valueOf(puIdObj.toString()) : null;
+        //Object puIdObj       = body.get("pollingUnitId");
+       // Integer pollingUnitId = puIdObj != null ? Integer.valueOf(puIdObj.toString()) : null;
 
+        Object puIdObj = body.get("pollingUnitId");
+        Integer pollingUnitId = null;
+        if (puIdObj != null && !puIdObj.toString().trim().isEmpty()) {
+            pollingUnitId = Integer.valueOf(puIdObj.toString().trim());
+        }
+        
         if (terminalId == null || terminalId.isBlank())
             return ResponseEntity.badRequest().body(Map.of("error", "terminalId is required"));
         if (publicKey == null || publicKey.isBlank())

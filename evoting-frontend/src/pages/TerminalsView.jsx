@@ -72,7 +72,7 @@ export default function TerminalsView() {
               if (!payload.pollingUnitId) {
                 payload.pollingUnitId = null;
               }
-          
+
       await client.post('/admin/terminals/provision', provData);
       showToast(`Successfully provisioned terminal: ${provData.terminalId}`);
       setShowModal(false);
@@ -101,7 +101,7 @@ export default function TerminalsView() {
     <div className="p-7 flex flex-col gap-5">
 
       {toast.msg && (
-        <div className={`fixed bottom-6 right-6 z-50 bg-card border border-border-hi rounded-2xl
+        <div className={`fixed bottom-6 right-6 z-[999] bg-card border border-border-hi rounded-2xl
                          px-5 py-3.5 text-sm font-semibold shadow-card animate-slide-in flex items-center gap-3
                          ${toast.type === "error" ? "text-danger" : "text-purple-300"}`}>
           <Ic n={toast.type === "error" ? "warning" : "check"} s={15} />
