@@ -13,7 +13,7 @@ import SockJS from "sockjs-client";
 import Stomp from "stompjs";
 import { getAuditLog } from "../api/audit.js";
 
-const NotificationContext = createContext(null);
+const NotificationContext = createContext({ refreshNotifications: () => {} });
 
 const WS_BASE = import.meta.env.VITE_WS_URL || "";
 let _nextId = 1;
@@ -152,8 +152,18 @@ export function NotificationProvider({ children }) {
     setPopups(p => p.filter(n => n.id !== id));
   }, []);
 
-  /* Load recent audit history on mount */
+  /* Load recent audit history — runs on mount AND when refreshTick changes.
+   * refreshTick is bumped by refreshNotifications(), which AuthContext calls
+   * immediately after login so displayName and notifications load at the same time. */
+  const [refreshTick, setRefreshTick] = useState(0);
+  const refreshNotifications = useCallback(() => {
+    setRefreshTick(t => t + 1);
+  }, []);
+
   useEffect(() => {
+    const token = localStorage.getItem("evoting_jwt") ||
+                  sessionStorage.getItem("evoting_jwt");
+    if (!token) return; // not logged in — skip
     getAuditLog({ page: 0, size: 20 }).then(entries => {
       const notifs = entries
         .map(e => auditToNotif({
@@ -168,9 +178,9 @@ export function NotificationProvider({ children }) {
            "ADMIN_USER_CREATED","VOTE_CAST","AUTH_SUCCESS"].includes(n.eventType));
       setNotifications(notifs);
     }).catch(() => {});
-  }, []);
+  }, [refreshTick]); // re-runs after login via refreshNotifications()
 
-  /* WebSocket subscription to /topic/notifications */
+  /* WebSocket: reconnect when refreshTick changes (i.e. after login) */
   useEffect(() => {
     let cancelled = false;
 
@@ -209,7 +219,7 @@ export function NotificationProvider({ children }) {
       cancelled = true;
       try { stompRef.current?.disconnect(); } catch (_) {}
     };
-  }, [push]);
+  }, [push, refreshTick]); // re-runs after login to pick up new JWT
 
   const markRead    = useCallback(id =>
     setNotifications(p => p.map(n => n.id === id ? { ...n, read: true } : n)), []);

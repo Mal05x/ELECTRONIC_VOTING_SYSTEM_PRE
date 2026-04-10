@@ -39,6 +39,8 @@ function store(remember) {
 }
 
 export function AuthProvider({ children }) {
+  // Re-trigger notification load after login
+  const { refreshNotifications } = useNotifications?.() || {};
   const [user,     setUser]     = useState(() => {
     try {
       const ls = localStorage.getItem("evoting_user");
@@ -92,19 +94,29 @@ export function AuthProvider({ children }) {
     setLoading(true); setError("");
     try {
       const data = await apiLogin(username, password);
-      // Backend now returns username + email in login response
-      const u = {
-        username:    data.username || username,
-        role:        data.role,
-        email:       data.email  || "",
-        lastLogin:   data.lastLogin || null,
-        remember,
-      };
-      store(remember).setItem("evoting_jwt",  data.token);
-      store(remember).setItem("evoting_user", JSON.stringify(u));
+      // Store JWT first so getProfile() can use it
+      store(remember).setItem("evoting_jwt", data.token);
       localStorage.setItem("evoting_remember", String(remember));
       if (remember) localStorage.setItem("evoting_saved_user", username);
+
+      // Immediately fetch full profile — login endpoint only returns
+      // username/role/email, not displayName. Without this, displayName
+      // is undefined until the user refreshes the page.
+      let profile = {};
+      try { profile = await getProfile(); } catch (_) {}
+
+      const u = {
+        username:    profile.username    || data.username || username,
+        role:        profile.role        || data.role,
+        email:       profile.email       || data.email || "",
+        displayName: profile.displayName || "",
+        lastLogin:   profile.lastLogin   || null,
+        remember,
+      };
+      store(remember).setItem("evoting_user", JSON.stringify(u));
       setUser(u);
+      // Trigger notification history + WebSocket reconnect now that JWT is stored
+      try { refreshNotifications?.(); } catch (_) {}
       return true;
     } catch (err) {
       // Extract the most useful message from any Spring error shape:

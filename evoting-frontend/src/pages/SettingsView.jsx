@@ -277,43 +277,32 @@ export default function SettingsView() {
   };
 
   /* ── Manual actions ── */
- const publishMerkle = async () => {
-     try {
-       // Fetch active election to pass as electionId param
-       const elections = await getElections().catch(() => []);
-       const active = elections.find(e => e.status === "ACTIVE") || elections[0];
-
-       if (!active) {
-         showToast("No election found to publish Merkle root for", "error");
-         return;
-       }
-
-       // FIX 1: Check the correct boolean flags from useKeypair
-       if (!(hasLocalKey && hasServerKey)) {
-         showToast("No signing key. Register keypair first.", "error");
-         return;
-       }
-
-       const res = await initiateStateChange("PUBLISH_MERKLE_ROOT", active.id);
-
-       if (!res.pending) {
-         showToast("Merkle root published successfully");
-       } else {
-         // FIX 2: Use signChallenge from your hook instead of signPayload
-         const sig = await signChallenge(res.changeId);
-         if (sig) {
-           const signed = await signStateChange(res.changeId, sig);
-           if (signed.executed) {
-             showToast("Merkle root published successfully");
-             return;
-           }
-         }
-         showToast("Merkle publish submitted — awaiting co-signature");
-       }
-     } catch (e) {
-       showToast(e.response?.data?.error || "Merkle publish failed", "error");
-     }
-   };
+  const publishMerkle = async () => {
+    try {
+      const elections = await getElections().catch(() => []);
+      const active = elections.find(e => e.status === "ACTIVE") || elections[0];
+      if (!active) { showToast("No active election found", "error"); return; }
+      if (!(hasLocalKey && hasServerKey)) {
+        showToast("No signing key. Register keypair first.", "error"); return;
+      }
+      const res = await initiateStateChange("PUBLISH_MERKLE_ROOT", active.id);
+      const changeId = res.changeId;
+      if (!res.pending || res.status?.executed) {
+        showToast("Merkle root published successfully");
+        return;
+      }
+      const signingPayload = res.status?.signingPayload || changeId;
+      const sig = await signChallenge(signingPayload);
+      if (sig) {
+        const signed = await signStateChange(changeId, sig);
+        if (signed.executed) { showToast("Merkle root published successfully"); return; }
+      }
+      showToast("Merkle publish initiated — go to Approvals to co-sign", "warning");
+      setTimeout(() => navigate("/approvals"), 900);
+    } catch (e) {
+      showToast(e.response?.data?.error || "Merkle publish failed", "error");
+    }
+  };
 
   // FIX-S2: Audit export is now gated behind multisig approval.
   // Step 1: initiate the EXPORT_AUDIT_LOG pending state change.

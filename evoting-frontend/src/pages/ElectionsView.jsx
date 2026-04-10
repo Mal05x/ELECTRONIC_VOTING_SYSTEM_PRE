@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getElections, createElection, deleteElection, unlockCards } from "../api/elections.js";
+import { getElections, createElection, deleteElection, unlockCards, uploadCandidatePhoto } from "../api/elections.js";
 import { initiateStateChange, signStateChange } from "../api/multisig.js";
 import { useStepUpAction } from "../components/StepUpModal.jsx";
 import { useKeypair } from "../context/KeypairContext.jsx";
@@ -16,6 +16,24 @@ export default function ElectionsView() {
   const [form,      setForm]      = useState({ name:"", type:"PRESIDENTIAL", startTime:"", endTime:"", description:"" });
   const [saving,    setSaving]    = useState(false);
   const [submitting, setSubmitting] = useState(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(null);
+
+  const handlePhotoUpload = async (candidateId, file) => {
+    if (!file) return;
+    setUploadingPhoto(candidateId);
+    try {
+      await uploadCandidatePhoto(candidateId, file);
+      showToast("Photo uploaded successfully");
+      // Reload candidates to show updated imageUrl
+      if (selectedElection) {
+        const { getCandidates } = await import("../api/elections.js");
+        const updated = await getCandidates(selectedElection.id);
+        setCandidates(updated);
+      }
+    } catch (e) {
+      showToast(e.response?.data?.error || "Photo upload failed", "error");
+    } finally { setUploadingPhoto(null); }
+  };
   const [toast,     setToast]     = useState({ msg: "", type: "success" });
 
   const showToast = (msg, type = "success") => {

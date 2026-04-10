@@ -7,6 +7,7 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { getPendingRegistrations, commitRegistration, cancelPendingRegistration } from "../api/registration.js";
+import { useStepUpAction } from "../components/StepUpModal.jsx";
 import { SectionHeader, Spinner, Ic } from "../components/ui.jsx";
 
 function ToastBar({ msg, type, onClose }) {
@@ -39,6 +40,7 @@ export default function RegistrationView() {
   const [cancelling, setCancelling] = useState(null);
   const [toast,      setToast]      = useState({ msg: "", type: "success" });
   const [result,     setResult]     = useState(null);
+  const [awaitingAuth, setAwaitingAuth] = useState(false);
 
   // Form fields
   const [firstName, setFirstName] = useState("");
@@ -59,7 +61,12 @@ export default function RegistrationView() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    // Auto-poll every 15 seconds so new cards from the terminal appear without manual refresh
+    const iv = setInterval(() => load(), 15_000);
+    return () => clearInterval(iv);
+  }, [load]);
 
   const resetForm = () => {
     setFirstName(""); setSurname(""); setDob(""); setGender("MALE");
@@ -71,30 +78,41 @@ export default function RegistrationView() {
     resetForm();
   };
 
-  const handleCommit = async () => {
+  // Step-up auth wrapper for commit registration
+  const { trigger: triggerCommit, modal: commitModal } = useStepUpAction(
+    "COMMIT_REGISTRATION",
+    () => `Register voter: card ${selected?.cardIdHash?.slice(0, 12) || ""}`,
+    async (authHeaders) => {
+      if (!selected) return;
+      if (!firstName.trim() || !surname.trim() || !dob || !gender) {
+        showToast("All fields are required", "error"); return;
+      }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
+        showToast("Date of birth must be YYYY-MM-DD", "error"); return;
+      }
+      setSaving(true);
+      try {
+        const res = await commitRegistration(selected.pendingId, {
+          firstName: firstName.trim(),
+          surname:   surname.trim(),
+          dateOfBirth: dob,
+          gender,
+        }, authHeaders);
+        setResult(res);
+        showToast(`Voter registered — ${res.votingId}`);
+        load();
+      } catch (e) {
+        showToast(e.response?.data?.error || e.message || "Registration failed", "error");
+      } finally { setSaving(false); }
+    }
+  );
+
+  const handleCommit = () => {
     if (!selected) return;
     if (!firstName.trim() || !surname.trim() || !dob || !gender) {
       showToast("All fields are required", "error"); return;
     }
-    // Basic date validation
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
-      showToast("Date of birth must be YYYY-MM-DD", "error"); return;
-    }
-
-    setSaving(true);
-    try {
-      const res = await commitRegistration(selected.pendingId, {
-        firstName: firstName.trim(),
-        surname:   surname.trim(),
-        dateOfBirth: dob,
-        gender,
-      });
-      setResult(res);
-      showToast(`Voter registered — ${res.votingId}`);
-      load();
-    } catch (e) {
-      showToast(e.response?.data?.error || e.message || "Registration failed", "error");
-    } finally { setSaving(false); }
+    triggerCommit();
   };
 
   const handleCancel = async (p) => {
@@ -314,6 +332,7 @@ export default function RegistrationView() {
                   ? <><Spinner s={16} /> Registering...</>
                   : <><Ic n="check" s={15} c="#fff" /> Register Voter</>}
               </button>
+              {commitModal}
             </div>
           )}
         </div>

@@ -15,15 +15,15 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
       <ThemeProvider>
-        <AuthProvider>
-          <NotificationProvider>
+        <NotificationProvider>
+          <AuthProvider>
             <MessageProvider>
               <KeypairProvider>
                   <App />
               </KeypairProvider>
             </MessageProvider>
-          </NotificationProvider>
-        </AuthProvider>
+          </AuthProvider>
+        </NotificationProvider>
       </ThemeProvider>
     </BrowserRouter>
   </React.StrictMode>

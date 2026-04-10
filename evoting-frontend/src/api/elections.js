@@ -84,3 +84,17 @@ export const unlockCards = async (id) => {
   const res = await client.post(`/admin/elections/${id}/unlock-cards`);
   return res.data;
 };
+
+/**
+ * POST /api/images/candidate/{candidateId}
+ * Uploads a candidate photo to S3. Returns { imageUrl }.
+ * Requires ADMIN or SUPER_ADMIN.
+ */
+export async function uploadCandidatePhoto(candidateId, file) {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await client.post(`/images/candidate/${candidateId}`, form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data; // { imageUrl }
+}
