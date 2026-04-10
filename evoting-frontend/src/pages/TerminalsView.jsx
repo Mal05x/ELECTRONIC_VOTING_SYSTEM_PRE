@@ -195,47 +195,48 @@ const handleProvision = async (e) => {
               </div>
             </div>
           ))
-      {/* PROVISIONING MODAL */}
-            {showModal && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
-                <div className="bg-card w-full max-w-md rounded-2xl border border-border shadow-2xl overflow-hidden">
-                  <div className="p-5 border-b border-border flex justify-between items-center bg-elevated">
-                    <h3 className="font-bold text-ink">Provision New Terminal</h3>
-                    <button onClick={() => setShowModal(false)} className="text-muted hover:text-sub"><Ic n="close" s={16} /></button>
-                  </div>
-                  <form onSubmit={handleProvision} className="p-5 flex flex-col gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-sub mb-1 uppercase">Terminal ID</label>
-                      <input required className="inp inp-md" placeholder="e.g., TERM-KD-001"
-                        value={provData.terminalId} onChange={e => setProvData({...provData, terminalId: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-sub mb-1 uppercase">ECDSA Public Key (Base64)</label>
-                      <textarea required className="inp inp-md h-24 font-mono text-xs resize-none" placeholder="Paste the key output from the ESP32 serial monitor..."
-                        value={provData.publicKey} onChange={e => setProvData({...provData, publicKey: e.target.value})} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-semibold text-sub mb-1 uppercase">Label (Optional)</label>
-                        <input className="inp inp-md" placeholder="e.g., Ward 3"
-                          value={provData.label} onChange={e => setProvData({...provData, label: e.target.value})} />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-sub mb-1 uppercase">PU ID (Optional)</label>
-                        <input type="number" className="inp inp-md" placeholder="42"
-                          value={provData.pollingUnitId} onChange={e => setProvData({...provData, pollingUnitId: e.target.value})} />
-                      </div>
-                    </div>
-                    <div className="flex justify-end gap-3 mt-4">
-                      <button type="button" className="btn btn-surface btn-md" onClick={() => setShowModal(false)}>Cancel</button>
-                      <button type="submit" className="btn btn-primary btn-md" disabled={provisioning}>
-                        {provisioning ? <Spinner s={16} /> : "Save to Registry"}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
         )}
+     {/* PROVISIONING MODAL */}
+                {showModal && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-card w-full max-w-md rounded-2xl border border-border shadow-2xl overflow-hidden">
+                      <div className="p-5 border-b border-border flex justify-between items-center bg-elevated">
+                        <h3 className="font-bold text-ink">Provision New Terminal</h3>
+                        <button onClick={() => setShowModal(false)} className="text-muted hover:text-sub"><Ic n="close" s={16} /></button>
+                      </div>
+                      <form onSubmit={handleProvision} className="p-5 flex flex-col gap-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-sub mb-1 uppercase">Terminal ID</label>
+                          <input required className="inp inp-md" placeholder="e.g., TERM-KD-001"
+                            value={provData.terminalId} onChange={e => setProvData({...provData, terminalId: e.target.value})} />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-sub mb-1 uppercase">ECDSA Public Key (Base64)</label>
+                          <textarea required className="inp inp-md h-24 font-mono text-xs resize-none" placeholder="Paste the key output from the ESP32 serial monitor..."
+                            value={provData.publicKey} onChange={e => setProvData({...provData, publicKey: e.target.value})} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-semibold text-sub mb-1 uppercase">Label (Optional)</label>
+                            <input className="inp inp-md" placeholder="e.g., Ward 3"
+                              value={provData.label} onChange={e => setProvData({...provData, label: e.target.value})} />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-sub mb-1 uppercase">PU ID (Optional)</label>
+                            <input type="number" className="inp inp-md" placeholder="42"
+                              value={provData.pollingUnitId} onChange={e => setProvData({...provData, pollingUnitId: e.target.value})} />
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-3 mt-4">
+                          <button type="button" className="btn btn-surface btn-md" onClick={() => setShowModal(false)}>Cancel</button>
+                          <button type="submit" className="btn btn-primary btn-md" disabled={provisioning}>
+                            {provisioning ? <Spinner s={16} /> : "Save to Registry"}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
       </div>
     </div>
   );
