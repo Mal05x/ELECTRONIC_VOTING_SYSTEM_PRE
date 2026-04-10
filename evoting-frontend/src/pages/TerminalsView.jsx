@@ -65,6 +65,14 @@ export default function TerminalsView() {
     e.preventDefault();
     setProvisioning(true);
     try {
+        // Create a copy of the data
+              const payload = { ...provData };
+
+              // FIX: If PU ID is empty, set it to null so Java doesn't crash
+              if (!payload.pollingUnitId) {
+                payload.pollingUnitId = null;
+              }
+          
       await client.post('/admin/terminals/provision', provData);
       showToast(`Successfully provisioned terminal: ${provData.terminalId}`);
       setShowModal(false);
