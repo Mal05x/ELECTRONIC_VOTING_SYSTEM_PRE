@@ -6,9 +6,11 @@ import com.evoting.repository.PartyRepository;
 import com.evoting.service.AuditLogService;
 import com.evoting.service.S3Service;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.Map;
@@ -25,6 +27,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/admin/images")
+@Slf4j
 public class ImageController {
 
     @Autowired private CandidateRepository candidateRepo;
@@ -46,24 +49,37 @@ public class ImageController {
 
         validateImage(image);
         Candidate candidate = candidateRepo.findById(candidateId)
-            .orElseThrow(() -> new IllegalArgumentException("Candidate not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Candidate not found"));
 
-        // Delete old photo from S3 if it exists
-        if (candidate.getImageS3Key() != null) s3.delete(candidate.getImageS3Key());
+        try {
+            // Delete old photo from S3 if it exists
+            if (candidate.getImageS3Key() != null) s3.delete(candidate.getImageS3Key());
 
-        String key = s3.upload("candidates", image);
-        String url = s3.generatePresignedUrl(key);
-        candidate.setImageS3Key(key);
-        candidate.setImageUrl(url);
-        candidateRepo.save(candidate);
+            String key = s3.upload("candidates", image);
+            String url = s3.generatePresignedUrl(key);
+            candidate.setImageS3Key(key);
+            candidate.setImageUrl(url);
+            candidateRepo.save(candidate);
 
-        auditLog.log("CANDIDATE_PHOTO_UPLOADED", auth.getName(),
-            "Candidate: " + candidate.getFullName() + " | Key: " + key);
+            auditLog.log("CANDIDATE_PHOTO_UPLOADED", auth.getName(),
+                    "Candidate: " + candidate.getFullName() + " | Key: " + key);
 
-        return ResponseEntity.ok(Map.of(
-            "candidateId", candidateId.toString(),
-            "imageUrl",    url,
-            "s3Key",       key));
+            return ResponseEntity.ok(Map.of(
+                    "candidateId", candidateId.toString(),
+                    "imageUrl",    url,
+                    "s3Key",       key));
+
+        } catch (IllegalStateException e) {
+            // S3 not configured — return 503 with actionable message instead of 500
+            log.warn("Photo upload rejected — S3 not configured: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(Map.of(
+                            "error",  e.getMessage(),
+                            "hint",   "Set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and " +
+                                    "AWS_S3_BUCKET_NAME as environment variables on Render, " +
+                                    "then redeploy. See application.yml aws.* properties."
+                    ));
+        }
     }
 
     /**
@@ -79,7 +95,7 @@ public class ImageController {
 
         validateImage(image);
         Party party = partyRepo.findById(partyId)
-            .orElseThrow(() -> new IllegalArgumentException("Party not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Party not found"));
 
         if (party.getLogoS3Key() != null) s3.delete(party.getLogoS3Key());
 
@@ -90,12 +106,12 @@ public class ImageController {
         partyRepo.save(party);
 
         auditLog.log("PARTY_LOGO_UPLOADED", auth.getName(),
-            "Party: " + party.getAbbreviation() + " | Key: " + key);
+                "Party: " + party.getAbbreviation() + " | Key: " + key);
 
         return ResponseEntity.ok(Map.of(
-            "partyId",  partyId.toString(),
-            "logoUrl",  url,
-            "s3Key",    key));
+                "partyId",  partyId.toString(),
+                "logoUrl",  url,
+                "s3Key",    key));
     }
 
     /**
@@ -106,7 +122,7 @@ public class ImageController {
     public ResponseEntity<Map<String, String>> deleteCandidatePhoto(
             @PathVariable UUID candidateId, Authentication auth) {
         Candidate candidate = candidateRepo.findById(candidateId)
-            .orElseThrow(() -> new IllegalArgumentException("Candidate not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Candidate not found"));
         if (candidate.getImageS3Key() != null) {
             s3.delete(candidate.getImageS3Key());
             candidate.setImageS3Key(null);
@@ -123,7 +139,7 @@ public class ImageController {
     public ResponseEntity<Map<String, String>> refreshCandidateUrl(
             @PathVariable UUID candidateId, Authentication auth) {
         Candidate c = candidateRepo.findById(candidateId)
-            .orElseThrow(() -> new IllegalArgumentException("Candidate not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Candidate not found"));
         if (c.getImageS3Key() == null)
             return ResponseEntity.ok(Map.of("message", "No image on record"));
         String url = s3.generatePresignedUrl(c.getImageS3Key());

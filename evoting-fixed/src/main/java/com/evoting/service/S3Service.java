@@ -81,6 +81,11 @@ public class S3Service {
 
     /** Upload a MultipartFile to S3. Returns the S3 object key. */
     public String upload(String folder, MultipartFile file) throws IOException {
+        if (!s3Enabled || s3Client == null) {
+            throw new IllegalStateException(
+                    "S3 is not configured. Set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, " +
+                            "and aws.s3.bucket in application.yml (or env vars) to enable photo uploads.");
+        }
         String ext = getExtension(file.getOriginalFilename());
         String key = folder + "/" + UUID.randomUUID() + "." + ext;
 
@@ -97,6 +102,11 @@ public class S3Service {
 
     /** Generate a presigned GET URL valid for expiryHours. */
     public String generatePresignedUrl(String s3Key) {
+        if (!s3Enabled || s3Presigner == null) {
+            throw new IllegalStateException(
+                    "S3 is not configured — cannot generate presigned URL. " +
+                            "Set AWS credentials to enable photo uploads.");
+        }
         return s3Presigner.presignGetObject(
                         GetObjectPresignRequest.builder()
                                 .signatureDuration(Duration.ofHours(expiryHours))
