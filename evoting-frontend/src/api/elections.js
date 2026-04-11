@@ -92,9 +92,16 @@ export const unlockCards = async (id) => {
  */
 export async function uploadCandidatePhoto(candidateId, file) {
   const form = new FormData();
-  form.append("file", file);
-  const res = await client.post(`/images/candidate/${candidateId}`, form, {
+  // Backend ImageController expects field name "image" (not "file")
+  form.append("image", file);
+  // Correct path: /admin/images/candidate/{id}
+  const res = await client.post(`/admin/images/candidate/${candidateId}`, form, {
     headers: { "Content-Type": "multipart/form-data" },
   });
-  return res.data; // { imageUrl }
+  return res.data; // { candidateId, imageUrl, s3Key }
+}
+
+export async function deleteCandidatePhoto(candidateId) {
+  const res = await client.delete(`/admin/images/candidate/${candidateId}`);
+  return res.data;
 }
