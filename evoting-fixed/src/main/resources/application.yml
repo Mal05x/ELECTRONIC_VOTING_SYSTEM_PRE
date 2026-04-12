@@ -101,14 +101,26 @@ security:
     allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:3000,http://localhost:5173,https://localhost:3000,https://localhost:5173,http://localhost:4173,https://localhost:4173,https://192.168.0.159:3000}
 
 aws:
-  # Optional — only required for S3 candidate photo uploads.
-  # If not set, image upload endpoints return 503; all other features work normally.
+  # ── S3-compatible photo storage (AWS S3, Supabase, MinIO, R2, DigitalOcean Spaces) ──
+  # Only required for candidate photo uploads.
+  # If credentials are not set, upload endpoints return 503; all other features work.
   access-key-id: ${AWS_ACCESS_KEY_ID}
   secret-access-key: ${AWS_SECRET_ACCESS_KEY}
   s3:
-    bucket: ${AWS_S3_BUCKET}
+    bucket: ${AWS_S3_BUCKET:evoting-media}
+    # For Supabase: region is usually "ap-southeast-1" or check your project settings
     region: ${AWS_REGION:eu-west-2}
-    presigned-url-expiry-hours: 168   # 7 days
+    presigned-url-expiry-hours: 168   # 7 days — S3 presigned URL lifetime
+
+    # S3-compatible endpoint override.
+    # Required for Supabase, MinIO, Cloudflare R2, DigitalOcean Spaces.
+    # Leave blank for real AWS S3.
+    #
+    # Supabase format: https://<PROJECT_REF>.supabase.co/storage/v1/s3
+    # Example:         https://abcdefghijklmnop.supabase.co/storage/v1/s3
+    #
+    # Set env var: AWS_S3_ENDPOINT=https://<PROJECT_REF>.supabase.co/storage/v1/s3
+    endpoint: ${AWS_S3_ENDPOINT:}
 
 management:
   endpoints:

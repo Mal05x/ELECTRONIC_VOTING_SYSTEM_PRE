@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import java.io.IOException;
+import java.net.URI;
 import java.time.Duration;
 import java.util.UUID;
 
@@ -38,7 +39,20 @@ public class S3Service {
     @Value("${aws.s3.region}")                       private String region;
     @Value("${aws.access-key-id}")                   private String accessKeyId;
     @Value("${aws.secret-access-key}")               private String secretKey;
-    @Value("${aws.s3.presigned-url-expiry-hours:168}") private int  expiryHours;
+    @Value("${aws.s3.presigned-url-expiry-hours:168}") private int    expiryHours;
+
+    /**
+     * Optional S3-compatible endpoint override.
+     * Required for Supabase Storage, MinIO, Cloudflare R2, DigitalOcean Spaces, etc.
+     * Leave blank/unset for real AWS S3.
+     *
+     * Supabase endpoint format:
+     *   https://<project-ref>.supabase.co/storage/v1/s3
+     *
+     * Set env var:  AWS_S3_ENDPOINT=https://<project-ref>.supabase.co/storage/v1/s3
+     */
+    @Value("${aws.s3.endpoint:}")
+    private String endpointOverride;
 
     // Fix B-11: singleton clients — created once, reused for all S3 operations
     private S3Client    s3Client;
@@ -59,11 +73,27 @@ public class S3Service {
                     AwsBasicCredentials.create(accessKeyId, secretKey));
             Region r = Region.of(region);
 
-            this.s3Client = S3Client.builder()
-                    .region(r).credentialsProvider(cp).build();
+            // Build S3 client — supports both real AWS and S3-compatible providers
+            // (Supabase, MinIO, R2, DigitalOcean Spaces).
+            // forcePathStyle=true is required for all non-AWS providers.
+            var s3Builder = S3Client.builder()
+                    .region(r)
+                    .credentialsProvider(cp)
+                    .forcePathStyle(true);  // required for Supabase, MinIO, R2
 
-            this.s3Presigner = S3Presigner.builder()
-                    .region(r).credentialsProvider(cp).build();
+            var presignBuilder = S3Presigner.builder()
+                    .region(r)
+                    .credentialsProvider(cp);
+
+            if (endpointOverride != null && !endpointOverride.isBlank()) {
+                URI endpoint = URI.create(endpointOverride.trim());
+                s3Builder      = s3Builder.endpointOverride(endpoint);
+                presignBuilder = presignBuilder.endpointOverride(endpoint);
+                log.info("S3Service using custom endpoint: {}", endpointOverride);
+            }
+
+            this.s3Client    = s3Builder.build();
+            this.s3Presigner = presignBuilder.build();
 
             this.s3Enabled = true;
             log.info("S3Service initialised — region={} bucket={}", region, bucket);
