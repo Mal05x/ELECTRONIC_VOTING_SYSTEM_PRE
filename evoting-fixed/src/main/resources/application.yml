@@ -103,11 +103,11 @@ security:
 aws:
   # Optional — only required for S3 candidate photo uploads.
   # If not set, image upload endpoints return 503; all other features work normally.
-  access-key-id: ${AWS_ACCESS_KEY_ID:NOT_SET}
-  secret-access-key: ${AWS_SECRET_ACCESS_KEY:NOT_SET}
+  access-key-id: ${AWS_ACCESS_KEY_ID}
+  secret-access-key: ${AWS_SECRET_ACCESS_KEY}
   s3:
-    bucket: ${AWS_S3_BUCKET:evoting-media}
-    region: ${AWS_REGION:eu-west-1}
+    bucket: ${AWS_S3_BUCKET}
+    region: ${AWS_REGION:eu-west-2}
     presigned-url-expiry-hours: 168   # 7 days
 
 management:
