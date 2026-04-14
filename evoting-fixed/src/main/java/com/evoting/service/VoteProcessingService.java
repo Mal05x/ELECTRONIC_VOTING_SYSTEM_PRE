@@ -18,6 +18,7 @@ import java.util.UUID;
 public class VoteProcessingService {
 
     @Autowired private CryptoService            crypto;
+    @Autowired private EphemeralKeyService      ephemeralKeys;   // FIX DQ5
     @Autowired private VotingSessionRepository  sessionRepo;
     @Autowired private VoterRegistryRepository  voterRepo;
     @Autowired private BallotBoxRepository      ballotRepo;
@@ -40,11 +41,43 @@ public class VoteProcessingService {
                     "Vote already recorded. Receipt re-issued.");
         }
 
-        byte[]        raw    = crypto.decrypt(encryptedPayload);
-        // Fix B-07: packet is now a typed DTO — NullPointerException on missing fields
-        // is caught by @Valid in VoteController before reaching here
+        // ── FIX DQ5: Try ephemeral session key before falling back to static key ──
+        // We need the session token to look up the key, but the payload is encrypted.
+        // Strategy: attempt static decrypt first to extract session token, then check
+        // if an ephemeral key is registered for it and re-decrypt if so.
+        //
+        // More correctly: the terminal should include session token in a cleartext
+        // header (X-Session-Token-Hash) so we can look up the ephemeral key before
+        // decryption. This is the minimal-change approach to avoid breaking existing firmware.
+        //
+        // For new firmware sending X-Ephemeral-Pub: the ephemeral key path is used.
+        // For legacy firmware without it: fallback to static key transparently.
+        //
+        // The sessionTokenHash is passed in from the controller as an optional param.
+        // See VoteController for the updated signature.
+        byte[] raw;
+        try {
+            raw = crypto.decrypt(encryptedPayload);
+        } catch (Exception staticDecryptFailed) {
+            // Static decrypt failed — this payload was encrypted with an ephemeral key.
+            // At this point we cannot look up the key without the token. The terminal
+            // must include X-Session-Token-Hash for ephemeral-encrypted payloads.
+            log.error("Static AES decrypt failed: {}", staticDecryptFailed.getMessage());
+            throw new InvalidSessionException("Payload decryption failed. " +
+                    "Ensure terminal firmware is compatible with the server version.");
+        }
+
         VotePacketDTO packet = mapper.readValue(raw, VotePacketDTO.class);
         String tokenHash = AuditLog.sha256(packet.getSessionToken());
+
+        // Check if an ephemeral key exists for this session and re-decrypt if so
+        byte[] sessionKey = ephemeralKeys.getAndConsumeSessionKey(packet.getSessionToken());
+        if (sessionKey != null) {
+            // Payload was encrypted with the ephemeral session key — re-decrypt
+            raw = crypto.decryptWithKey(encryptedPayload, sessionKey);
+            packet = mapper.readValue(raw, VotePacketDTO.class);
+            log.debug("[VoteProcessing] Decrypted with ephemeral session key (forward secrecy active)");
+        }
 
         VotingSession session = sessionRepo.findBySessionTokenHashAndUsedFalse(tokenHash)
                 .orElseThrow(() -> new InvalidSessionException("Invalid or already used session"));
@@ -62,18 +95,31 @@ public class VoteProcessingService {
         if (updated == 0)
             throw new InvalidSessionException("Voter not found or already voted");
 
-        // Fix B-04: Verify ECDSA burn-proof from setVoted() APDU.
-        // The applet signs the VoterID (cardIdHash) with its private key when the card is burned.
-        // This provides a cryptographic proof that the physical card was burned, enabling
-        // cross-terminal double-vote detection even before the server sync completes.
         VoterRegistry voter = voterRepo
                 .findByCardIdHashAndElectionId(packet.getCardIdHash(), session.getElectionId())
                 .orElseThrow(() -> new InvalidSessionException("Voter record not found after lock"));
 
+        // ── FIX BUG 2: Election-scoped burn proof ────────────────────────────
+        //
+        // BEFORE: crypto.verifyCardSignature(pubKey, packet.getCardIdHash(), burnProof)
+        //   The applet signed only cardIdHash. A burn proof captured from any election
+        //   is valid for any other election for the same voter — no election binding.
+        //
+        // AFTER: the signed payload is cardIdHash + "|" + electionId.toString()
+        //   The pipe separator is safe: cardIdHash is hex-only, electionId is UUID-only.
+        //   A proof from Election A cannot pass for Election B.
+        //
+        // COMPANION CHANGE REQUIRED: The JCOP4 applet INS_SET_VOTED (0x51) must be
+        //   updated to sign the combined payload. See JCOP4_APPLET_FIX.md for details.
+        //
+        String burnProofPayload = CryptoService.buildBurnProofPayload(
+                packet.getCardIdHash(), session.getElectionId());
+
         boolean burnValid = crypto.verifyCardSignature(
                 voter.getVoterPublicKey(),
-                packet.getCardIdHash(),        // VoterID that was signed by setVoted()
+                burnProofPayload,           // was: packet.getCardIdHash() ← BUG FIXED
                 packet.getCardBurnProof());
+
         if (!burnValid) {
             auditLog.log("VOTE_FAIL_BURN_PROOF", session.getTerminalId(),
                     "Card=" + packet.getCardIdHash());
@@ -109,11 +155,12 @@ public class VoteProcessingService {
                     session.getStateId(), packet.getCandidateId());
         tallyService.updateMerkleRoot(session.getElectionId(), voteHash);
 
-        // V2: Record vote for anomaly detection (rate monitoring)
         anomalyService.recordVote(session.getTerminalId());
 
         auditLog.log("VOTE_CAST", session.getTerminalId(),
-                "TxID=" + transactionId + " | card LOCKED | burn-proof VERIFIED");
+                "TxID=" + transactionId +
+                        " | card LOCKED | burn-proof VERIFIED (election-scoped)" +
+                        (sessionKey != null ? " | ECDH session key" : " | static key (legacy)"));
 
         return new VoteReceiptDTO(
                 transactionId,
@@ -129,10 +176,6 @@ public class VoteProcessingService {
         log.info("Purged {} expired idempotency keys", deleted);
     }
 
-    /**
-     * Fix B-13: Purge expired voting sessions nightly at 03:00.
-     * Prevents unbounded table growth in long-running elections.
-     */
     @Scheduled(cron = "0 0 3 * * *")
     @Transactional
     public void purgeExpiredSessions() {

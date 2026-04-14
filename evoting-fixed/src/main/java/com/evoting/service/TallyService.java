@@ -7,6 +7,8 @@ import com.evoting.model.Election;
 import com.evoting.repository.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,108 @@ public class TallyService {
     @Autowired private VoterRegistryRepository voterRepo;
     @Autowired private MerkleTreeService       merkleService;
     @Autowired private SimpMessagingTemplate   ws;
+
+    // ── FIX DQ3: Rebuild Redis tally from DB on startup ───────────────────────
+    //
+    // PROBLEM:
+    //   The national tally lives in Redis. If Redis is restarted mid-election,
+    //   all tally keys for in-progress elections are lost. getTally() falls back
+    //   to dbTally() when Redis is empty — this is correct — but the NEXT vote
+    //   after restart calls incrementTally(), which starts Redis at 1 instead of
+    //   (DB count + 1). The tally then diverges from the true count until Redis
+    //   is re-populated.
+    //
+    // FIX:
+    //   On ApplicationReadyEvent (after all beans are initialized), scan for all
+    //   ACTIVE elections. For each, check if Redis has ANY tally keys. If Redis
+    //   is empty for an active election (indicating a Redis restart during voting),
+    //   seed it from the DB before the first increment arrives.
+    //
+    //   This is safe because:
+    //   - ApplicationReadyEvent fires after Flyway migrations complete.
+    //   - The rebuild is idempotent — if Redis already has keys, nothing changes.
+    //   - DB is the source of truth; Redis is always a cache of it.
+    //   - The Merkle root is also recomputed from DB to ensure consistency.
+    //
+    @EventListener(ApplicationReadyEvent.class)
+    public void rebuildRedisTallyOnStartup() {
+        log.info("[TallyService] Checking Redis tally consistency for active elections...");
+        List<Election> activeElections;
+        try {
+            activeElections = electionRepo.findAll().stream()
+                    .filter(e -> "ACTIVE".equals(
+                            e.getStatus() != null ? e.getStatus().name() : ""))
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.warn("[TallyService] Could not query elections on startup (DB not ready?): {}",
+                    e.getMessage());
+            return;
+        }
+
+        if (activeElections.isEmpty()) {
+            log.info("[TallyService] No active elections — Redis check skipped.");
+            return;
+        }
+
+        for (Election election : activeElections) {
+            UUID electionId = election.getId();
+            try {
+                Map<String, Long> redisState = scan(
+                        TALLY_PFX + electionId + ":*",
+                        TALLY_PFX + electionId + ":");
+
+                if (redisState.isEmpty()) {
+                    log.warn("[TallyService] Redis tally EMPTY for active election {} ({}). " +
+                                    "Seeding from DB — likely cause: Redis restart during voting.",
+                            electionId, election.getName());
+                    seedTallyFromDb(electionId);
+                } else {
+                    log.info("[TallyService] Redis tally OK for election {} ({} candidate entries).",
+                            electionId, redisState.size());
+                }
+            } catch (Exception e) {
+                log.error("[TallyService] Failed to check/rebuild tally for election {}: {}",
+                        electionId, e.getMessage());
+                // Do not crash startup — log and continue; dbTally() fallback remains active
+            }
+        }
+    }
+
+    /**
+     * Seeds Redis tally counters from the DB for a specific election.
+     * Called when Redis is found empty for an active election after a restart.
+     * Also rebuilds the Merkle root in Redis.
+     */
+    public void seedTallyFromDb(UUID electionId) {
+        // National tally
+        Map<String, Long> dbCounts = dbTally(electionId);
+        dbCounts.forEach((candidateId, count) -> {
+            String key = TALLY_PFX + electionId + ":" + candidateId;
+            redis.opsForValue().set(key, count.toString());
+        });
+        log.info("[TallyService] Seeded {} candidate tally entries for election {}",
+                dbCounts.size(), electionId);
+
+        // State tallies — rebuild for each state that has votes
+        ballotRepo.countVotesByState(electionId).forEach(row -> {
+            Integer stateId = (Integer) row[0];
+            ballotRepo.countVotesByCandidateAndState(electionId, stateId).forEach(r -> {
+                String key = STATE_PFX + electionId + ":" + stateId + ":" + r[0];
+                redis.opsForValue().set(key, r[1].toString());
+            });
+        });
+        log.info("[TallyService] Seeded state tally entries for election {}", electionId);
+
+        // Merkle root
+        List<String> allHashes = ballotRepo.findByElectionId(electionId)
+                .stream().map(BallotBox::getVoteHash).collect(Collectors.toList());
+        if (!allHashes.isEmpty()) {
+            String root = merkleService.computeMerkleRoot(allHashes);
+            redis.opsForValue().set(MERKLE_PFX + electionId, root);
+            log.info("[TallyService] Rebuilt Merkle root for election {} from {} votes: {}",
+                    electionId, allHashes.size(), root.substring(0, 16) + "...");
+        }
+    }
 
     // ── National tally ────────────────────────────────────────────────────────
 
@@ -80,20 +184,8 @@ public class TallyService {
         }).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
-
     // ── Dynamic regional breakdown ────────────────────────────────────────────
 
-    /**
-     * Returns a regional breakdown whose granularity adapts to the election type:
-     *
-     *   PRESIDENTIAL              → one row per STATE (37 rows max)
-     *   GUBERNATORIAL / SENATORIAL
-     *     / STATE_ASSEMBLY        → one row per LGA (up to 774 rows)
-     *   LOCAL_GOVERNMENT          → one row per POLLING_UNIT
-     *
-     * Called by GET /api/results/{id}/by-region.
-     * The frontend uses the regionType field to label the chart header and legend.
-     */
     public List<RegionalBreakdownDTO> getRegionalBreakdown(UUID electionId) {
         Election election = electionRepo.findById(electionId)
                 .orElseThrow(() -> new IllegalArgumentException("Election not found: " + electionId));
@@ -105,13 +197,10 @@ public class TallyService {
             case "SENATORIAL":
             case "STATE_ASSEMBLY":
                 return getLgaBreakdown(electionId);
-
             case "LOCAL_GOVERNMENT":
                 return getPollingUnitBreakdown(electionId);
-
             case "PRESIDENTIAL":
             default:
-                // Reuse existing state breakdown, map to RegionalBreakdownDTO
                 return getStateBreakdown(electionId).stream().map(s ->
                         new RegionalBreakdownDTO(
                                 s.getStateId(), s.getStateName(), s.getStateCode(),
@@ -127,7 +216,6 @@ public class TallyService {
             Integer lgaId = row[0] instanceof Number ? ((Number) row[0]).intValue() : null;
             if (lgaId == null) return null;
             long total = ((Number) row[1]).longValue();
-
             return lgaRepo.findById(lgaId).map(lga -> {
                 Map<String, Long> tally = ballotRepo
                         .countVotesByCandidateForLga(electionId, lgaId).stream()
@@ -135,14 +223,9 @@ public class TallyService {
                                 r -> r[0].toString(),
                                 r -> ((Number) r[1]).longValue(),
                                 (a, b) -> a, LinkedHashMap::new));
-
                 String code = lga.getState() != null ? lga.getState().getCode() + "/" + lgaId : "";
-                return new RegionalBreakdownDTO(
-                        lgaId, lga.getName(), code,
-                        "LGA", total,
-                        0L,   // registered voters at LGA granularity not cached — omit
-                        0.0,
-                        tally);
+                return new RegionalBreakdownDTO(lgaId, lga.getName(), code,
+                        "LGA", total, 0L, 0.0, tally);
             }).orElse(null);
         }).filter(Objects::nonNull).collect(Collectors.toList());
     }
@@ -152,7 +235,6 @@ public class TallyService {
             Long puId = row[0] instanceof Number ? ((Number) row[0]).longValue() : null;
             if (puId == null) return null;
             long total = ((Number) row[1]).longValue();
-
             return pollingUnitRepo.findById(puId).map(pu -> {
                 Map<String, Long> tally = ballotRepo
                         .countVotesByCandidateForPollingUnit(electionId, puId).stream()
@@ -160,34 +242,15 @@ public class TallyService {
                                 r -> r[0].toString(),
                                 r -> ((Number) r[1]).longValue(),
                                 (a, b) -> a, LinkedHashMap::new));
-
-                return new RegionalBreakdownDTO(
-                        puId, pu.getName(), pu.getCode() != null ? pu.getCode() : "",
-                        "POLLING_UNIT", total,
-                        0L, 0.0,
-                        tally);
+                return new RegionalBreakdownDTO(puId, pu.getName(),
+                        pu.getCode() != null ? pu.getCode() : "",
+                        "POLLING_UNIT", total, 0L, 0.0, tally);
             }).orElse(null);
         }).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
     // ── Merkle root ───────────────────────────────────────────────────────────
 
-    /**
-     * Fix B-14: updateMerkleRoot() now delegates to MerkleTreeService.computeMerkleRoot().
-     *
-     * BUG: The previous implementation computed SHA256(prevRoot || newVoteHash) — a simple
-     * hash chain, not a binary Merkle tree. getMerkleRoot() fell back to MerkleTreeService
-     * when Redis was empty. The two methods produced DIFFERENT roots for the same vote set,
-     * breaking public auditability: a verifier rebuilding the tree from ballot_box hashes
-     * got a different root than what was published on /api/results.
-     *
-     * FIX: Both updateMerkleRoot() and getMerkleRoot() now use the same
-     * MerkleTreeService.computeMerkleRoot() algorithm — the published root always
-     * matches what an independent verifier can compute from the public ballot_box hashes.
-     *
-     * Scale note: full tree recomputation is O(n) per vote. For very large elections,
-     * migrate to an incremental Merkle tree data structure.
-     */
     public void updateMerkleRoot(UUID electionId, String newVoteHash) {
         List<String> allHashes = ballotRepo.findByElectionId(electionId)
                 .stream().map(BallotBox::getVoteHash).collect(Collectors.toList());
@@ -199,7 +262,6 @@ public class TallyService {
     public String getMerkleRoot(UUID electionId) {
         String root = redis.opsForValue().get(MERKLE_PFX + electionId);
         if (root != null) return root;
-        // DB fallback uses the same algorithm — consistent with updateMerkleRoot()
         List<String> hashes = ballotRepo.findByElectionId(electionId)
                 .stream().map(BallotBox::getVoteHash).collect(Collectors.toList());
         return merkleService.computeMerkleRoot(hashes);
@@ -213,7 +275,6 @@ public class TallyService {
                         (a, b) -> a, LinkedHashMap::new));
     }
 
-    /** SCAN-based iteration — safe for production Redis (never blocks). */
     private Map<String, Long> scan(String pattern, String stripPrefix) {
         Map<String, Long> result = new LinkedHashMap<>();
         try {

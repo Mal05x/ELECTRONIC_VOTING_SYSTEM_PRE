@@ -31,10 +31,41 @@ public class AuditLog {
         this.createdAt      = OffsetDateTime.now();
     }
 
+    /** Hash a UTF-8 string. Used by audit log chaining and general string digests. */
     public static String sha256(String input) {
         try {
             return HexFormat.of().formatHex(
-                MessageDigest.getInstance("SHA-256").digest(input.getBytes(StandardCharsets.UTF_8)));
+                    MessageDigest.getInstance("SHA-256").digest(
+                            input.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException e) { throw new RuntimeException(e); }
+    }
+
+    /**
+     * FIX BUG 3: Hash a raw byte array directly.
+     *
+     * This overload is used exclusively by MerkleTreeService to hash the binary
+     * concatenation of two child node byte arrays. It avoids the second-preimage
+     * vulnerability present in sha256(hexLeft + hexRight):
+     *
+     *   sha256("abc" + "def") == sha256("ab" + "cdef")  ← AMBIGUOUS (hex string concat)
+     *   sha256Bytes(bytes("abc") + bytes("def"))         ← UNAMBIGUOUS (binary concat)
+     *
+     * Because sha256 operates on the raw 32-byte binary values (not their hex
+     * representations), every pair of children maps to a unique parent hash.
+     */
+    public static String sha256Bytes(byte[] input) {
+        try {
+            return HexFormat.of().formatHex(
+                    MessageDigest.getInstance("SHA-256").digest(input));
+        } catch (NoSuchAlgorithmException e) { throw new RuntimeException(e); }
+    }
+
+    /**
+     * Decode a lowercase hex string to its raw byte array.
+     * Used by MerkleTreeService to convert stored hex vote hashes back to bytes
+     * before binary concatenation.
+     */
+    public static byte[] hexToBytes(String hex) {
+        return HexFormat.of().parseHex(hex);
     }
 }

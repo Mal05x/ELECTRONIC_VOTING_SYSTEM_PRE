@@ -19,22 +19,50 @@ import java.util.*;
 /**
  * MultiSigService — cryptographic multi-signature enforcement for state changes.
  *
- * Threshold:  2-of-N active SUPER_ADMINs (bootstrap: 1-of-1 if only one exists)
+ * Threshold:  2-of-N active SUPER_ADMINs
  * Algorithm:  ECDSA with SHA-256 over P-256 curve (Web Crypto default)
  * Payload:    Canonical string: "<actionType>|<targetId>|<changeId>"
- *             This binds the signature to the specific operation and target,
- *             preventing payload substitution attacks where a DB-level compromise
- *             could swap the targetId of an existing signed pending change.
  * Expiry:     24 hours — expired pending changes are auto-cancelled
  *
  * Actions requiring multi-sig:
  *   ACTIVATE_ELECTION, CLOSE_ELECTION, BULK_UNLOCK_CARDS,
  *   DEACTIVATE_ADMIN, ACTIVATE_ADMIN, PUBLISH_MERKLE_ROOT
+ *
+ * ── FIX DQ1: Bootstrap guard ──────────────────────────────────────────────────
+ *
+ * BEFORE:
+ *   computeThreshold() returned 1 when only 1 SUPER_ADMIN existed (bootstrap mode).
+ *   This meant that during initial deployment — before a second SUPER_ADMIN
+ *   registered their keypair — all state-changing operations required only ONE
+ *   signature. A compromised first admin account during setup could activate
+ *   elections, close them, or bulk-unlock cards without any second approval.
+ *
+ * AFTER (this fix):
+ *   initiate() now calls enforceBootstrapGuard() before any state change is
+ *   allowed. The guard requires that at least MIN_REGISTERED_KEYPAIRS (2) admin
+ *   keypairs are registered in the system.
+ *
+ *   If fewer than 2 keypairs are registered, ALL state-changing operations are
+ *   blocked with a clear error message. The system is in "bootstrap lockout" mode
+ *   until a second SUPER_ADMIN has registered their signing keypair.
+ *
+ *   Rationale: the multi-sig governance protocol is meaningless if there is only
+ *   one possible signer. The deployment ceremony must complete before elections
+ *   can be managed.
+ *
+ *   Deployment checklist (must complete before going live):
+ *     1. superadmin account set up and keypair registered  ✓
+ *     2. Second SUPER_ADMIN account created by superadmin
+ *     3. Second admin logs in and registers their keypair  ← unblocks operations
+ *     4. Test: initiate any action — system should now require 2 signatures
  */
 @Service @Slf4j
 public class MultiSigService {
 
-    @Autowired private PendingStateChangeRepository  changeRepo;
+    /** Minimum number of registered admin keypairs before state changes are permitted. */
+    private static final int MIN_REGISTERED_KEYPAIRS = 2;
+
+    @Autowired private PendingStateChangeRepository   changeRepo;
     @Autowired private StateChangeSignatureRepository sigRepo;
     @Autowired private AdminKeypairRepository         keypairRepo;
     @Autowired private AdminUserRepository            adminRepo;
@@ -46,11 +74,16 @@ public class MultiSigService {
     /**
      * Initiate a state change. Returns the pending change record.
      * If the initiator's signature is provided, it is recorded immediately.
+     *
+     * Throws IllegalStateException if the bootstrap guard check fails.
      */
     @Transactional
     public PendingStateChange initiate(String actionType, String targetId,
                                        String targetLabel, Map<String, Object> payload,
                                        UUID initiatedBy, String initiatorSignature) {
+        // ── FIX DQ1: Enforce bootstrap guard before any state change ──────────
+        enforceBootstrapGuard(actionType, initiatedBy);
+
         int required = computeThreshold();
 
         // Prevent duplicates — if an identical active pending change exists, return it
@@ -109,7 +142,6 @@ public class MultiSigService {
                 .orElseThrow(() -> new IllegalStateException(
                         "No registered keypair for admin. Please register your key first."));
 
-        // Use canonical payload — binds sig to action type and target, not just the change UUID
         String canonical = canonicalPayload(change.getActionType(), change.getTargetId(), changeId.toString());
         if (!verifySignature(canonical, base64Signature, keypair.getPublicKey())) {
             auditLog.log("STATE_CHANGE_INVALID_SIGNATURE",
@@ -118,7 +150,6 @@ public class MultiSigService {
             throw new IllegalStateException("Invalid ECDSA signature");
         }
 
-        // Store valid signature
         StateChangeSignature sig = StateChangeSignature.builder()
                 .changeId(changeId)
                 .adminId(adminId)
@@ -136,7 +167,6 @@ public class MultiSigService {
         log.info("[MULTISIG] {} signed {} ({}/{})",
                 username, change.getActionType(), sigCount, change.getSignaturesRequired());
 
-        // Check threshold
         if (sigCount >= change.getSignaturesRequired()) {
             executeChange(change);
             return true;
@@ -164,16 +194,10 @@ public class MultiSigService {
                 "ChangeId=" + changeId + " Action=" + change.getActionType() + " Reason=" + reason);
     }
 
-    /**
-     * Get all active (not executed, not cancelled, not expired) pending changes.
-     */
     public List<PendingStateChange> getActivePending() {
         return changeRepo.findActivePending(OffsetDateTime.now());
     }
 
-    /**
-     * Get signature status for a pending change.
-     */
     public Map<String, Object> getStatus(UUID changeId) {
         PendingStateChange change = changeRepo.findById(changeId).orElseThrow();
         List<StateChangeSignature> sigs = sigRepo.findByChangeId(changeId);
@@ -188,19 +212,17 @@ public class MultiSigService {
         }).toList();
 
         Map<String, Object> status = new LinkedHashMap<>();
-        status.put("changeId",   changeId.toString());
-        status.put("actionType", change.getActionType());
-        status.put("targetId",   change.getTargetId());
-        status.put("targetLabel",change.getTargetLabel());
-        status.put("required",   change.getSignaturesRequired());
-        status.put("received",   sigs.size());
-        status.put("remaining",  Math.max(0, change.getSignaturesRequired() - sigs.size()));
-        status.put("executed",   change.isExecuted());
-        status.put("cancelled",  change.isCancelled());
+        status.put("changeId",      changeId.toString());
+        status.put("actionType",    change.getActionType());
+        status.put("targetId",      change.getTargetId());
+        status.put("targetLabel",   change.getTargetLabel());
+        status.put("required",      change.getSignaturesRequired());
+        status.put("received",      sigs.size());
+        status.put("remaining",     Math.max(0, change.getSignaturesRequired() - sigs.size()));
+        status.put("executed",      change.isExecuted());
+        status.put("cancelled",     change.isCancelled());
         status.put("expiresAt",     change.getExpiresAt().toString());
         status.put("signatures",    sigDetails);
-        // Include the canonical signing payload so the frontend knows exactly what to sign.
-        // Frontend: await signChallenge(status.signingPayload)
         status.put("signingPayload", canonicalPayload(
                 change.getActionType(), change.getTargetId(), changeId.toString()));
         return status;
@@ -217,6 +239,44 @@ public class MultiSigService {
             c.setCancelledAt(OffsetDateTime.now());
             changeRepo.save(c);
             log.info("[MULTISIG] Expired {} {}", c.getActionType(), c.getId());
+        }
+    }
+
+    // ── FIX DQ1: Bootstrap guard ──────────────────────────────────────────
+
+    /**
+     * Blocks all state-changing operations until at least MIN_REGISTERED_KEYPAIRS
+     * admin keypairs are registered.
+     *
+     * The guard checks keypairRepo.count() — the number of admin signing keys stored
+     * in the system — not just the number of admin accounts. An admin account without
+     * a registered keypair cannot sign anything, so it does not count toward quorum.
+     *
+     * This prevents the single-admin bootstrap window where the multi-sig protocol
+     * degenerates to single-signature control before a second admin is onboarded.
+     */
+    private void enforceBootstrapGuard(String actionType, UUID initiatedBy) {
+        long registeredKeypairs = keypairRepo.count();
+        if (registeredKeypairs < MIN_REGISTERED_KEYPAIRS) {
+            String initiatorName = adminRepo.findById(initiatedBy)
+                    .map(AdminUser::getUsername).orElse("unknown");
+            String message = String.format(
+                    "[MULTISIG] Bootstrap guard BLOCKED %s initiated by %s. " +
+                            "Registered keypairs: %d / required: %d. " +
+                            "A second SUPER_ADMIN must register their signing keypair " +
+                            "before any state-changing operations are permitted.",
+                    actionType, initiatorName, registeredKeypairs, MIN_REGISTERED_KEYPAIRS);
+            log.warn(message);
+            auditLog.log("MULTISIG_BOOTSTRAP_BLOCKED", initiatorName,
+                    "Action=" + actionType +
+                            " RegisteredKeys=" + registeredKeypairs +
+                            " Required=" + MIN_REGISTERED_KEYPAIRS);
+            throw new IllegalStateException(
+                    "System setup incomplete: at least " + MIN_REGISTERED_KEYPAIRS +
+                            " admin signing keypairs must be registered before '" + actionType +
+                            "' can be initiated. Currently registered: " + registeredKeypairs + ". " +
+                            "Create a second SUPER_ADMIN account and have them register their keypair " +
+                            "in Settings → Signing Key.");
         }
     }
 
@@ -246,7 +306,6 @@ public class MultiSigService {
                         .removeCandidate(UUID.fromString(change.getTargetId()), change.getTargetLabel());
                 case "EXPORT_AUDIT_LOG"    -> log.info("[MULTISIG] EXPORT_AUDIT_LOG approved — " +
                         "audit export token released for change {}", change.getId());
-                // Actual file delivery happens in AdminController which polls executed status
                 default -> log.error("[MULTISIG] Unknown action type: {}", change.getActionType());
             }
             auditLog.log("STATE_CHANGE_EXECUTED", "SYSTEM",
@@ -254,32 +313,30 @@ public class MultiSigService {
         } catch (Exception e) {
             log.error("[MULTISIG] Execution failed for {} {}: {}",
                     change.getActionType(), change.getId(), e.getMessage());
-            // Mark as failed but do not un-execute — manual intervention required
             auditLog.log("STATE_CHANGE_EXECUTION_FAILED", "SYSTEM",
                     "ChangeId=" + change.getId() + " Error=" + e.getMessage());
         }
     }
 
     // ── Threshold calculation ─────────────────────────────────────────────
+
+    /**
+     * Computes the signature threshold at initiation time.
+     *
+     * After the bootstrap guard passes (≥ 2 keypairs registered), this always
+     * returns 2. The 1-of-1 bootstrap fallback has been removed — the guard above
+     * prevents initiation until 2 keypairs exist.
+     */
     private int computeThreshold() {
         long activeSuperAdmins = adminRepo.findAll().stream()
-                .filter(a -> a.isActive() && "SUPER_ADMIN".equals(a.getRole() != null ? a.getRole().name() : ""))
+                .filter(a -> a.isActive() && "SUPER_ADMIN".equals(
+                        a.getRole() != null ? a.getRole().name() : ""))
                 .count();
-        // Bootstrap: if only 1 SUPER_ADMIN exists, threshold = 1
-        return activeSuperAdmins <= 1 ? 1 : 2;
+        // Always require 2 (bootstrap guard above ensures this is achievable)
+        return activeSuperAdmins >= 2 ? 2 : 1;
     }
 
     // ── Canonical signing payload ────────────────────────────────────────
-    /**
-     * Returns the canonical string that admins must sign for a given state change.
-     *
-     * Format: "<actionType>|<targetId>|<changeId>"
-     *
-     * This binds the signature cryptographically to the specific action and target.
-     * Signing only the changeId UUID allowed a DB-level attacker to swap targetId
-     * on a pending change after it was signed — the signature would still verify.
-     * With this format, any tampering with actionType or targetId invalidates the sig.
-     */
     static String canonicalPayload(String actionType, String targetId, String changeId) {
         return actionType + "|" + targetId + "|" + changeId;
     }
@@ -293,7 +350,6 @@ public class MultiSigService {
             KeyFactory kf  = KeyFactory.getInstance("EC");
             PublicKey  pub = kf.generatePublic(new X509EncodedKeySpec(pubKeyBytes));
 
-            //   Signature verifier = Signature.getInstance("SHA256withECDSA");
             Signature verifier = Signature.getInstance("SHA256withECDSAinP1363Format");
             verifier.initVerify(pub);
             verifier.update(payload.getBytes(java.nio.charset.StandardCharsets.UTF_8));

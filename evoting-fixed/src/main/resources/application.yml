@@ -134,15 +134,27 @@ management:
 websocket:
   allowed-origin: ${WEBSOCKET_ALLOWED_ORIGIN:http://localhost:3000,http://localhost:5173,https://localhost:3000,https://localhost:5173,http://localhost:4173,https://localhost:4173,https://192.168.0.159:3000}
 
+# ══════════════════════════════════════════════════════════════════════════════
+# application.yml ADDITIONS — paste these blocks into the appropriate sections
+# of your existing application.yml. They are not a full replacement.
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── REPLACE existing liveness block with this ─────────────────────────────────
 # Self-hosted Silent-Face-Anti-Spoofing liveness microservice
-# Run: cd liveness-service && docker-compose up -d
 liveness:
   service:
     url: ${LIVENESS_SERVICE_URL:http://127.0.0.1:5001}
     timeout-ms: ${LIVENESS_TIMEOUT_MS:12000}
-    # If the Python service is down, fail-open allows V1 livenessFlag fallback
-    # Set to false in production to enforce AI evaluation always
     fail-open: ${LIVENESS_FAIL_OPEN:true}
+
+    # FIX DQ2: Shared secret between Spring Boot and the Python liveness service.
+    # Generate with: openssl rand -hex 32
+    # Set the SAME value in:
+    #   1. This env var: LIVENESS_SECRET=<value>
+    #   2. liveness-service/.env: LIVENESS_SECRET=<value>
+    # The Python service will reject any request that does not include
+    # header: X-Liveness-Secret: <value>
+    secret: ${LIVENESS_SECRET}
 
 
 logging:

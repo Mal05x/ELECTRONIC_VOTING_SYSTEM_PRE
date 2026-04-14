@@ -1,22 +1,31 @@
 import cv2
 import numpy as np
 import onnxruntime as ort
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, Header, HTTPException
 from fastapi.responses import JSONResponse
 import io
+import os
 
 app = FastAPI(title="Liveness Detection Service")
 
-# Point to the exact model we downloaded via curl
 MODEL_PATH = "models/MiniFASNetV2_SE.onnx"
 ort_session = None
+
+# ── FIX DQ2: Shared-secret authentication ────────────────────────────────────
+# The /evaluate endpoint is no longer open to the internal network.
+# BiometricService must include the X-Liveness-Secret header on every call.
+# Set LIVENESS_SECRET in the liveness-service/.env and in Spring's application.yml
+# (liveness.service.secret). Use: openssl rand -hex 32
+LIVENESS_SECRET = os.environ.get("LIVENESS_SECRET", "")
 
 @app.on_event("startup")
 def load_models():
     global ort_session
+    if not LIVENESS_SECRET:
+        print("CRITICAL: LIVENESS_SECRET env var is not set. "
+              "All requests to /evaluate will be rejected.")
     print(f"Loading Liveness Model from {MODEL_PATH}...")
     try:
-        # Initialize the ONNX Runtime engine
         ort_session = ort.InferenceSession(MODEL_PATH)
         print("Model loaded successfully!")
     except Exception as e:
@@ -25,13 +34,26 @@ def load_models():
 
 @app.get("/health")
 def health_check():
+    # Health endpoint intentionally has no auth — Spring boot checks it on startup
     return {"status": "Liveness AI Engine is online and ready"}
 
 @app.post("/evaluate")
-async def evaluate_liveness(frame: UploadFile = File(...)):
+async def evaluate_liveness(
+        frame: UploadFile = File(...),
+        x_liveness_secret: str = Header(default=None, alias="X-Liveness-Secret"),
+        x_session_id: str = Header(default=None, alias="X-Session-Id"),
+        x_terminal_id: str = Header(default=None, alias="X-Terminal-Id"),
+):
+    # ── FIX DQ2: Validate shared secret ──────────────────────────────────────
+    if not LIVENESS_SECRET:
+        raise HTTPException(status_code=503,
+                            detail="Liveness service is misconfigured: LIVENESS_SECRET not set.")
+    if x_liveness_secret != LIVENESS_SECRET:
+        # Return 403, not 401 — don't hint at auth scheme details
+        raise HTTPException(status_code=403, detail="Forbidden")
+
     global ort_session
     try:
-        # 1. Read the image payload from the request (from ESP32 / Spring Boot)
         image_bytes = await frame.read()
         nparr = np.frombuffer(image_bytes, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -39,25 +61,26 @@ async def evaluate_liveness(frame: UploadFile = File(...)):
         if img is None:
             return JSONResponse(status_code=400, content={"error": "Invalid image payload"})
 
-        # 2. Preprocess the image for MiniFASNet (Resize to 80x80)
-        img = cv2.resize(img, (128, 128))
+        # ── FIX BUG 1: Correct input resolution for MiniFASNetV2_SE ──────────
+        # MiniFASNetV2_SE expects 80×80 input, not 128×128.
+        # The incorrect (128,128) resize causes the model to receive inputs outside
+        # its training distribution, producing unreliable liveness scores silently.
+        img = cv2.resize(img, (80, 80))           # was: (128, 128) ← BUG FIXED
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img = np.transpose(img, (2, 0, 1)) # Change format from HWC to CHW
+        img = np.transpose(img, (2, 0, 1))        # HWC → CHW
         img = np.expand_dims(img, axis=0)
-        img = img.astype(np.float32) / 255.0 # Normalize
+        img = img.astype(np.float32) / 255.0      # normalize to [0, 1]
 
-        # 3. Run AI Inference
         input_name = ort_session.get_inputs()[0].name
         outputs = ort_session.run(None, {input_name: img})
 
-        # 4. Parse the Softmax Output (Index 1 is usually the 'Real Face' score)
+        # Index 1 = 'Real Face' score in MiniFASNet softmax output
         prediction = outputs[0][0]
         real_score = float(prediction[1])
 
-        # 5. Make the Liveness Decision (Threshold set to 80% confidence)
         is_real = real_score > 0.80
 
-        print(f"Processed Frame - Real Confidence: {real_score*100:.2f}% | Passed: {is_real}")
+        print(f"[Session={x_session_id}] Real: {real_score*100:.2f}% | Passed: {is_real}")
 
         return {
             "livenessPassed": is_real,
