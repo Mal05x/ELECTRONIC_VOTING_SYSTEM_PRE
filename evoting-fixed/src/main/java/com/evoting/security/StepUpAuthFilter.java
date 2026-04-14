@@ -46,6 +46,24 @@ public class StepUpAuthFilter extends OncePerRequestFilter {
         this.handlerMapping = handlerMapping;
     }
 
+    /**
+     * Skip step-up auth processing for multipart/form-data requests (file uploads).
+     *
+     * Why: getAnnotation() calls handlerMapping.getHandler(request), which does
+     * internal Spring request processing. For multipart requests, this corrupts the
+     * boundary metadata before DispatcherServlet wraps the request in a
+     * MultipartHttpServletRequest — causing "Current request is not a multipart request"
+     * when the controller tries to bind @RequestParam MultipartFile.
+     *
+     * File upload endpoints (@RequestParam MultipartFile) never use @RequiresStepUp,
+     * so skipping them here loses nothing and fixes the upload.
+     */
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String contentType = request.getContentType();
+        return contentType != null && contentType.toLowerCase().startsWith("multipart/");
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
