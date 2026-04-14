@@ -96,7 +96,10 @@ public class S3Service {
             this.s3Presigner = presignBuilder.build();
 
             this.s3Enabled = true;
-            log.info("S3Service initialised — region={} bucket={}", region, bucket);
+            log.info("S3Service initialised — region={} bucket={} endpoint={}",
+                    region, bucket,
+                    (endpointOverride != null && !endpointOverride.isBlank())
+                            ? endpointOverride : "AWS default");
         } catch (Exception e) {
             log.error("S3Service failed to initialise: {} — photo uploads disabled", e.getMessage());
         }

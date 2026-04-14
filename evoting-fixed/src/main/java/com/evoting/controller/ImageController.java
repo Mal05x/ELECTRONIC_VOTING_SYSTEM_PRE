@@ -13,6 +13,8 @@ import org.springframework.security.core.Authentication;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.core.exception.SdkException;
 import java.util.Map;
 import java.util.UUID;
 
@@ -70,14 +72,41 @@ public class ImageController {
                     "s3Key",       key));
 
         } catch (IllegalStateException e) {
-            // S3 not configured — return 503 with actionable message instead of 500
-            log.warn("Photo upload rejected — S3 not configured: {}", e.getMessage());
+            // S3 not configured — return 503 with actionable message
+            log.warn("[PHOTO] S3 not configured: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                     .body(Map.of(
-                            "error",  e.getMessage(),
-                            "hint",   "Set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and " +
-                                    "AWS_S3_BUCKET_NAME as environment variables on Render, " +
-                                    "then redeploy. See application.yml aws.* properties."
+                            "error", e.getMessage(),
+                            "hint",  "Set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, " +
+                                    "AWS_S3_BUCKET_NAME and AWS_S3_ENDPOINT on Render."
+                    ));
+
+        } catch (S3Exception e) {
+            // Credentials wrong, bucket missing, wrong endpoint, permission denied, etc.
+            log.error("[PHOTO] S3 error {}: {} — requestId={}", e.statusCode(), e.getMessage(),
+                    e.requestId());
+            String hint = switch (e.statusCode()) {
+                case 403 -> "Check AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY — credentials " +
+                        "rejected by the storage provider.";
+                case 404 -> "Bucket not found. Check AWS_S3_BUCKET name matches exactly what " +
+                        "is in Supabase Storage.";
+                case 301, 307 -> "Wrong region or endpoint. Verify AWS_S3_ENDPOINT and " +
+                        "AWS_REGION for your Supabase project.";
+                default   -> "Storage provider returned HTTP " + e.statusCode() +
+                        ". Check all AWS_* env vars on Render.";
+            };
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .body(Map.of("error", "Storage error: " + e.awsErrorDetails().errorMessage(),
+                            "hint",  hint));
+
+        } catch (SdkException e) {
+            // Network error, timeout, SSL issue reaching the storage endpoint
+            log.error("[PHOTO] SDK/network error reaching storage endpoint: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .body(Map.of(
+                            "error", "Could not reach storage endpoint: " + e.getMessage(),
+                            "hint",  "Verify AWS_S3_ENDPOINT is correct and reachable from Render. " +
+                                    "For Supabase: https://<project-ref>.supabase.co/storage/v1/s3"
                     ));
         }
     }
