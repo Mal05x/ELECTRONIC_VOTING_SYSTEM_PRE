@@ -1409,27 +1409,75 @@ bool checkIfAlreadyVoted() {
 /*
  * setVotedStatusAndCaptureBurnProof()
  * Sends INS_SET_VOTED to permanently burn the card's voted flag.
- * The applet responds with an ECDSA signature of the VoterID (burn-proof).
+ * The applet responds with an ECDSA signature used as the burn-proof.
  * This proof is Base64-encoded into currentSession.cardBurnProof and
- * sent to the backend with the vote packet (backend Fix B-04).
+ * sent to the backend with the vote packet.
+ *
+ * ── BUG-2 FIX: Election-scoped burn proof ────────────────────────────────────
+ *
+ * BEFORE: INS_SET_VOTED was sent with Lc=0 (no data). The applet signed
+ *   its stored voterID constant — the same for every election. A burn proof
+ *   captured from Election A was valid for Election B for the same voter.
+ *
+ * AFTER: This function builds the combined payload:
+ *   burnPayload = currentSession.cardUID + "|" + ELECTION_ID
+ *
+ *   This is sent as APDU Lc data. The applet signs this combined payload.
+ *   The backend reconstructs the same string via:
+ *     CryptoService.buildBurnProofPayload(cardIdHash, electionId)
+ *     = cardIdHash + "|" + electionId.toString()
+ *   and verifies. A proof from a different election cannot pass verification.
+ *
+ * NOTE: ELECTION_ID must be the UUID from the elections table (e.g.
+ *   "550e8400-e29b-41d4-a716-446655440000"), not an arbitrary string.
+ *   The backend VotePacketDTO.electionId is typed as java.util.UUID —
+ *   sending a non-UUID string will cause a 400 deserialization error.
+ *   Update the ELECTION_ID define at the top of this file accordingly.
  */
 bool setVotedStatusAndCaptureBurnProof() {
-  uint8_t apdu[5] = {CLA_EVOTING, INS_SET_VOTED, 0x00, 0x00, 0x00};
-  uint8_t response[256]; uint8_t responseLength;
-  if (!sendNfcAPDU(apdu, 5, response, &responseLength)) return false;
-  uint16_t sw = (response[responseLength-2] << 8) | response[responseLength-1];
-  if (sw != SW_SUCCESS) return false;
+  // BUG-2: Build combined payload that the applet will sign
+  // Must match CryptoService.buildBurnProofPayload() on the server:
+  //   payload = cardIdHash + "|" + electionId.toString()
+  String burnPayload = currentSession.cardUID + "|" + ELECTION_ID;
+  uint8_t payloadLen = (uint8_t)burnPayload.length();
 
-  // Capture the ECDSA burn-proof signature (all response bytes before SW)
+  // Sanity check: minimum = 1 (cardId) + 1 (pipe) + 36 (UUID) = 38 bytes
+  if (payloadLen < 38) {
+    Serial.println("[CARD] Burn payload too short (" + String(payloadLen) + 
+                   "). Check ELECTION_ID is a valid UUID.");
+    return false;
+  }
+
+  // Build APDU: CLA=0x80, INS=0x51, P1=0x00, P2=0x00, Lc=payloadLen, data=payload
+  uint8_t apdu[5 + 255];   // max APDU short-form Lc = 255
+  apdu[0] = CLA_EVOTING;
+  apdu[1] = INS_SET_VOTED;
+  apdu[2] = 0x00;
+  apdu[3] = 0x00;
+  apdu[4] = payloadLen;
+  memcpy(&apdu[5], burnPayload.c_str(), payloadLen);
+
+  uint8_t response[256]; uint8_t responseLength;
+  if (!sendNfcAPDU(apdu, (uint8_t)(5 + payloadLen), response, &responseLength)) return false;
+
+  uint16_t sw = (response[responseLength-2] << 8) | response[responseLength-1];
+  if (sw != SW_SUCCESS) {
+    Serial.printf("[CARD] INS_SET_VOTED failed: SW=%04X\n", sw);
+    return false;
+  }
+
+  // Capture the ECDSA burn-proof signature (all response bytes before SW1SW2)
   if (responseLength > 2) {
     uint8_t sigLen = responseLength - 2;
     size_t b64Len = 0;
     mbedtls_base64_encode(NULL, 0, &b64Len, response, sigLen);
     unsigned char* b64 = (unsigned char*)malloc(b64Len);
+    if (!b64) { Serial.println("[CARD] malloc failed for burn proof"); return false; }
     mbedtls_base64_encode(b64, b64Len, &b64Len, response, sigLen);
     currentSession.cardBurnProof = String((char*)b64);
     free(b64);
-    Serial.println("[CARD] Burn proof captured: " + String(sigLen) + " bytes");
+    Serial.println("[CARD] Election-scoped burn proof captured: " + String(sigLen) + " bytes");
+    Serial.println("[CARD] Payload signed: " + burnPayload.substring(0, 20) + "...");
   }
   return true;
 }
