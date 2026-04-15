@@ -439,7 +439,7 @@ public class MFAVotingApplet extends Applet {
         apdu.setOutgoingAndSend((short) 0, (short) 1);
     }
 
-    // ==================== SET VOTED (B-05) ====================
+    // ==================== SET VOTED (B-05 + BUG-2) ====================
     /**
      * B-05: Sign BEFORE writing hasVoted=true.
      *
@@ -452,6 +452,32 @@ public class MFAVotingApplet extends Applet {
      *   1. sign() into scratchPad — CryptoException here is safe (hasVoted still false)
      *   2. hasVoted = true — EEPROM write only after we have the proof
      *   3. Copy scratchPad → APDU buffer and send
+     *
+     * ── BUG-2: Election-scoped burn proof ────────────────────────────────────
+     *
+     * BEFORE: The applet signed only voterID (32 bytes, on-card constant).
+     *   A burn proof from Election A was cryptographically identical to a proof
+     *   from Election B for the same voter. Server-side DB guard blocked replay,
+     *   but the proof had no intrinsic binding to a specific election.
+     *
+     * AFTER: The terminal passes the combined payload as APDU data:
+     *   Lc data = cardIdHash_bytes + "|" (0x7C) + electionId_bytes
+     *   Minimum length: 38 bytes (1 cardId + 1 pipe + 36-char UUID)
+     *   Typical length: varies by cardIdHash format + 1 + 36 (UUID)
+     *
+     *   The applet signs whatever APDU data it receives.
+     *   The server reconstructs the same payload via:
+     *     CryptoService.buildBurnProofPayload(cardIdHash, electionId)
+     *     = cardIdHash + "|" + electionId.toString()
+     *   and verifies the signature against it.
+     *
+     *   A proof signed for Election A carries electionId_A in the payload —
+     *   it will NOT verify when presented for Election B (different electionId).
+     *
+     * ESP32-S3 COMPANION CHANGE:
+     *   setVotedStatusAndCaptureBurnProof() must build:
+     *     burnPayload = currentSession.cardUID + "|" + ELECTION_ID
+     *   and send it as APDU Lc data (see esp32_s3_merged_5.ino).
      */
     private void setVoted(APDU apdu) {
         if (!secureChannelEstablished)       ISOException.throwIt(SW_SECURE_CHANNEL_NOT_ESTABLISHED);
@@ -461,14 +487,25 @@ public class MFAVotingApplet extends Applet {
 
         byte[] buffer = apdu.getBuffer();
 
-        // B-05: Step 1 — sign first (into scratchPad to avoid exposing partial state)
-        short sigLen = ecdsaSignature.sign(voterID, (short) 0, VOTER_ID_SIZE,
+        // BUG-2: Receive the combined payload (cardIdHash + "|" + electionId).
+        // Minimum: 1 byte cardId + 1 byte pipe + 36 bytes UUID = 38 bytes.
+        // The card does not parse the payload — it signs whatever is received.
+        // The server validates format when it reconstructs and verifies.
+        short lc = apdu.setIncomingAndReceive();
+        if (lc < (short) 38) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+
+        // B-05 + BUG-2: Step 1 — sign the received payload first.
+        // Write into scratchPad to avoid collision: signature output will overwrite
+        // buffer[0..sigLen], which overlaps the APDU header bytes (fine —
+        // we've already read Lc data and signing reads from OFFSET_CDATA onward).
+        short sigLen = ecdsaSignature.sign(buffer, ISO7816.OFFSET_CDATA, lc,
                                             scratchPad, (short) 0);
 
-        // B-05: Step 2 — only burn the card AFTER we have a valid signature
+        // B-05: Step 2 — only burn the card AFTER we have a valid signature.
+        // CryptoException during sign() above leaves hasVoted=false — voter is safe.
         hasVoted = true;
 
-        // B-05: Step 3 — copy proof to APDU buffer and respond
+        // B-05: Step 3 — copy election-scoped burn proof to APDU buffer and respond.
         Util.arrayCopy(scratchPad, (short) 0, buffer, (short) 0, sigLen);
         apdu.setOutgoingAndSend((short) 0, sigLen);
     }
