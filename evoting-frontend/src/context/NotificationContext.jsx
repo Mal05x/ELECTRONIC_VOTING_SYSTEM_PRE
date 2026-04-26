@@ -173,9 +173,9 @@ export function NotificationProvider({ children }) {
           body:      `${e.actor || "system"}`,
           time:      e.createdAt,
         }))
-        .filter(n => n.type !== "info" ||
-          ["ELECTION_CREATED","ELECTION_ACTIVATED","MERKLE_ROOT_PUBLISHED",
-           "ADMIN_USER_CREATED","VOTE_CAST","AUTH_SUCCESS"].includes(n.eventType));
+        //.filter(n => n.type !== "info" ||
+        //  ["ELECTION_CREATED","ELECTION_ACTIVATED","MERKLE_ROOT_PUBLISHED",
+        //   "ADMIN_USER_CREATED","VOTE_CAST","AUTH_SUCCESS"].includes(n.eventType));
       setNotifications(notifs);
     }).catch(() => {});
   }, [refreshTick]); // re-runs after login via refreshNotifications()

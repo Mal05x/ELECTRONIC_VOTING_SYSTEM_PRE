@@ -21,6 +21,7 @@ import ApprovalsView      from "./pages/ApprovalsView.jsx";
 import RegistrationView   from "./pages/RegistrationView.jsx";
 import ResetPasswordPage  from "./pages/ResetPasswordPage.jsx";
 import OAuthCallback      from "./components/OAuthCallback";
+import PopupRenderer from "./components/PopupRenderer.jsx";
 
 function RequireAuth({ children }) {
   const { user } = useAuth();
@@ -108,6 +109,8 @@ function AppShell() {
 export default function App() {
   const { user } = useAuth();
   return (
+      <PopupRenderer />
+      
     <Routes>
       <Route path="/login"        element={user ? <Navigate to="/" replace /> : <LoginPage />} />
        <Route path="/oauth-callback" element={<OAuthCallback />} />
