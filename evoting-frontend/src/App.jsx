@@ -109,8 +109,9 @@ function AppShell() {
 export default function App() {
   const { user } = useAuth();
   return (
+      <>
       <PopupRenderer />
-      
+
     <Routes>
       <Route path="/login"        element={user ? <Navigate to="/" replace /> : <LoginPage />} />
        <Route path="/oauth-callback" element={<OAuthCallback />} />
