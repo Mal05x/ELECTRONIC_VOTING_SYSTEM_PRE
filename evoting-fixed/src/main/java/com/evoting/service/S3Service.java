@@ -134,12 +134,25 @@ public class S3Service {
     }
 
     /** Generate a presigned GET URL valid for expiryHours. */
+    /** Generate a public URL (for Supabase) or a presigned GET URL (for AWS). */
     public String generatePresignedUrl(String s3Key) {
         if (!s3Enabled || s3Presigner == null) {
             throw new IllegalStateException(
-                    "S3 is not configured — cannot generate presigned URL. " +
+                    "S3 is not configured — cannot generate URL. " +
                             "Set AWS credentials to enable photo uploads.");
         }
+
+        // --- THE SUPABASE FIX ---
+        // If we are routing through Supabase, ignore the AWS Presigner entirely
+        // and return the direct Public web URL instead.
+        if (endpointOverride != null && endpointOverride.contains("supabase.co")) {
+            // Converts ".../storage/v1/s3" to ".../storage/v1/object/public"
+            String publicBaseUrl = endpointOverride.replace("/s3", "/object/public");
+            return publicBaseUrl + "/" + bucket + "/" + s3Key;
+        }
+
+        // --- STANDARD AWS FALLBACK ---
+        // If no custom endpoint is set, behave like normal AWS and presign it
         return s3Presigner.presignGetObject(
                         GetObjectPresignRequest.builder()
                                 .signatureDuration(Duration.ofHours(expiryHours))
