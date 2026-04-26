@@ -124,5 +124,6 @@ export default function App() {
         </RequireAuth>
       } />
     </Routes>
+    </>
   );
 }
