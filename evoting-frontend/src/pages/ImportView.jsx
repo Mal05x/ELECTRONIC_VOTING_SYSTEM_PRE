@@ -654,7 +654,8 @@ export default function ImportView() {
                   {c.imageUrl ? (
                     <img src={c.imageUrl} alt={c.fullName}
                       className="w-9 h-9 rounded-full object-cover flex-shrink-0 border border-border"
-                      onError={e => { e.target.style.display="none"; }} />
+                      //onError={e => { e.target.style.display="none"; }}
+                       />
                   ) : (
                     <div className="w-9 h-9 rounded-full bg-elevated border border-dashed border-border
                                     flex items-center justify-center flex-shrink-0">
