@@ -188,7 +188,7 @@ export function NotificationProvider({ children }) {
       if (cancelled) return;
       try {
         const base = WS_BASE.endsWith("/") ? WS_BASE.slice(0, -1) : WS_BASE;
-        const sock  = new SockJS(`/ws`);
+        const sock  = new SockJS(`${import.meta.env.VITE_API_BASE_URL}/ws`);
         const stomp = Stomp.over(sock);
         stomp.debug = () => {};
         const token = localStorage.getItem("evoting_jwt") ||
