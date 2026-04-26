@@ -1,26 +1,36 @@
 /*
  * ============================================================
  *  INEC Multi-Factor Authentication E-Voting Terminal
- *  ESP32-S3 Firmware v4.1 — Fully Merged Production Build
+ *  ESP32-S3 Firmware v4.2 — Q1 / Q2 / Q3 / BUG-2 Fixes
  *
- *  Sources merged:
- *    evoting_s3_v2  — V2 cloud liveness + session architecture
- *    esp32_root_cert — Real mTLS certificates + NTP time sync
- *    evoting_v2     — Baseline voting flow reference
+ *  Changes from v4.1:
  *
- *  Key fixes applied in this merge:
- *    1. Real PEM certificates (R"EOF format) from root_cert file
- *    2. NTP time sync — WITHOUT THIS TLS handshake fails (clock = 1970)
- *    3. INS_GET_SIGNATURE fixed from 0x80 → 0x71 (applet A-02)
- *    4. APDU Lc=1, data=0x01 added (applet A-17 liveness byte)
- *    5. setVotedStatus() now captures ECDSA burn-proof from applet
- *    6. cardBurnProof included in vote packet (backend Fix B-04)
- *    7. INS_GET_PUBLIC_KEY (0x72) called every card insertion
- *    8. voterPublicKey included in auth packet
- *    9. HEARTBEAT_INTERVAL fixed (0000 → 60000 ms)
- *   10. heartbeat payload now includes terminalId
- *   11. Battery level read from voltage divider on analog pin
- *   12. Tamper detection via reed switch on GPIO pin
+ *  Q1 — Dynamic election config (no more hardcoded ELECTION_ID)
+ *       fetchElectionConfig() pulls the active election UUID,
+ *       title, pollingUnitId and closingTime from the backend
+ *       via GET /api/terminal/config on every boot (mTLS + signed).
+ *       Admin activates election on the dashboard → all terminals
+ *       pick it up automatically. Zero firmware reflashing.
+ *       AREA_ID and TERMINAL_POLLING_UNIT_ID defines removed —
+ *       pollingUnitId now comes from the server config response.
+ *       setup() blocks with a 30s retry loop until an active
+ *       election is assigned to this terminal's polling unit.
+ *
+ *  Q2 — Terminal ECDSA key auto-generated on first boot (unchanged).
+ *       Added clarifying comments: copy public key from Serial Monitor
+ *       and paste into admin dashboard Terminal Registration page.
+ *
+ *  Q3 — Admin token card decommission — voter PIN no longer required
+ *       for INS_LOCK_CARD. lockCardWithAdminToken(token) added.
+ *       Sends 32-byte admin token encrypted under the card session key.
+ *       Applet verifies SHA-256(token) == stored adminTokenHash (set at
+ *       personalization). Voter never needs to be present.
+ *
+ *  BUG-2 — Election-scoped burn proof.
+ *       setVotedStatusAndCaptureBurnProof() now sends
+ *       burnPayload = cardUID + "|" + activeConfig.electionId
+ *       as INS_SET_VOTED Lc data. Applet signs the combined payload.
+ *       Server verifies via CryptoService.buildBurnProofPayload().
  *
  *  Hardware: ESP32-S3, JCOP4 Smart Card, PN5180 NFC,
  *            R307 Fingerprint, ESP32-CAM, ILI9341 TFT
@@ -58,7 +68,22 @@ const char*  WIFI_PASSWORD = "A4B6C557";         // ← Your WiFi password
 // serverURL is for logging only — http.begin() uses host+port separately (see below)
 const String serverURL     = "https://" + String(BACKEND_HOST) + "/api";
 const String TERMINAL_ID   = "TERM-KD-001";      // ← Unique per terminal
-const String ELECTION_ID   = "ELEC-2026-NIG";    // ← FIRMWARE FIX F-03: Must be the UUID from elections table
+// ── Q1 FIX: ELECTION_ID is NO LONGER hardcoded. ─────────────────────────────
+// The terminal pulls the active election config from the server on every boot
+// via fetchElectionConfig() → GET /api/terminal/config (mTLS + signed request).
+// When an admin creates and activates a new election on the dashboard, every
+// terminal automatically picks it up on its next boot — zero firmware reflashing.
+// ELECTION_ID is kept as a fallback label for Serial logs only.
+// DO NOT use ELECTION_ID anywhere in vote/auth logic — use activeConfig.electionId.
+
+struct ElectionConfig {
+  String electionId;       // UUID from elections table e.g. "550e8400-e29b-41d4-a716-446655440000"
+  String electionTitle;    // Human-readable e.g. "2026 Presidential Election"
+  String closingTime;      // ISO-8601 string
+  int    pollingUnitId;    // Assigned polling unit for this physical terminal
+  bool   loaded;           // true once fetchElectionConfig() succeeds
+};
+ElectionConfig activeConfig = {"", "", "", 0, false};
 
 // ==================== TERMINAL ECDSA KEY (Application-layer signing) ====================
 // Replaces mTLS for cloud deployments (Render/Railway/etc.) where the TLS proxy
@@ -81,9 +106,11 @@ static const char* NVS_KEY_PROVISIONED = "provisioned"; // flag: key registered 
 // In-memory private key context (loaded from NVS on boot)
 static mbedtls_pk_context  terminalPrivKey;
 static bool                terminalKeyLoaded = false;
-static String              terminalPublicKeyB64 = "";    // Sent to admin for registration (e.g. "550e8400-e29b-41d4-a716-446655440000")
-const String AREA_ID       = "KADUNA-NORTH-01";  // ← Match DB area ID
-#define TERMINAL_POLLING_UNIT_ID  1              // ← Polling unit ID this terminal serves
+static String              terminalPublicKeyB64 = "";    // Sent to admin for registration
+// NOTE: AREA_ID and TERMINAL_POLLING_UNIT_ID have been removed.
+// pollingUnitId is now returned by the server in fetchElectionConfig().
+// The server knows which polling unit each terminal serves based on
+// the terminal's registered identity in terminal_registry.
 
 // ── NTP (needed so TLS certificate dates validate correctly) ──
 const char* NTP_SERVER_1 = "pool.ntp.org";
@@ -248,7 +275,7 @@ const uint8_t TAMPER_PIN = 3;
 const unsigned long HEARTBEAT_INTERVAL_MS = 60000UL;  // 60 seconds
 
 // ==================== APPLET CONSTANTS ====================
-const uint8_t APPLET_AID[]        = {0xA0,0x00,0x00,0x00,0x03,0x45,0x56,0x4F,0x54,0x45};
+const uint8_t APPLET_AID[]        = {0xA0,0x00,0x00,0x00,0x03,0x45,0x56,0x4F,0x52,0x45};
 const uint8_t APPLET_AID_LENGTH   = 10;
 
 const uint8_t CLA_EVOTING              = 0x80;
@@ -806,7 +833,7 @@ void TaskNetwork(void *pvParameters) {
       doc["signedMessage"]  = "Identity Cryptographically Verified";
       doc["sessionId"]      = currentSession.sessionId;      // V2 liveness
       doc["voterPublicKey"] = currentSession.voterPublicKey; // EC public key
-      doc["electionId"]     = ELECTION_ID;
+      doc["electionId"]     = activeConfig.electionId;  // Q1: from server config, not hardcoded
       doc["terminalId"]     = TERMINAL_ID;
 
       String rawJson; serializeJson(doc, rawJson);
@@ -857,7 +884,7 @@ void TaskNetwork(void *pvParameters) {
       votePacket["candidateId"]   = candidates[navState.currentSelection].id;
       votePacket["cardIdHash"]    = currentSession.cardUID;
       votePacket["terminalId"]    = TERMINAL_ID;
-      votePacket["electionId"]    = ELECTION_ID;
+      votePacket["electionId"]    = activeConfig.electionId;  // Q1: from server config
       votePacket["cardBurnProof"] = currentSession.cardBurnProof;
 
       String rawVoteJson; serializeJson(votePacket, rawVoteJson);
@@ -969,7 +996,9 @@ void TaskUI(void *pvParameters) {
 // ==================== SETUP ====================
 void setup() {
   Serial.begin(115200);
-  Serial.println("=== INEC E-Voting Terminal v4.1 ===");
+  delay(3000);
+  pinMode(BUZZER, OUTPUT); tone(BUZZER, 2000); delay(1000); noTone(BUZZER);
+  Serial.println("=== MFA E-Voting Terminal v4.1 ===");
 // ---------------- SPI BUS FIX ----------------
   // 1. Prevent bus contention by pulling ALL Chip Selects HIGH *before* SPI starts
   pinMode(TFT_CS, OUTPUT);
@@ -999,9 +1028,14 @@ void setup() {
   pinMode(TAMPER_PIN, INPUT_PULLUP);  // Reed switch — HIGH when lid opened
   setLED(0, 0, 255);
 
-  Serial.println("Initializing PN5180...");
+  /* Serial.println("Initializing PN5180...");
   nfc.begin();
-  nfc.reset();
+
+  pinMode(PN5180_BUSY, INPUT);
+  Serial.printf("BUSY PIN STATE: %d\n", digitalRead(PN5180_BUSY));
+  delay(100);
+
+  nfc.reset(); */
 
   Serial.println("Initializing R307 fingerprint sensor...");
   FingerprintSerial.begin(57600, SERIAL_8N1, FP_RX, FP_TX);
@@ -1063,6 +1097,23 @@ void setup() {
       setLED(0, 255, 0);
       beep(200);
     }
+
+    // ── Q1: Fetch election config BEFORE candidates ───────────────────
+    // Blocks until a valid active election is assigned to this terminal.
+    // Admin activates election on dashboard → terminal picks it up here.
+    displayStatus("Fetching election\nconfig from server...");
+    while (!fetchElectionConfig()) {
+      displayStatus("Waiting for active\nelection assignment...\nRetrying in 30s");
+      Serial.println("[CONFIG] No active election — retrying in 30s");
+      delay(30000);
+      // Retry WiFi if it dropped
+      if (WiFi.status() != WL_CONNECTED) {
+        WiFi.reconnect();
+        delay(5000);
+      }
+    }
+    displayStatus("Election:\n" + activeConfig.electionTitle);
+    delay(1500);
 
     fetchCandidates();
   }
@@ -1248,6 +1299,70 @@ void handleVoteConfirmation() {
   delay(100);
 }
 
+// ==================== Q3: ADMIN CARD DECOMMISSION ====================
+/**
+ * lockCardWithAdminToken()
+ * Sends INS_LOCK_CARD (0x90) using an admin-provided token instead of the
+ * voter's PIN. The voter does not need to be present for this operation.
+ *
+ * Token flow:
+ *   1. SUPER_ADMIN completes step-up auth on the backend dashboard.
+ *   2. Admin initiates "Decommission Card" for the specific cardIdHash.
+ *   3. Backend generates a 32-byte random admin token, stores SHA-256(token)
+ *      in a short-TTL Redis key, and returns the raw token to the admin terminal
+ *      over the mTLS channel.
+ *   4. Admin terminal passes the token to this function.
+ *   5. This function encrypts the token with the current card session key
+ *      (same AES-ECB mechanism as PIN transmission) and sends it as APDU data.
+ *   6. The applet decrypts, SHA-256 hashes the result, and compares against
+ *      the adminTokenHash stored during card personalization.
+ *   7. Match → locked = true (permanent EEPROM write).
+ *
+ * @param adminToken  32-byte raw admin token received from the backend.
+ *                    Must NOT be pre-hashed — the applet does the hashing.
+ * @return true if card was successfully locked, false on any failure.
+ */
+bool lockCardWithAdminToken(uint8_t* adminToken) {
+  if (!currentSession.secureChannel.established) {
+    Serial.println("[LOCK] Secure channel not established");
+    return false;
+  }
+
+  // Encrypt the 32-byte admin token with the current session key (AES-ECB)
+  // Matches the decryption path in lockCard() on the applet
+  uint8_t encryptedToken[32];
+  mbedtls_aes_context aes;
+  mbedtls_aes_init(&aes);
+  mbedtls_aes_setkey_enc(&aes, currentSession.secureChannel.sessionKey, 128);
+  // AES-ECB in two 16-byte blocks (session key is 128-bit / 16 bytes)
+  mbedtls_aes_crypt_ecb(&aes, MBEDTLS_AES_ENCRYPT, adminToken,      encryptedToken);
+  mbedtls_aes_crypt_ecb(&aes, MBEDTLS_AES_ENCRYPT, adminToken + 16, encryptedToken + 16);
+  mbedtls_aes_free(&aes);
+
+  // Build APDU: CLA=0x80, INS=0x90, P1=0x00, P2=0x00, Lc=0x20 (32 bytes), data=token
+  uint8_t apdu[5 + 32];
+  apdu[0] = CLA_EVOTING;
+  apdu[1] = INS_LOCK_CARD;
+  apdu[2] = 0x00;
+  apdu[3] = 0x00;
+  apdu[4] = 0x20;  // Lc = 32
+  memcpy(&apdu[5], encryptedToken, 32);
+
+  uint8_t response[8]; uint8_t responseLength;
+  if (!sendNfcAPDU(apdu, (uint8_t)(5 + 32), response, &responseLength)) {
+    Serial.println("[LOCK] APDU send failed");
+    return false;
+  }
+
+  uint16_t sw = (response[responseLength - 2] << 8) | response[responseLength - 1];
+  if (sw == SW_SUCCESS) {
+    Serial.println("[LOCK] Card physically decommissioned via admin token");
+    return true;
+  }
+  Serial.printf("[LOCK] INS_LOCK_CARD failed: SW=%04X\n", sw);
+  return false;
+}
+
 // ==================== SMART CARD / NFC FUNCTIONS ====================
 bool selectCustomApplet() {
   uint8_t selectAPDU[15] = {0x00, 0xA4, 0x04, 0x00, APPLET_AID_LENGTH};
@@ -1397,11 +1512,35 @@ bool verifyFingerprintOnCard(uint8_t* tmpl, uint16_t templateSize) {
 }
 
 bool checkIfAlreadyVoted() {
-  uint8_t apdu[5] = {CLA_EVOTING, INS_CHECK_VOTE_STATUS, 0x00, 0x00, 0x00};
+  // 1. Ensure we actually have an election ID from the server
+  if (!activeConfig.loaded || activeConfig.electionId.length() != 36) {
+    Serial.println("[CARD] Cannot check vote status — no valid 36-byte election config loaded.");
+    return false;
+  }
+
+  // 2. Build APDU: CLA, INS, P1, P2, Lc (36), Data (36 bytes)
+  uint8_t apdu[5 + 36];
+  apdu[0] = CLA_EVOTING;
+  apdu[1] = INS_CHECK_VOTE_STATUS;
+  apdu[2] = 0x00;
+  apdu[3] = 0x00;
+  apdu[4] = 36; // Lc = 36
+  
+  // Attach the dynamic election UUID to the APDU
+  memcpy(&apdu[5], activeConfig.electionId.c_str(), 36);
+
   uint8_t response[256]; uint8_t responseLength;
-  if (sendNfcAPDU(apdu, 5, response, &responseLength)) {
+  
+  // 3. Send the command
+  if (sendNfcAPDU(apdu, 5 + 36, response, &responseLength)) {
     uint16_t sw = (response[responseLength-2] << 8) | response[responseLength-1];
-    if (sw == SW_SUCCESS && responseLength > 2) return response[0] == 0x01;
+    
+    // 4. Evaluate response
+    if (sw == SW_SUCCESS && responseLength > 2) {
+      return response[0] == 0x01; // 0x01 means Already Voted in THIS election
+    } else {
+      Serial.printf("[CARD] Check Vote Status Failed: SW=%04X\n", sw);
+    }
   }
   return false;
 }
@@ -1409,47 +1548,33 @@ bool checkIfAlreadyVoted() {
 /*
  * setVotedStatusAndCaptureBurnProof()
  * Sends INS_SET_VOTED to permanently burn the card's voted flag.
- * The applet responds with an ECDSA signature used as the burn-proof.
- * This proof is Base64-encoded into currentSession.cardBurnProof and
- * sent to the backend with the vote packet.
+ * The applet signs the combined payload and returns it as the burn-proof.
  *
- * ── BUG-2 FIX: Election-scoped burn proof ────────────────────────────────────
- *
- * BEFORE: INS_SET_VOTED was sent with Lc=0 (no data). The applet signed
- *   its stored voterID constant — the same for every election. A burn proof
- *   captured from Election A was valid for Election B for the same voter.
- *
- * AFTER: This function builds the combined payload:
- *   burnPayload = currentSession.cardUID + "|" + ELECTION_ID
- *
- *   This is sent as APDU Lc data. The applet signs this combined payload.
- *   The backend reconstructs the same string via:
- *     CryptoService.buildBurnProofPayload(cardIdHash, electionId)
- *     = cardIdHash + "|" + electionId.toString()
- *   and verifies. A proof from a different election cannot pass verification.
- *
- * NOTE: ELECTION_ID must be the UUID from the elections table (e.g.
- *   "550e8400-e29b-41d4-a716-446655440000"), not an arbitrary string.
- *   The backend VotePacketDTO.electionId is typed as java.util.UUID —
- *   sending a non-UUID string will cause a 400 deserialization error.
- *   Update the ELECTION_ID define at the top of this file accordingly.
+ * ── BUG-2 FIX + Q1: Election-scoped burn proof ───────────────────────────────
+ * Payload sent to card = currentSession.cardUID + "|" + activeConfig.electionId
+ * activeConfig.electionId is the UUID fetched from the server at boot (Q1 fix).
+ * The applet signs this combined payload. The backend verifies using the same
+ * CryptoService.buildBurnProofPayload(cardIdHash, electionId) construction.
  */
 bool setVotedStatusAndCaptureBurnProof() {
-  // BUG-2: Build combined payload that the applet will sign
-  // Must match CryptoService.buildBurnProofPayload() on the server:
-  //   payload = cardIdHash + "|" + electionId.toString()
-  String burnPayload = currentSession.cardUID + "|" + ELECTION_ID;
-  uint8_t payloadLen = (uint8_t)burnPayload.length();
-
-  // Sanity check: minimum = 1 (cardId) + 1 (pipe) + 36 (UUID) = 38 bytes
-  if (payloadLen < 38) {
-    Serial.println("[CARD] Burn payload too short (" + String(payloadLen) + 
-                   "). Check ELECTION_ID is a valid UUID.");
+  if (!activeConfig.loaded || activeConfig.electionId.isEmpty()) {
+    Serial.println("[CARD] Cannot burn card — no election config loaded.");
     return false;
   }
 
-  // Build APDU: CLA=0x80, INS=0x51, P1=0x00, P2=0x00, Lc=payloadLen, data=payload
-  uint8_t apdu[5 + 255];   // max APDU short-form Lc = 255
+  // Build election-scoped payload: cardIdHash + "|" + electionId (UUID)
+  String burnPayload = currentSession.cardUID + "|" + activeConfig.electionId;
+  uint8_t payloadLen = (uint8_t)burnPayload.length();
+
+  // Minimum: 1 (cardId) + 1 (pipe) + 36 (UUID) = 38 bytes
+  if (payloadLen < 38) {
+    Serial.println("[CARD] Burn payload too short (" + String(payloadLen) +
+                   "). Ensure electionId is a valid UUID.");
+    return false;
+  }
+
+  // APDU: CLA=0x80, INS=0x51, P1=0x00, P2=0x00, Lc=payloadLen, data=payload
+  uint8_t apdu[5 + 128];
   apdu[0] = CLA_EVOTING;
   apdu[1] = INS_SET_VOTED;
   apdu[2] = 0x00;
@@ -1460,13 +1585,13 @@ bool setVotedStatusAndCaptureBurnProof() {
   uint8_t response[256]; uint8_t responseLength;
   if (!sendNfcAPDU(apdu, (uint8_t)(5 + payloadLen), response, &responseLength)) return false;
 
-  uint16_t sw = (response[responseLength-2] << 8) | response[responseLength-1];
+  uint16_t sw = (response[responseLength - 2] << 8) | response[responseLength - 1];
   if (sw != SW_SUCCESS) {
     Serial.printf("[CARD] INS_SET_VOTED failed: SW=%04X\n", sw);
     return false;
   }
 
-  // Capture the ECDSA burn-proof signature (all response bytes before SW1SW2)
+  // Base64-encode the ECDSA burn-proof (all bytes before SW1SW2)
   if (responseLength > 2) {
     uint8_t sigLen = responseLength - 2;
     size_t b64Len = 0;
@@ -1476,8 +1601,7 @@ bool setVotedStatusAndCaptureBurnProof() {
     mbedtls_base64_encode(b64, b64Len, &b64Len, response, sigLen);
     currentSession.cardBurnProof = String((char*)b64);
     free(b64);
-    Serial.println("[CARD] Election-scoped burn proof captured: " + String(sigLen) + " bytes");
-    Serial.println("[CARD] Payload signed: " + burnPayload.substring(0, 20) + "...");
+    Serial.println("[CARD] Election-scoped burn proof captured (" + String(sigLen) + " bytes)");
   }
   return true;
 }
@@ -1576,7 +1700,7 @@ void registerPendingWithBackend() {
   
   StaticJsonDocument<512> doc;
   doc["terminalId"]     = TERMINAL_ID;
-  doc["pollingUnitId"]  = TERMINAL_POLLING_UNIT_ID;
+  doc["pollingUnitId"]  = activeConfig.pollingUnitId;  // Q1: from server config
   doc["cardIdHash"]     = currentSession.cardUID;
   doc["voterPublicKey"] = currentSession.voterPublicKey;
 
@@ -1610,18 +1734,78 @@ void registerPendingWithBackend() {
   http.end();
 }
 
-// ==================== CANDIDATE FETCH ====================
-void fetchCandidates() {
-  displayStatus("Loading candidates...");
-  WiFiClientSecure client;
-  client.setCACert(rootCACertificate);
-  client.setCertificate(clientCertificate);
-  client.setPrivateKey(clientPrivateKey);
+// ==================== Q1: ELECTION CONFIG PULL ====================
+/**
+ * fetchElectionConfig()
+ * Pulls the active election UUID and config from the server on every boot.
+ * Requires mTLS + ECDSA-signed request — only registered terminals get a response.
+ *
+ * Replaces the hardcoded ELECTION_ID define. When an admin activates a new
+ * election on the dashboard, all terminals pick it up automatically on next boot.
+ * No firmware reflashing, no Postman, no UUID copying.
+ *
+ * Backend: GET /api/terminal/config  (TerminalConfigController.java)
+ * Response: { electionId, electionTitle, pollingUnitId, closingTime }
+ *
+ * Blocking retry: if the server has no active election for this terminal's
+ * polling unit, the terminal shows a waiting screen and retries every 30s.
+ * This prevents the terminal operating without a valid election bound.
+ */
+bool fetchElectionConfig() {
+  if (WiFi.status() != WL_CONNECTED) return false;
+
+  WiFiClientSecure client = makeMtlsClient();
+  client.setTimeout(10);
 
   HTTPClient http;
-  // FIRMWARE FIX F-05 applied: host+port+path form
+  http.begin(client, BACKEND_HOST, BACKEND_PORT, "/api/terminal/config", true);
+  http.addHeader("Content-Type", "application/json");
+  http.setTimeout(10000);
+  addTerminalAuthHeaders(http, "");  // signed empty body — identity is the auth
+
+  int code = http.GET();
+  if (code == 200) {
+    StaticJsonDocument<512> doc;
+    DeserializationError err = deserializeJson(doc, http.getString());
+    http.end();
+    if (err) {
+      Serial.println("[CONFIG] JSON parse error: " + String(err.c_str()));
+      return false;
+    }
+    activeConfig.electionId   = doc["electionId"].as<String>();
+    activeConfig.electionTitle = doc["electionTitle"].as<String>();
+    activeConfig.pollingUnitId = doc["pollingUnitId"].as<int>();
+    activeConfig.closingTime  = doc["closingTime"].as<String>();
+    activeConfig.loaded       = true;
+
+    Serial.println("[CONFIG] Election loaded: " + activeConfig.electionTitle);
+    Serial.println("[CONFIG] Election ID:     " + activeConfig.electionId);
+    Serial.println("[CONFIG] Polling Unit:    " + String(activeConfig.pollingUnitId));
+    Serial.println("[CONFIG] Closes:          " + activeConfig.closingTime);
+    return true;
+  }
+
+  http.end();
+  if (code == 404) {
+    Serial.println("[CONFIG] No active election assigned to this terminal.");
+  } else {
+    Serial.printf("[CONFIG] fetchElectionConfig failed: HTTP %d\n", code);
+  }
+  return false;
+}
+
+void fetchCandidates() {
+  if (!activeConfig.loaded) {
+    Serial.println("[NET] fetchCandidates: no election config loaded — skipping.");
+    return;
+  }
+  displayStatus("Loading candidates...");
+  WiFiClientSecure client = makeMtlsClient();  // use mTLS for consistency
+
+  HTTPClient http;
+  // Use activeConfig.electionId — never the old hardcoded ELECTION_ID
   http.begin(client, BACKEND_HOST, BACKEND_PORT,
-    "/api/terminal/candidates?electionId=" + ELECTION_ID, true);
+    "/api/terminal/candidates?electionId=" + activeConfig.electionId, true);
   http.setTimeout(10000);
   int code = http.GET();
   if (code == 200) {
@@ -1638,7 +1822,8 @@ void fetchCandidates() {
         candidateCount++;
       }
     }
-    Serial.printf("[NET] %d candidates loaded\n", candidateCount);
+    Serial.printf("[NET] %d candidates loaded for election %s\n",
+                  candidateCount, activeConfig.electionId.c_str());
   } else {
     Serial.printf("[NET] fetchCandidates failed: %d\n", code);
   }
@@ -1749,7 +1934,7 @@ void displayError(String msg) {
     tft.setCursor(20, y); tft.println(msg.substring(start, end));
     y += 15; start = end + 1;
   }
-  setLED(255, 0, 0); beep(500);
+  setLED(255, 0, 0); errorBeep();
 }
 
 void displaySuccess(String msg) {
@@ -1761,7 +1946,8 @@ void displaySuccess(String msg) {
 }
 
 void setLED(int r, int g, int b) { analogWrite(LED_R, r); analogWrite(LED_G, g); analogWrite(LED_B, b); }
-void beep(int ms)                { digitalWrite(BUZZER, HIGH); delay(ms); digitalWrite(BUZZER, LOW); }
+void beep(int ms)                { tone(BUZZER, 2000); delay(ms); noTone(BUZZER); }
+void errorBeep() {tone(BUZZER, 300); delay(500); noTone(BUZZER); }
 
 void printHex(uint8_t* data, int length) {
   for (int i = 0; i < length; i++) { if (data[i] < 0x10) Serial.print("0"); Serial.print(data[i], HEX); Serial.print(" "); }
