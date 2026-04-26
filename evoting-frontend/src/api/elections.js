@@ -92,13 +92,16 @@ export const unlockCards = async (id) => {
  */
 export async function uploadCandidatePhoto(candidateId, file) {
   const form = new FormData();
-  // Backend ImageController expects field name "image" (not "file")
   form.append("image", file);
-  // DO NOT set Content-Type manually — axios/browser must set it automatically
-  // so the multipart boundary is included (e.g. multipart/form-data; boundary=xxxx).
-  // Manually setting Content-Type without the boundary breaks Spring's multipart parser.
-  const res = await client.post(`/admin/images/candidate/${candidateId}`, form);
-  return res.data; // { candidateId, imageUrl, s3Key }
+
+  // Override the global client.js headers for this specific request
+  const res = await client.post(`/admin/images/candidate/${candidateId}`, form, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+
+  return res.data;
 }
 
 export async function deleteCandidatePhoto(candidateId) {
