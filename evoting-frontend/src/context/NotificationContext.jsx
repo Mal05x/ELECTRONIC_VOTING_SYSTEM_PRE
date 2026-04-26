@@ -234,7 +234,7 @@ export function NotificationProvider({ children }) {
 
   return (
     <NotificationContext.Provider value={{
-      notifications, popups, dismissPopup, push, markRead, markUnread, toggleRead, markAllRead, clearAll, unread,
+      notifications, popups, dismissPopup, push, markRead, markUnread, toggleRead, markAllRead, clearAll, unread, refreshNotifications,
     }}>
       {children}
     </NotificationContext.Provider>
