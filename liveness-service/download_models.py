@@ -16,7 +16,11 @@ import ssl
 import sys
 from pathlib import Path
 
-MODELS_DIR = Path(__file__).parent / "models"
+# Absolute path anchored to this script's own directory.
+# Render runs build commands from the repo root, so a bare Path("models")
+# would create /opt/render/project/src/models/ instead of
+# /opt/render/project/src/liveness-service/models/.
+MODELS_DIR = Path(__file__).resolve().parent / "models"
 MODELS_DIR.mkdir(exist_ok=True)
 
 MODELS = [

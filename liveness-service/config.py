@@ -9,10 +9,15 @@ Model selection:
 import os
 
 # ─── Model paths ─────────────────────────────────────────────────────────────
-MODELS_DIR         = "models"
-MINIFASNET_PATH    = f"{MODELS_DIR}/MiniFASNetV2_SE.onnx"
-FACE_DETECTOR_PATH = f"{MODELS_DIR}/version-RFB-320.onnx"   # Ultraface RFB-320
-CDCN_PATH          = f"{MODELS_DIR}/CDCNpp.onnx"
+# Absolute path anchored to this file's own directory.
+# CRITICAL on Render: the process CWD is the repo root (/opt/render/project/src/)
+# but the models live inside liveness-service/models/. A relative "models/" string
+# silently resolves to the wrong location even after a successful build.
+_HERE              = os.path.dirname(os.path.abspath(__file__))
+MODELS_DIR         = os.path.join(_HERE, "models")
+MINIFASNET_PATH    = os.path.join(MODELS_DIR, "MiniFASNetV2_SE.onnx")
+FACE_DETECTOR_PATH = os.path.join(MODELS_DIR, "version-RFB-320.onnx")
+CDCN_PATH          = os.path.join(MODELS_DIR, "CDCNpp.onnx")
 
 # ─── Active liveness model ───────────────────────────────────────────────────
 # "minifasnet_multiscale" — three-scale MiniFASNetV2 (immediate, no extra model)
@@ -31,10 +36,8 @@ BURST_FUSED_THRESHOLD = 0.72  # Final liveness_weight×liveness + flow_weight×f
 # ─── Multi-scale MiniFASNet crop schedule ────────────────────────────────────
 # Each tuple: (output_size_px, face_bbox_margin_factor)
 # Margin 1.0 → tight crop; 1.5 → 50% context; 2.0 → 100% extra context.
-# This is the multi-scale inference described in the original
-# Silent-Face-Anti-Spoofing paper — NOT currently used in the broken v2 pipeline.
 MINIFASNET_SCALES         = [(80, 1.0), (80, 1.5), (80, 2.0)]
-MINIFASNET_SCALE_WEIGHTS  = [1/3, 1/3, 1/3]   # Equal weighting
+MINIFASNET_SCALE_WEIGHTS  = [1/3, 1/3, 1/3]
 
 # ─── Optical flow (burst mode) ────────────────────────────────────────────────
 FLOW_MIN_MOTION  = 0.08  # Below this  → suspiciously static (printed photo)
