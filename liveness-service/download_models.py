@@ -25,19 +25,30 @@ MODELS_DIR.mkdir(exist_ok=True)
 
 MODELS = [
     {
-        "name": "MiniFASNetV2_SE.onnx",
-        "url":  "https://raw.githubusercontent.com/suriAI/face-antispoof-onnx/main/models/best_model.onnx",
-        "min_kb": 1000,
-        "desc": "MiniFASNetV2_SE — face anti-spoofing model",
+        # MiniFASNetV2 — crop scale 2.7 (trained at 2.7× face bbox)
+        # Source: github.com/yakhyo/face-anti-spoofing — verified working 2025
+        "name":   "MiniFASNetV2.onnx",
+        "url":    "https://github.com/yakhyo/face-anti-spoofing/releases/download/weights/MiniFASNetV2.onnx",
+        "min_kb": 400,
+        "desc":   "MiniFASNetV2 — anti-spoofing, crop scale 2.7",
     },
     {
-        "name": "version-RFB-320.onnx",
-        "url":  (
+        # MiniFASNetV1SE — crop scale 4.0 (trained at 4.0× face bbox)
+        # Running both V2+V1SE is the true multi-scale inference from the paper.
+        "name":   "MiniFASNetV1SE.onnx",
+        "url":    "https://github.com/yakhyo/face-anti-spoofing/releases/download/weights/MiniFASNetV1SE.onnx",
+        "min_kb": 400,
+        "desc":   "MiniFASNetV1SE — anti-spoofing, crop scale 4.0",
+    },
+    {
+        # Ultraface RFB-320 — face detector, 320×240 native input
+        "name":   "version-RFB-320.onnx",
+        "url":    (
             "https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB"
             "/raw/master/models/onnx/version-RFB-320.onnx"
         ),
         "min_kb": 300,
-        "desc": "Ultraface RFB-320 — face detector optimised for 320×240 input",
+        "desc":   "Ultraface RFB-320 — face detector optimised for 320×240 input",
     },
 ]
 
