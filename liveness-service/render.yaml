@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: evoting-liveness-service
+    runtime: python
+    region: oregon          # change to match your Spring Boot service region
+
+    # ── Build ────────────────────────────────────────────────────────────────
+    # Render runs this once per deploy inside the container before start.
+    # download_models.py skips files already present (checks size threshold).
+    # MiniFASNetV2_SE.onnx in the repo is the corrupt 626 KB file — it is
+    # below the 1 MB minimum so download_models.py WILL re-download it correctly.
+    # version-RFB-320.onnx (Ultraface face detector) is not in the repo and
+    # will be downloaded fresh here.
+    buildCommand: pip install -r requirements.txt && python download_models.py
+
+    # ── Start ────────────────────────────────────────────────────────────────
+    # Render injects $PORT. Must bind 0.0.0.0, not 127.0.0.1.
+    # --workers 1: single worker keeps memory under 512 MB on free tier.
+    # --timeout-keep-alive 65: prevents Render's load balancer from dropping
+    #   long-running burst requests (5 frames + inference can take ~3-4s).
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1 --timeout-keep-alive 65
+
+    # ── Plan ─────────────────────────────────────────────────────────────────
+    plan: free
+
+    # ── Health check ─────────────────────────────────────────────────────────
+    # Render uses this to decide if the deploy succeeded.
+    # The /health endpoint has no auth — safe to expose.
+    healthCheckPath: /health
+
+    # ── Environment variables ─────────────────────────────────────────────────
+    # LIVENESS_SECRET must be set in Render dashboard → Environment.
+    # Do NOT commit the actual secret value here.
+    envVars:
+      - key: LIVENESS_SECRET
+        sync: false              # set manually in Render dashboard
+      - key: LIVENESS_MODEL
+        value: minifasnet_multiscale   # change to "cdcn" after running cdcn_export.py
