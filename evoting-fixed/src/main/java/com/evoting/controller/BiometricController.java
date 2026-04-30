@@ -212,4 +212,36 @@ public class BiometricController {
                     .body(Map.of("error", "Liveness service unreachable: " + e.getMessage()));
         }
     }
+    
+    @PostMapping(value = "/debug-preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+     public ResponseEntity<?> debugPreview(
+        @RequestParam("frame") MultipartFile frame) {
+        try {
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("frame", new ByteArrayResource(frame.getBytes()) {
+            @Override public String getFilename() { return "frame.jpg"; }
+        });
+
+        HttpHeaders h = new HttpHeaders();
+        h.setContentType(MediaType.MULTIPART_FORM_DATA);
+        if (livenessSecret != null && !livenessSecret.isBlank()) {
+            h.set("X-Liveness-Secret", livenessSecret);
+        }
+
+        RestTemplate rt = new RestTemplate();
+        ResponseEntity<String> resp = rt.exchange(
+            livenessServiceUrl + "/debug/preview",
+            HttpMethod.POST,
+            new HttpEntity<>(body, h),
+            String.class
+        );
+        return ResponseEntity.status(resp.getStatusCode())
+                             .contentType(MediaType.APPLICATION_JSON)
+                             .body(resp.getBody());
+
+    } catch (Exception e) {
+        return ResponseEntity.status(503)
+                .body(Map.of("error", "Debug preview failed: " + e.getMessage()));
+    }
+  }
 }
