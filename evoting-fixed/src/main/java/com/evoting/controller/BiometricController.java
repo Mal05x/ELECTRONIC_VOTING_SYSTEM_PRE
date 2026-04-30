@@ -10,6 +10,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +38,11 @@ import java.util.Map;
 public class BiometricController {
 
     @Autowired private BiometricService biometricService;
+    @Value("${liveness.service.url:http://127.0.0.1:5001}")
+    private String livenessServiceUrl;
+
+    @Value("${liveness.service.secret:}")
+    private String livenessSecret;
 
     // ─────────────────────────────────────────────────────────────────────────
     //  V2 — Single frame (kept for backward compatibility)
@@ -180,5 +190,26 @@ public class BiometricController {
                         : "STRICT — AI evaluation required",
                 "message",  "Liveness configuration updated at runtime."
         ));
+    }
+
+    @GetMapping("/liveness-health")
+    public ResponseEntity<?> livenessHealth() {
+        try {
+            HttpHeaders h = new HttpHeaders();
+            if (livenessSecret != null && !livenessSecret.isBlank()) {
+                h.set("X-Liveness-Secret", livenessSecret);
+            }
+            RestTemplate rt = new RestTemplate();
+            ResponseEntity<String> resp = rt.exchange(
+                    livenessServiceUrl + "/health/detail",
+                    HttpMethod.GET,
+                    new HttpEntity<>(h),
+                    String.class
+            );
+            return ResponseEntity.status(resp.getStatusCode()).body(resp.getBody());
+        } catch (Exception e) {
+            return ResponseEntity.status(503)
+                    .body(Map.of("error", "Liveness service unreachable: " + e.getMessage()));
+        }
     }
 }

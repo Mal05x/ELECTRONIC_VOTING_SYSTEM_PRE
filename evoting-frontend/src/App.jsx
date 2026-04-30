@@ -22,6 +22,8 @@ import RegistrationView   from "./pages/RegistrationView.jsx";
 import ResetPasswordPage  from "./pages/ResetPasswordPage.jsx";
 import OAuthCallback      from "./components/OAuthCallback";
 import PopupRenderer from "./components/PopupRenderer.jsx";
+import BiometricCaptureView from "./pages/BiometricCaptureView.jsx";
+
 
 function RequireAuth({ children }) {
   const { user } = useAuth();
@@ -66,6 +68,7 @@ function AppShell() {
     approvals:    wrap("Pending Approvals",  <ApprovalsView />),
     registration: wrap("Registration",       <RegistrationView />),
     settings:     wrap("Settings",           <SettingsView />),
+    biometric:    wrap("Biometric Capture",  <BiometricCaptureView />),
   };
 
   return (
@@ -117,7 +120,9 @@ export default function App() {
        <Route path="/oauth-callback" element={<OAuthCallback />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/verify"    element={<ReceiptTrackerView />} />
-      <Route path="/simulator" element={<HardwareSimulator />} />
+      {import.meta.env.VITE_ENABLE_SIMULATOR === "true" && (
+        <Route path="/simulator" element={<HardwareSimulator />} />
+      )}
       <Route path="/*" element={
         <RequireAuth>
           <AppShell />

@@ -40,6 +40,10 @@ from fastapi.responses import JSONResponse
 import config
 from liveness_evaluator import LivenessEvaluator
 
+import base64
+
+
+
 # ─── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
@@ -176,7 +180,118 @@ async def evaluate_burst(
              result["model"],             result["detail"])
 
     return result
+# ── Paste these two functions into main.py ────────────────────────────────────
 
+@app.post("/debug/preview")
+async def debug_preview(
+        frame:              UploadFile = File(...),
+        x_liveness_secret:  str | None = Header(default=None, alias="X-Liveness-Secret"),
+):
+    """
+    Debug endpoint: annotates face bbox, runs liveness inference, returns
+    base64-encoded annotated JPEG + all intermediate scores.
+
+    REMOVE THIS ENDPOINT BEFORE DEPLOYING TO PRODUCTION / ELECTION DAY.
+    It returns face image data over the wire — privacy liability.
+    """
+    _require_secret(x_liveness_secret)
+
+    data = await frame.read()
+    img  = _decode_jpeg(data)
+    if img is None:
+        return JSONResponse(status_code=400,
+                            content={"error": "Invalid JPEG payload"})
+
+    # Detect face
+    face = _evaluator._detector.detect(img)
+
+    # Annotate
+    annotated = img.copy()
+    if face:
+        # Bounding box
+        cv2.rectangle(annotated,
+                      (face.x1, face.y1), (face.x2, face.y2),
+                      (139, 92, 246), 2)  # Purple
+        # Score badge
+        label = f"face {face.score:.2f}"
+        (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+        cv2.rectangle(annotated,
+                      (face.x1, face.y1 - th - 8),
+                      (face.x1 + tw + 6, face.y1),
+                      (139, 92, 246), -1)
+        cv2.putText(annotated, label,
+                    (face.x1 + 3, face.y1 - 4),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (240, 236, 255), 1)
+
+        # Draw 3 crop scales used in multi-scale inference
+        for margin, color in [(1.35, (167, 139, 250)), (2.0, (96, 165, 250))]:
+            import face_detector as fd_module
+            crop_img = _evaluator._detector.crop_face(img, face,
+                                                      margin_factor=margin,
+                                                      target_size=80)
+            h, w = img.shape[:2]
+            cx = (face.x1 + face.x2) // 2
+            cy = (face.y1 + face.y2) // 2
+            half = int(max(face.width, face.height) * margin / 2)
+            x1 = max(0, cx - half); x2 = min(w, cx + half)
+            y1 = max(0, cy - half); y2 = min(h, cy + half)
+            cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 1)
+
+    # Run liveness
+    result = _evaluator.evaluate(img)
+
+    # Encode
+    _, buf = cv2.imencode(".jpg", annotated, [cv2.IMWRITE_JPEG_QUALITY, 88])
+    b64 = base64.b64encode(buf).decode()
+
+    return {
+        "image_b64":      b64,
+        "face_detected":  face is not None,
+        "face_score":     float(face.score) if face else 0.0,
+        "livenessPassed": result["livenessPassed"],
+        "confidenceScore":result["confidenceScore"],
+        "model":          result["model"],
+        "detail":         result["detail"],
+    }
+
+
+@app.get("/health/detail")
+async def health_detail(
+        x_liveness_secret: str | None = Header(default=None, alias="X-Liveness-Secret"),
+):
+    """
+    Extended health check for the admin dashboard Model Status tab.
+    Returns model file presence, sizes, and active configuration.
+    """
+    _require_secret(x_liveness_secret)
+
+    import config
+
+    def file_info(path):
+        if os.path.exists(path):
+            return {"present": True, "size_kb": os.path.getsize(path) // 1024}
+        return {"present": False, "size_kb": 0}
+
+    return {
+        "status":        "ok",
+        "version":       "3.0.0",
+        "model":         config.LIVENESS_MODEL,
+        "burst_support": True,
+        "models": {
+            "MiniFASNetV2":   file_info(config.MINIFASNET_V2_PATH),
+            "MiniFASNetV1SE": file_info(config.MINIFASNET_V1SE_PATH),
+            "FaceDetector":   file_info(config.FACE_DETECTOR_PATH),
+            "CDCNpp":         file_info(config.CDCN_PATH),
+        },
+        "thresholds": {
+            "minifasnet":    config.MINIFASNET_THRESHOLD,
+            "cdcn":          config.CDCN_THRESHOLD,
+            "burst_fused":   config.BURST_FUSED_THRESHOLD,
+            "flow_min":      config.FLOW_MIN_MOTION,
+            "flow_weight":   config.FLOW_WEIGHT,
+            "liveness_weight": config.LIVENESS_WEIGHT,
+        },
+    }
 
 # ─── Render / local entry point ───────────────────────────────────────────────
 # Render injects $PORT dynamically. Locally defaults to 5001.
