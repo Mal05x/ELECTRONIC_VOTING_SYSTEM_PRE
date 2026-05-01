@@ -611,22 +611,29 @@ public class AdminController {
     /**
      * GET /api/admin/terminals
      * Returns the latest heartbeat record for every known terminal.
-     * Status is computed: ONLINE if heartbeat within 5 min, WARNING within 15, else OFFLINE.
      */
     @GetMapping("/terminals")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','OBSERVER')")
     public ResponseEntity<List<Map<String, Object>>> getTerminals() {
-        List<TerminalHeartbeat> allHeartbeats =
-                heartbeatRepo.findAll();
-        Map<String, TerminalHeartbeat> latestPerTerminal =
-                new HashMap<>();
-        for (com.evoting.model.TerminalHeartbeat h : allHeartbeats) {
-            latestPerTerminal.merge(h.getTerminalId(), h, (existing, candidate) ->
-                    candidate.getReportedAt().isAfter(existing.getReportedAt()) ? candidate : existing);
+        List<TerminalHeartbeat> allHeartbeats = heartbeatRepo.findAll();
+        Map<String, TerminalHeartbeat> latestPerTerminal = new HashMap<>();
+
+        for (TerminalHeartbeat h : allHeartbeats) {
+            // Null safety: skip bad records to prevent 500 errors
+            if (h.getTerminalId() == null) continue;
+
+            latestPerTerminal.merge(h.getTerminalId(), h, (existing, candidate) -> {
+                // Null safety for timestamps
+                if (candidate.getReportedAt() == null) return existing;
+                if (existing.getReportedAt() == null) return candidate;
+                return candidate.getReportedAt().isAfter(existing.getReportedAt()) ? candidate : existing;
+            });
         }
+
         java.time.OffsetDateTime now     = java.time.OffsetDateTime.now();
         java.time.OffsetDateTime online  = now.minusMinutes(5);
         java.time.OffsetDateTime warning = now.minusMinutes(15);
+
         List<Map<String, Object>> result = latestPerTerminal.values().stream()
                 .map(h -> {
                     String status = "OFFLINE";
@@ -635,16 +642,24 @@ public class AdminController {
                         else if (h.getReportedAt().isAfter(warning)) status = "WARNING";
                     }
                     if (Boolean.TRUE.equals(h.isTamperFlag())) status = "ALERT";
+
                     Map<String, Object> m = new HashMap<>();
                     m.put("terminalId",    h.getTerminalId());
                     m.put("batteryLevel",  h.getBatteryLevel() != null ? h.getBatteryLevel() : 0);
-                    m.put("tamperDetected",h.isTamperFlag());
+
+                    // FIX 1: React expects "tamperFlag", not "tamperDetected"
+                    m.put("tamperFlag",    h.isTamperFlag());
+
                     m.put("ipAddress",     h.getIpAddress() != null ? h.getIpAddress() : "");
-                    m.put("lastHeartbeat", h.getReportedAt() != null ? h.getReportedAt().toString() : "");
+
+                    // FIX 2: React expects "reportedAt", not "lastHeartbeat"
+                    m.put("reportedAt",    h.getReportedAt() != null ? h.getReportedAt().toString() : null);
+
                     m.put("status",        status);
                     return m;
                 })
                 .collect(Collectors.toList());
+
         return ResponseEntity.ok(result);
     }
 
