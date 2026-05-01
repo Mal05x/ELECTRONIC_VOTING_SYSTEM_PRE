@@ -148,6 +148,7 @@ public class TerminalAuthService {
                 .label(label)
                 .pollingUnitId(pollingUnitId)
                 .registeredBy(registeredBy)
+                .active(true)
                 .build();
         terminalRepo.save(reg);
         auditLog.log("TERMINAL_REGISTERED", registeredBy,
