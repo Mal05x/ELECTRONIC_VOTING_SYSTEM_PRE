@@ -12,6 +12,9 @@ import java.security.Signature;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.Instant;
 import java.util.Base64;
+import java.security.*;
+import java.nio.charset.StandardCharsets;
+
 
 /**
  * TerminalAuthService — application-layer terminal identity verification.
@@ -151,6 +154,69 @@ public class TerminalAuthService {
                 "TerminalId=" + terminalId + " Label=" + label);
         return reg;
     }
+
+    /**
+     * Verify a ping request signature from terminal_ping_test.ino.
+     *
+     * Canonical string: terminalId + "|" + timestamp + "|" + base64Sha256(bodyJson)
+     *
+     * @param terminalId  Terminal identifier (must be registered)
+     * @param timestamp   Unix seconds from terminal clock
+     * @param signature   Base64 P1363 ECDSA-P256 signature
+     * @param bodyJson    Raw JSON body string (for SHA-256 hashing)
+     * @return true if signature is valid and terminal is registered
+     */
+
+    public boolean verifyPingSignature(String terminalId, long timestamp,
+                                       String signature, String bodyJson) {
+        try {
+            // 1. Get terminal's registered public key
+            // FIXED: Changed 'Terminal' to 'TerminalRegistry' and 'terminalRepository' to 'terminalRepo'
+            TerminalRegistry terminal = terminalRepo.findByTerminalIdAndActiveTrue(terminalId)
+                    .orElse(null);
+
+            if (terminal == null || terminal.getPublicKey() == null) {
+                log.warn("[PING-VERIFY] Terminal {} not found, inactive, or has no public key",
+                        terminalId);
+                return false;
+            }
+
+            // 2. Compute SHA-256 of body JSON
+            MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+            byte[] bodyHash = sha256.digest(bodyJson.getBytes(StandardCharsets.UTF_8));
+            String bodyHashB64 = Base64.getEncoder().encodeToString(bodyHash);
+
+            // 3. Build canonical string
+            String canonical = terminalId + "|" + timestamp + "|" + bodyHashB64;
+
+            // 4. Decode public key SPKI DER → ECPublicKey
+            byte[] pubKeyDer = Base64.getDecoder().decode(terminal.getPublicKey());
+            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(pubKeyDer);
+            KeyFactory kf = KeyFactory.getInstance("EC");
+            PublicKey pubKey = kf.generatePublic(keySpec);
+
+            // 5. Verify P1363 signature
+            byte[] sigBytes = Base64.getDecoder().decode(signature);
+            Signature verifier = Signature.getInstance("SHA256withECDSAinP1363Format");
+            verifier.initVerify(pubKey);
+            verifier.update(canonical.getBytes(StandardCharsets.UTF_8));
+            boolean valid = verifier.verify(sigBytes);
+
+            if (valid) {
+                log.info("[PING-VERIFY] Terminal {} signature valid", terminalId);
+            } else {
+                log.warn("[PING-VERIFY] Terminal {} signature INVALID", terminalId);
+                log.debug("[PING-VERIFY] Canonical: {}", canonical);
+            }
+            return valid;
+
+        } catch (Exception e) {
+            log.error("[PING-VERIFY] Exception verifying terminal {} ping: {}",
+                    terminalId, e.getMessage());
+            return false;
+        }
+    }
+
 
     // ── ECDSA P-256 verification (SHA256withECDSAinP1363Format) ──────────
     private boolean verifyECDSA(String payload, String base64Sig, String base64PubKey) {
