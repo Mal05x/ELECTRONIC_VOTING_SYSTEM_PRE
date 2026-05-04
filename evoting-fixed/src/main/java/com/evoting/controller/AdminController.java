@@ -484,21 +484,35 @@ public class AdminController {
      * POST /api/admin/enrollment/queue
      *
      * Admin queues a voter enrollment for a specific terminal.
-     * Server generates the per-card SCP03 static key (Fix B-05) — it is
-     * stored in enrollment_queue and delivered to the terminal on GET /terminal/pending_enrollment.
+     * Server generates:
+     *   a) 16-byte per-card SCP03 static key (stored, delivered to terminal).
+     *   b) 32-byte admin token (SHA-256 stored; RAW returned ONCE here).
+     *
+     * CRITICAL: The rawAdminToken in the response is the ONLY time it appears.
+     * The admin MUST store it securely (e.g. printed receipt, HSM, password manager).
+     * It is needed to decommission (permanently lock) the card via INS_LOCK_CARD.
+     * Loss of this token means the card can never be administratively locked.
      */
     @PostMapping("/enrollment/queue")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPER_ADMIN')")
     @RequiresStepUp("QUEUE_ENROLLMENT")
     public ResponseEntity<?> queueEnrollment(
             @RequestBody @Valid EnrollmentQueueRequestDTO dto, Authentication auth) {
-        EnrollmentQueue queued = enrollmentService.queueEnrollment(dto, auth.getName());
+        EnrollmentService.EnrollmentQueueResult result =
+                enrollmentService.queueEnrollment(dto, auth.getName());
+        EnrollmentQueue queued = result.record();
         return ResponseEntity.ok(java.util.Map.of(
-                "enrollmentId", queued.getId(),
-                "terminalId",   queued.getTerminalId(),
-                "status",       queued.getStatus(),
-                "message",      "Enrollment queued. Terminal " + queued.getTerminalId() +
-                        " can now fetch and process this enrollment."));
+                "enrollmentId",    queued.getId(),
+                "terminalId",      queued.getTerminalId(),
+                "status",          queued.getStatus(),
+                // One-time reveal: Base64 of 32-byte raw admin token.
+                // Store this securely. It is required to lock the card via INS_LOCK_CARD.
+                // It will NEVER be returned again by this API.
+                "rawAdminToken",   result.rawAdminTokenB64(),
+                "adminTokenHash",  result.adminTokenHashB64(),
+                "message",         "Enrollment queued. Terminal " + queued.getTerminalId()
+                        + " can fetch and process this enrollment. "
+                        + "STORE rawAdminToken SECURELY — it cannot be recovered."));
     }
 
     /**
@@ -611,29 +625,22 @@ public class AdminController {
     /**
      * GET /api/admin/terminals
      * Returns the latest heartbeat record for every known terminal.
+     * Status is computed: ONLINE if heartbeat within 5 min, WARNING within 15, else OFFLINE.
      */
     @GetMapping("/terminals")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','OBSERVER')")
     public ResponseEntity<List<Map<String, Object>>> getTerminals() {
-        List<TerminalHeartbeat> allHeartbeats = heartbeatRepo.findAll();
-        Map<String, TerminalHeartbeat> latestPerTerminal = new HashMap<>();
-
-        for (TerminalHeartbeat h : allHeartbeats) {
-            // Null safety: skip bad records to prevent 500 errors
-            if (h.getTerminalId() == null) continue;
-
-            latestPerTerminal.merge(h.getTerminalId(), h, (existing, candidate) -> {
-                // Null safety for timestamps
-                if (candidate.getReportedAt() == null) return existing;
-                if (existing.getReportedAt() == null) return candidate;
-                return candidate.getReportedAt().isAfter(existing.getReportedAt()) ? candidate : existing;
-            });
+        List<TerminalHeartbeat> allHeartbeats =
+                heartbeatRepo.findAll();
+        Map<String, TerminalHeartbeat> latestPerTerminal =
+                new HashMap<>();
+        for (com.evoting.model.TerminalHeartbeat h : allHeartbeats) {
+            latestPerTerminal.merge(h.getTerminalId(), h, (existing, candidate) ->
+                    candidate.getReportedAt().isAfter(existing.getReportedAt()) ? candidate : existing);
         }
-
         java.time.OffsetDateTime now     = java.time.OffsetDateTime.now();
         java.time.OffsetDateTime online  = now.minusMinutes(5);
         java.time.OffsetDateTime warning = now.minusMinutes(15);
-
         List<Map<String, Object>> result = latestPerTerminal.values().stream()
                 .map(h -> {
                     String status = "OFFLINE";
@@ -642,24 +649,16 @@ public class AdminController {
                         else if (h.getReportedAt().isAfter(warning)) status = "WARNING";
                     }
                     if (Boolean.TRUE.equals(h.isTamperFlag())) status = "ALERT";
-
                     Map<String, Object> m = new HashMap<>();
                     m.put("terminalId",    h.getTerminalId());
                     m.put("batteryLevel",  h.getBatteryLevel() != null ? h.getBatteryLevel() : 0);
-
-                    // FIX 1: React expects "tamperFlag", not "tamperDetected"
-                    m.put("tamperFlag",    h.isTamperFlag());
-
+                    m.put("tamperDetected",h.isTamperFlag());
                     m.put("ipAddress",     h.getIpAddress() != null ? h.getIpAddress() : "");
-
-                    // FIX 2: React expects "reportedAt", not "lastHeartbeat"
-                    m.put("reportedAt",    h.getReportedAt() != null ? h.getReportedAt().toString() : null);
-
+                    m.put("lastHeartbeat", h.getReportedAt() != null ? h.getReportedAt().toString() : "");
                     m.put("status",        status);
                     return m;
                 })
                 .collect(Collectors.toList());
-
         return ResponseEntity.ok(result);
     }
 

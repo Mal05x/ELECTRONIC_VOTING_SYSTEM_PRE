@@ -77,6 +77,7 @@ public class SecurityConfig {
                         // NOT permitted: PUT /api/camera/liveness-config — requires SUPER_ADMIN JWT
                         .requestMatchers("/api/camera/liveness").permitAll()
                         .requestMatchers("/api/camera/liveness-burst").permitAll()
+                        .requestMatchers("/api/camera/stream").permitAll()
                         .requestMatchers("/api/camera/ping").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         .anyRequest().authenticated()
