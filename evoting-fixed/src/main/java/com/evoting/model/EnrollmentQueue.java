@@ -62,7 +62,7 @@ public class EnrollmentQueue {
      */
     @Column(name = "admin_token_hash", columnDefinition = "bpchar")
     private String adminTokenHash;
-    
+
     @org.hibernate.annotations.CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private java.time.LocalDateTime createdAt;
