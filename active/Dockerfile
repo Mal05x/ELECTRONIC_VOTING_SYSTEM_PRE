@@ -1,5 +1,5 @@
-# Use a lightweight Python base image
-FROM python:3.10-slim
+# Use the exact Python 3.11 version that worked on your laptop
+FROM python:3.11-slim
 
 # Install the system-level C++ libraries required by OpenCV and MediaPipe
 RUN apt-get update && apt-get install -y \
@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose port 5001 (matching the port in your app.py)
-EXPOSE 5001
+EXPOSE 5002
 
 # The command to boot the AI server
 CMD ["python", "app.py"]

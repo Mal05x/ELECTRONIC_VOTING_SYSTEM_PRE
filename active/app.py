@@ -91,6 +91,6 @@ def analyze_frame():
     return jsonify({"passed": passed})
 
 if __name__ == '__main__':
-    # Run the NEW active liveness server on port 5001
+    # Run the NEW active liveness server on port 5002
     print("🚀 Python MediaPipe Active Liveness Booting on Port 5001...")
-    app.run(host='0.0.0.0', port=5001)
+    app.run(host='0.0.0.0', port=5002)
