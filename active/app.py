@@ -92,5 +92,5 @@ def analyze_frame():
 
 if __name__ == '__main__':
     # Run the NEW active liveness server on port 5002
-    print("🚀 Python MediaPipe Active Liveness Booting on Port 5001...")
+    print("🚀 Python MediaPipe Active Liveness Booting on Port 5002...")
     app.run(host='0.0.0.0', port=5002)
