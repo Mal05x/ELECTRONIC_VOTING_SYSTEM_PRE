@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import com.evoting.model.TerminalHeartbeat;
 import com.evoting.repository.TerminalHeartbeatRepository;
 import com.evoting.service.VoteProcessingService;
@@ -39,10 +40,10 @@ public class TerminalController {
     @Autowired private EnrollmentService enrollmentService;
     @Autowired private CandidateRepository candidateRepo;
     @Autowired private ElectionRepository electionRepo;
-    // NEW: The WebSocket Megaphone!
     @Autowired private SimpMessagingTemplate messagingTemplate;
-    // --> ADD THIS LINE RIGHT HERE! <--
     @Autowired private TerminalHeartbeatRepository terminalHeartbeatRepo;
+    @Autowired
+    private com.evoting.repository.TerminalRegistryRepository terminalRegistryRepo;
 
     /**
      * PATCH-3: Wired to VoteProcessingService — replaces the stub that
@@ -58,11 +59,9 @@ public class TerminalController {
      */
     @Autowired private VoteProcessingService voteService;
 
-    // --- AES Key (Must match the ESP32 firmware) ---
-    private static final byte[] BACKEND_AES_KEY = {
-            0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0A,0x0B,0x0C,0x0D,0x0E,0x0F,0x10,
-            0x11,0x12,0x13,0x14,0x15,0x16,0x17,0x18,0x19,0x1A,0x1B,0x1C,0x1D,0x1E,0x1F,0x20
-    };
+    // Inject the Base64 string from application.yml
+    @Value("${security.aes.secret-key}")
+    private String aesKeyBase64;
 
     // ── ESP32 AUTHENTICATION & HEARTBEAT ──────────────────────────────────────
 
@@ -180,6 +179,55 @@ public class TerminalController {
         }
     }
 
+    /**
+     * GET /api/terminal/config
+     * * Called by the ESP32 terminal on boot to load the current active election.
+     * Expected response: { electionId, electionTitle, closingTime, pollingUnitId }
+     */
+    @GetMapping("/config")
+    public ResponseEntity<?> getTerminalConfig(HttpServletRequest request) {
+        String terminalId = request.getHeader("X-Terminal-Id");
+        log.info("Terminal {} requesting election configuration", terminalId);
+
+        // 1. Fetch the currently active election
+        List<Election> allElections = electionRepo.findAll();
+        Election activeElection = allElections.stream()
+                .filter(e -> e.getStatus() == Election.ElectionStatus.ACTIVE)
+                .findFirst()
+                .orElse(null);
+
+        if (activeElection == null) {
+            log.warn("No active election found for terminal {}", terminalId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "No active election currently configured."));
+        }
+
+        // 2. PRODUCTION LOGIC: Look up the terminal in the registry
+        com.evoting.model.TerminalRegistry registry = terminalRegistryRepo.findByTerminalIdAndActiveTrue(terminalId)
+                .orElse(null);
+
+        // If the terminal isn't in the DB, was deactivated, or has no PU assigned, block it.
+        if (registry == null || registry.getPollingUnitId() == null) {
+            log.warn("Terminal {} is not active or missing a Polling Unit ID.", terminalId);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Terminal is not provisioned or lacks a Polling Unit assignment."));
+        }
+
+        int assignedPollingUnitId = registry.getPollingUnitId();
+
+        // 3. Construct the exact JSON structure expected by the ESP32
+        Map<String, Object> config = Map.of(
+                "electionId", activeElection.getId().toString(),
+                "electionTitle", activeElection.getName(),
+                "closingTime", activeElection.getEndTime() != null ? activeElection.getEndTime().toString() : "",
+                "pollingUnitId", assignedPollingUnitId
+        );
+
+        log.info("Serving config for election '{}' to terminal {} (PU: {})",
+                activeElection.getName(), terminalId, assignedPollingUnitId);
+        return ResponseEntity.ok(config);
+    }
+
     // ── ORIGINAL ENROLLMENT & CANDIDATE LOGIC ─────────────────────────────────
 
     @GetMapping("/candidates/{electionId}")
@@ -236,16 +284,26 @@ public class TerminalController {
 
     private String decryptAESGCM(String base64Encrypted) throws Exception {
         if (base64Encrypted == null) throw new IllegalArgumentException("Payload is null");
+
+        // 1. Decode the Base64 environment variable back into your 32-byte array
+        byte[] backendAesKey = Base64.getDecoder().decode(aesKeyBase64);
+
+        // 2. Decode the incoming payload
         byte[] packageBytes = Base64.getDecoder().decode(base64Encrypted);
         byte[] iv = new byte[12];
         System.arraycopy(packageBytes, 0, iv, 0, 12);
+
         int cipherTextLength = packageBytes.length - 12;
         byte[] cipherTextWithTag = new byte[cipherTextLength];
         System.arraycopy(packageBytes, 12, cipherTextWithTag, 0, cipherTextLength);
 
+        // 3. Initialize the Cipher
         Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
         GCMParameterSpec spec = new GCMParameterSpec(128, iv);
-        SecretKeySpec keySpec = new SecretKeySpec(BACKEND_AES_KEY, "AES");
+
+        // Pass the dynamically loaded key here
+        SecretKeySpec keySpec = new SecretKeySpec(backendAesKey, "AES");
+
         cipher.init(Cipher.DECRYPT_MODE, keySpec, spec);
         return new String(cipher.doFinal(cipherTextWithTag));
     }
