@@ -63,6 +63,55 @@ public class TerminalController {
     @Value("${security.aes.secret-key}")
     private String aesKeyBase64;
 
+    /**
+     * GET /api/terminal/config
+     * * Called by the ESP32 terminal on boot to load the current active election.
+     * Expected response: { electionId, electionTitle, closingTime, pollingUnitId }
+     */
+    @GetMapping("/config")
+    public ResponseEntity<?> getTerminalConfig(HttpServletRequest request) {
+        String terminalId = request.getHeader("X-Terminal-Id");
+        log.info("Terminal {} requesting election configuration", terminalId);
+
+        // 1. Fetch the currently active election
+        List<Election> allElections = electionRepo.findAll();
+        Election activeElection = allElections.stream()
+                .filter(e -> e.getStatus() == Election.ElectionStatus.ACTIVE)
+                .findFirst()
+                .orElse(null);
+
+        if (activeElection == null) {
+            log.warn("No active election found for terminal {}", terminalId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "No active election currently configured."));
+        }
+
+        // 2. PRODUCTION LOGIC: Look up the terminal in the registry
+        com.evoting.model.TerminalRegistry registry = terminalRegistryRepo.findByTerminalIdAndActiveTrue(terminalId)
+                .orElse(null);
+
+        // If the terminal isn't in the DB, was deactivated, or has no PU assigned, block it.
+        if (registry == null || registry.getPollingUnitId() == null) {
+            log.warn("Terminal {} is not active or missing a Polling Unit ID.", terminalId);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Terminal is not provisioned or lacks a Polling Unit assignment."));
+        }
+
+        int assignedPollingUnitId = registry.getPollingUnitId();
+
+        // 3. Construct the exact JSON structure expected by the ESP32
+        Map<String, Object> config = Map.of(
+                "electionId", activeElection.getId().toString(),
+                "electionTitle", activeElection.getName(),
+                "closingTime", activeElection.getEndTime() != null ? activeElection.getEndTime().toString() : "",
+                "pollingUnitId", assignedPollingUnitId
+        );
+
+        log.info("Serving config for election '{}' to terminal {} (PU: {})",
+                activeElection.getName(), terminalId, assignedPollingUnitId);
+        return ResponseEntity.ok(config);
+    }
+
     // ── ESP32 AUTHENTICATION & HEARTBEAT ──────────────────────────────────────
 
     @PostMapping("/authenticate")
@@ -179,54 +228,6 @@ public class TerminalController {
         }
     }
 
-    /**
-     * GET /api/terminal/config
-     * * Called by the ESP32 terminal on boot to load the current active election.
-     * Expected response: { electionId, electionTitle, closingTime, pollingUnitId }
-     */
-    @GetMapping("/config")
-    public ResponseEntity<?> getTerminalConfig(HttpServletRequest request) {
-        String terminalId = request.getHeader("X-Terminal-Id");
-        log.info("Terminal {} requesting election configuration", terminalId);
-
-        // 1. Fetch the currently active election
-        List<Election> allElections = electionRepo.findAll();
-        Election activeElection = allElections.stream()
-                .filter(e -> e.getStatus() == Election.ElectionStatus.ACTIVE)
-                .findFirst()
-                .orElse(null);
-
-        if (activeElection == null) {
-            log.warn("No active election found for terminal {}", terminalId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "No active election currently configured."));
-        }
-
-        // 2. PRODUCTION LOGIC: Look up the terminal in the registry
-        com.evoting.model.TerminalRegistry registry = terminalRegistryRepo.findByTerminalIdAndActiveTrue(terminalId)
-                .orElse(null);
-
-        // If the terminal isn't in the DB, was deactivated, or has no PU assigned, block it.
-        if (registry == null || registry.getPollingUnitId() == null) {
-            log.warn("Terminal {} is not active or missing a Polling Unit ID.", terminalId);
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Terminal is not provisioned or lacks a Polling Unit assignment."));
-        }
-
-        int assignedPollingUnitId = registry.getPollingUnitId();
-
-        // 3. Construct the exact JSON structure expected by the ESP32
-        Map<String, Object> config = Map.of(
-                "electionId", activeElection.getId().toString(),
-                "electionTitle", activeElection.getName(),
-                "closingTime", activeElection.getEndTime() != null ? activeElection.getEndTime().toString() : "",
-                "pollingUnitId", assignedPollingUnitId
-        );
-
-        log.info("Serving config for election '{}' to terminal {} (PU: {})",
-                activeElection.getName(), terminalId, assignedPollingUnitId);
-        return ResponseEntity.ok(config);
-    }
 
     // ── ORIGINAL ENROLLMENT & CANDIDATE LOGIC ─────────────────────────────────
 
@@ -285,24 +286,22 @@ public class TerminalController {
     private String decryptAESGCM(String base64Encrypted) throws Exception {
         if (base64Encrypted == null) throw new IllegalArgumentException("Payload is null");
 
-        // 1. Decode the Base64 environment variable back into your 32-byte array
-        byte[] backendAesKey = Base64.getDecoder().decode(aesKeyBase64);
+        // 1. Decode the dynamic environment variable key back into a byte array
+        // (This actually USES the value you set in Render!)
+        byte[] dynamicAesKey = java.util.Base64.getDecoder().decode(aesKeyBase64);
 
-        // 2. Decode the incoming payload
-        byte[] packageBytes = Base64.getDecoder().decode(base64Encrypted);
+        byte[] packageBytes = java.util.Base64.getDecoder().decode(base64Encrypted);
         byte[] iv = new byte[12];
         System.arraycopy(packageBytes, 0, iv, 0, 12);
-
         int cipherTextLength = packageBytes.length - 12;
         byte[] cipherTextWithTag = new byte[cipherTextLength];
         System.arraycopy(packageBytes, 12, cipherTextWithTag, 0, cipherTextLength);
 
-        // 3. Initialize the Cipher
         Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
         GCMParameterSpec spec = new GCMParameterSpec(128, iv);
 
-        // Pass the dynamically loaded key here
-        SecretKeySpec keySpec = new SecretKeySpec(backendAesKey, "AES");
+        // 2. Pass the dynamically loaded key here instead of the hardcoded one
+        SecretKeySpec keySpec = new SecretKeySpec(dynamicAesKey, "AES");
 
         cipher.init(Cipher.DECRYPT_MODE, keySpec, spec);
         return new String(cipher.doFinal(cipherTextWithTag));
