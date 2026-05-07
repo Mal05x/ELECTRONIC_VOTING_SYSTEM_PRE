@@ -150,6 +150,7 @@ export default function SettingsView() {
             if (d.backupSchedule)           setBackupSchedule(d.backupSchedule);
             if (d.merklePublish    != null) setMerklePublish(!!d.merklePublish);
             if (d.livenessFailOpen != null) setLivenessFailOpen(!!d.livenessFailOpen);
+            if (d.livenessMode)            setLivenessMode(d.livenessMode);
           }
         })
         .catch(() => {
@@ -203,6 +204,8 @@ export default function SettingsView() {
    * Changing this updates BiometricService at runtime via PUT /api/admin/system/liveness-config.
    */
   const [livenessFailOpen, setLivenessFailOpen] = useState(false); // default: strict (fail-open=false)
+  // NEW: liveness model — "PASSIVE" (MiniFASNet burst) or "ACTIVE" (MediaPipe challenge)
+  const [livenessMode, setLivenessMode] = useState("PASSIVE");
 
   /* ── System health (loaded on About tab) ── */
   const [health, setHealth] = useState(null);
@@ -826,6 +829,73 @@ export default function SettingsView() {
                         <Toggle checked={merklePublish} onChange={setMerklePublish}
                           label="Auto-publish Merkle Root"
                           sub="Commit ballot Merkle root to public ledger after each vote batch" />
+
+                        {/* ── Liveness Model Selector ── */}
+                        <div className="border-t border-white/5 pt-4 mt-2">
+                          <div className="text-xs font-bold text-purple-400 uppercase tracking-widest mb-3">
+                            Liveness Model
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {[
+                              {
+                                id: "PASSIVE",
+                                label: "Passive (MiniFASNet)",
+                                icon: "shield",
+                                desc: "AI analyses 5 burst frames silently. Strongest anti-spoof. Requires Python liveness service running on port 5001.",
+                                color: "green"
+                              },
+                              {
+                                id: "ACTIVE",
+                                label: "Active (MediaPipe)",
+                                icon: "eye",
+                                desc: "Voter completes a random challenge (blink, smile, turn head). No GPU model needed. Requires MediaPipe service on port 5002.",
+                                color: "blue"
+                              }
+                            ].map(opt => (
+                              <button
+                                key={opt.id}
+                                onClick={() => setLivenessMode(opt.id)}
+                                className={[
+                                  "text-left p-3 rounded-xl border transition-all",
+                                  livenessMode === opt.id
+                                    ? opt.color === "green"
+                                      ? "border-green-500/60 bg-green-500/10"
+                                      : "border-blue-500/60 bg-blue-500/10"
+                                    : "border-white/8 bg-white/3 hover:border-white/20"
+                                ].join(" ")}
+                              >
+                                <div className="flex items-center gap-2 mb-1">
+                                  <div className={[
+                                    "w-3 h-3 rounded-full border-2 flex-shrink-0",
+                                    livenessMode === opt.id
+                                      ? opt.color === "green" ? "border-green-400 bg-green-400" : "border-blue-400 bg-blue-400"
+                                      : "border-white/30"
+                                  ].join(" ")} />
+                                  <span className={[
+                                    "text-xs font-semibold",
+                                    livenessMode === opt.id
+                                      ? opt.color === "green" ? "text-green-300" : "text-blue-300"
+                                      : "text-dim"
+                                  ].join(" ")}>{opt.label}</span>
+                                </div>
+                                <p className="text-xs text-dim leading-relaxed pl-5">{opt.desc}</p>
+                              </button>
+                            ))}
+                          </div>
+
+                          {livenessMode === "ACTIVE" && (
+                            <div className="flex items-start gap-2 mt-3 px-3 py-2 rounded-lg bg-blue-500/8 border border-blue-500/20">
+                              <Ic n="info" s={12} c="#60A5FA" />
+                              <p className="text-xs text-blue-300 leading-relaxed">
+                                Active mode is lower latency but can be defeated by a cooperative
+                                attacker with a printed photo if not combined with fail-closed
+                                strict mode. Best for low-resource environments where MiniFASNet
+                                cannot run.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
                         <Toggle
                           checked={livenessFailOpen}
                           onChange={setLivenessFailOpen}
@@ -898,12 +968,19 @@ export default function SettingsView() {
                       <SaveRow saving={saving}
                         onSave={async () => {
                           await savePrefs("system",
-                            { auditRetention, backupSchedule, merklePublish, livenessFailOpen },
+                            { auditRetention, backupSchedule, merklePublish, livenessFailOpen, livenessMode },
                             "System config");
                           try {
+                            // Update fail-open mode
                             await client.put("/camera/liveness-config", { failOpen: livenessFailOpen });
                           } catch (e) {
-                            console.warn("Could not update liveness config at runtime:", e.message);
+                            console.warn("Could not update liveness fail-open at runtime:", e.message);
+                          }
+                          try {
+                            // Update liveness model (PASSIVE / ACTIVE)
+                            await client.put("/camera/liveness-mode", { mode: livenessMode });
+                          } catch (e) {
+                            console.warn("Could not update liveness mode at runtime:", e.message);
                           }
                         }} />
                     </div>

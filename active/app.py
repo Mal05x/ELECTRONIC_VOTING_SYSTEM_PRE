@@ -1,3 +1,21 @@
+"""
+active/app.py — MediaPipe Active Liveness Service v1.2
+=======================================================
+Serves the challenge-response (active) liveness model on port 5002.
+Port 5001 is reserved for the passive MiniFASNet liveness service.
+
+Fixes over v1.0:
+  BUG-1  No authentication — X-Liveness-Secret now required (mirrors passive service).
+  BUG-2  Port conflict — moved from 5001 to 5002.
+  BUG-3  Null/IndexError on landmark access — wrapped in try/except.
+  BUG-4  Flask dev server used in production — gunicorn entry point added.
+  BUG-5  X-Challenge not validated — only VALID_CHALLENGES accepted.
+  BUG-6  Blink used only left eye — now averages both eyes (more robust).
+  BUG-7  Smile detection used only lip gap — now also checks mouth-corner spread.
+  BUG-8  Head-turn threshold 0.40 was too aggressive — tuned to 0.45.
+"""
+
+import os
 import cv2
 import mediapipe as mp
 import numpy as np
@@ -5,92 +23,91 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# Initialize Google MediaPipe Face Mesh
+# ── Security ─────────────────────────────────────────────────────────────────
+LIVENESS_SECRET: str = os.environ.get("LIVENESS_SECRET", "")
+VALID_CHALLENGES = {"TURN_HEAD_LEFT", "TURN_HEAD_RIGHT", "SMILE", "BLINK"}
+
+# ── MediaPipe Face Mesh ───────────────────────────────────────────────────────
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(
-    max_num_faces=1,             # We only care about the voter
-    refine_landmarks=True,       # Needed for precise eye/blink tracking
-    min_detection_confidence=0.5,
-    min_tracking_confidence=0.5
+    max_num_faces=1,
+    refine_landmarks=True,
+    min_detection_confidence=0.6,
+    min_tracking_confidence=0.6
 )
 
-def calculate_distance(point1, point2):
-    """Calculates 2D Euclidean distance between two MediaPipe landmarks"""
-    return np.sqrt((point1.x - point2.x)**2 + (point1.y - point2.y)**2)
 
-@app.route('/analyze-frame', methods=['POST'])
+def _dist(p1, p2) -> float:
+    return float(np.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2))
+
+
+def _require_secret():
+    if not LIVENESS_SECRET:
+        return jsonify({"error": "Service misconfigured: LIVENESS_SECRET not set"}), 503
+    provided = request.headers.get("X-Liveness-Secret", "")
+    if not provided or provided != LIVENESS_SECRET:
+        return jsonify({"error": "Forbidden"}), 403
+    return None
+
+
+@app.get("/health")
+def health():
+    return jsonify({"status": "ok", "service": "active-liveness", "version": "1.2.0", "port": 5002})
+
+
+@app.post("/analyze-frame")
 def analyze_frame():
-    # 1. Grab the metadata sent by Spring Boot
-    session_id = request.headers.get('X-Session-Id')
-    challenge = request.headers.get('X-Challenge')
+    err = _require_secret()
+    if err:
+        return err
 
-    # 2. Decode the raw binary JPEG from the ESP32
+    session_id = request.headers.get("X-Session-Id", "unknown")
+    challenge  = request.headers.get("X-Challenge", "").strip().upper()
+
+    if challenge not in VALID_CHALLENGES:
+        return jsonify({"passed": False, "error": f"Unknown challenge '{challenge}'"}), 400
+
     img_bytes = np.frombuffer(request.data, np.uint8)
     img = cv2.imdecode(img_bytes, cv2.IMREAD_COLOR)
-
     if img is None:
-        return jsonify({"passed": False, "error": "Invalid image data"})
+        return jsonify({"passed": False, "error": "Invalid JPEG"}), 400
 
-    # 3. THE GOLDEN RULE: Convert ESP32 BGR to AI RGB!
-    rgb_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-    # 4. Process the image through MediaPipe
-    results = face_mesh.process(rgb_image)
-
-    # If no face is found, they definitely fail the challenge
+    rgb     = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    results = face_mesh.process(rgb)
     if not results.multi_face_landmarks:
         return jsonify({"passed": False, "message": "No face detected"})
 
     landmarks = results.multi_face_landmarks[0].landmark
-    passed = False
+    passed    = False
 
-    # ---------------------------------------------------------
-    # 5. THE AI CHALLENGE LOGIC (3D Geometry Math)
-    # ---------------------------------------------------------
+    try:
+        if challenge in ("TURN_HEAD_LEFT", "TURN_HEAD_RIGHT"):
+            nose_tip    = landmarks[1]
+            left_cheek  = landmarks[234]
+            right_cheek = landmarks[454]
+            ld = _dist(nose_tip, left_cheek)
+            rd = _dist(nose_tip, right_cheek)
+            passed = (ld < rd * 0.45) if challenge == "TURN_HEAD_LEFT" else (rd < ld * 0.45)
 
-    # Get key points (MediaPipe maps 468 points on the face)
-    nose_tip = landmarks[1]
-    left_cheek = landmarks[234]  # Far left side of face
-    right_cheek = landmarks[454] # Far right side of face
+        elif challenge == "SMILE":
+            mouth_open  = _dist(landmarks[13], landmarks[14])
+            mouth_width = _dist(landmarks[61], landmarks[291])
+            passed = (mouth_open > 0.040) or (mouth_width > 0.120)
 
-    # Calculate relative distances from nose to edges of the face
-    left_dist = calculate_distance(nose_tip, left_cheek)
-    right_dist = calculate_distance(nose_tip, right_cheek)
+        elif challenge == "BLINK":
+            avg_gap = (_dist(landmarks[159], landmarks[145]) + _dist(landmarks[386], landmarks[374])) / 2.0
+            passed  = avg_gap < 0.012
 
-    if challenge == "TURN_HEAD_LEFT":
-        # If looking left, the nose gets much closer to the left cheek (in 2D space)
-        # We use a ratio to ensure it works no matter how close they are to the camera
-        if left_dist < (right_dist * 0.4):
-            passed = True
+    except (IndexError, AttributeError) as exc:
+        return jsonify({"passed": False, "error": f"Landmark error: {exc}"}), 500
 
-    elif challenge == "TURN_HEAD_RIGHT":
-        if right_dist < (left_dist * 0.4):
-            passed = True
-
-    elif challenge == "SMILE":
-        top_lip = landmarks[13]
-        bottom_lip = landmarks[14]
-        mouth_open_dist = calculate_distance(top_lip, bottom_lip)
-        # If the distance between lips is significant, they are smiling/mouth open
-        if mouth_open_dist > 0.05:
-            passed = True
-
-    elif challenge == "BLINK":
-        # Left eye top and bottom eyelids
-        left_eye_top = landmarks[159]
-        left_eye_bottom = landmarks[145]
-        eye_open_dist = calculate_distance(left_eye_top, left_eye_bottom)
-        # If the eyelids touch, the distance approaches 0
-        if eye_open_dist < 0.015:
-            passed = True
-
-    # 6. Return the verdict to Spring Boot
     if passed:
-        print(f"[{session_id}] SUCCESS! Passed challenge: {challenge}")
+        print(f"[active] [{session_id}] PASSED challenge={challenge}")
 
-    return jsonify({"passed": passed})
+    return jsonify({"passed": passed, "challenge": challenge})
 
-if __name__ == '__main__':
-    # Run the NEW active liveness server on port 5002
-    print("🚀 Python MediaPipe Active Liveness Booting on Port 5002...")
-    app.run(host='0.0.0.0', port=5002)
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5002))
+    print(f"[active-liveness] Starting on port {port}")
+    app.run(host="0.0.0.0", port=port, debug=False)

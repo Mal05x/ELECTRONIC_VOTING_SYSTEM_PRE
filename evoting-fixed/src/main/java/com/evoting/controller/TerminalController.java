@@ -11,11 +11,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.beans.factory.annotation.Value;
 import com.evoting.model.TerminalHeartbeat;
 import com.evoting.repository.TerminalHeartbeatRepository;
 import com.evoting.service.VoteProcessingService;
@@ -42,8 +42,6 @@ public class TerminalController {
     @Autowired private ElectionRepository electionRepo;
     @Autowired private SimpMessagingTemplate messagingTemplate;
     @Autowired private TerminalHeartbeatRepository terminalHeartbeatRepo;
-    @Autowired
-    private com.evoting.repository.TerminalRegistryRepository terminalRegistryRepo;
 
     /**
      * PATCH-3: Wired to VoteProcessingService — replaces the stub that
@@ -59,58 +57,9 @@ public class TerminalController {
      */
     @Autowired private VoteProcessingService voteService;
 
-    // Inject the Base64 string from application.yml
+    // Injects the Base64 AES key from application.yml / environment variables
     @Value("${security.aes.secret-key}")
     private String aesKeyBase64;
-
-    /**
-     * GET /api/terminal/config
-     * * Called by the ESP32 terminal on boot to load the current active election.
-     * Expected response: { electionId, electionTitle, closingTime, pollingUnitId }
-     */
-    @GetMapping("/config")
-    public ResponseEntity<?> getTerminalConfig(HttpServletRequest request) {
-        String terminalId = request.getHeader("X-Terminal-Id");
-        log.info("Terminal {} requesting election configuration", terminalId);
-
-        // 1. Fetch the currently active election
-        List<Election> allElections = electionRepo.findAll();
-        Election activeElection = allElections.stream()
-                .filter(e -> e.getStatus() == Election.ElectionStatus.ACTIVE)
-                .findFirst()
-                .orElse(null);
-
-        if (activeElection == null) {
-            log.warn("No active election found for terminal {}", terminalId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "No active election currently configured."));
-        }
-
-        // 2. PRODUCTION LOGIC: Look up the terminal in the registry
-        com.evoting.model.TerminalRegistry registry = terminalRegistryRepo.findByTerminalIdAndActiveTrue(terminalId)
-                .orElse(null);
-
-        // If the terminal isn't in the DB, was deactivated, or has no PU assigned, block it.
-        if (registry == null || registry.getPollingUnitId() == null) {
-            log.warn("Terminal {} is not active or missing a Polling Unit ID.", terminalId);
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Terminal is not provisioned or lacks a Polling Unit assignment."));
-        }
-
-        int assignedPollingUnitId = registry.getPollingUnitId();
-
-        // 3. Construct the exact JSON structure expected by the ESP32
-        Map<String, Object> config = Map.of(
-                "electionId", activeElection.getId().toString(),
-                "electionTitle", activeElection.getName(),
-                "closingTime", activeElection.getEndTime() != null ? activeElection.getEndTime().toString() : "",
-                "pollingUnitId", assignedPollingUnitId
-        );
-
-        log.info("Serving config for election '{}' to terminal {} (PU: {})",
-                activeElection.getName(), terminalId, assignedPollingUnitId);
-        return ResponseEntity.ok(config);
-    }
 
     // ── ESP32 AUTHENTICATION & HEARTBEAT ──────────────────────────────────────
 
@@ -228,7 +177,6 @@ public class TerminalController {
         }
     }
 
-
     // ── ORIGINAL ENROLLMENT & CANDIDATE LOGIC ─────────────────────────────────
 
     @GetMapping("/candidates/{electionId}")
@@ -286,11 +234,10 @@ public class TerminalController {
     private String decryptAESGCM(String base64Encrypted) throws Exception {
         if (base64Encrypted == null) throw new IllegalArgumentException("Payload is null");
 
-        // 1. Decode the dynamic environment variable key back into a byte array
-        // (This actually USES the value you set in Render!)
-        byte[] dynamicAesKey = java.util.Base64.getDecoder().decode(aesKeyBase64);
+        // Use the dynamically loaded environment variable instead of the hardcoded key
+        byte[] dynamicAesKey = Base64.getDecoder().decode(aesKeyBase64);
 
-        byte[] packageBytes = java.util.Base64.getDecoder().decode(base64Encrypted);
+        byte[] packageBytes = Base64.getDecoder().decode(base64Encrypted);
         byte[] iv = new byte[12];
         System.arraycopy(packageBytes, 0, iv, 0, 12);
         int cipherTextLength = packageBytes.length - 12;
@@ -299,11 +246,62 @@ public class TerminalController {
 
         Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
         GCMParameterSpec spec = new GCMParameterSpec(128, iv);
-
-        // 2. Pass the dynamically loaded key here instead of the hardcoded one
         SecretKeySpec keySpec = new SecretKeySpec(dynamicAesKey, "AES");
-
         cipher.init(Cipher.DECRYPT_MODE, keySpec, spec);
         return new String(cipher.doFinal(cipherTextWithTag));
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  GET /api/terminal/config
+    //  Called by ESP32-S3 on boot via fetchElectionConfig().
+    //  Returns the active election details + livenessMode so the firmware
+    //  knows whether to send BURST: (passive) or ACTIVE: (challenge) to the CAM.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.evoting.service.BiometricService biometricService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.evoting.repository.TerminalRegistryRepository terminalRegistryRepo;
+
+    @GetMapping("/config")
+    public ResponseEntity<?> getTerminalConfig(HttpServletRequest request) {
+        String terminalId = request.getHeader("X-Terminal-Id");
+        if (terminalId == null || terminalId.isBlank()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "X-Terminal-Id header required"));
+        }
+
+        // Find active election
+        java.util.List<com.evoting.model.Election> active =
+                electionRepo.findByStatus(com.evoting.model.Election.ElectionStatus.ACTIVE);
+
+        if (active.isEmpty()) {
+            log.warn("[CONFIG] Terminal {} requested config — no ACTIVE election found", terminalId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "No active election assigned to this terminal"));
+        }
+
+        com.evoting.model.Election election = active.get(0);
+
+        // Resolve polling unit for this terminal
+        Integer pollingUnitId = terminalRegistryRepo
+                .findByTerminalIdAndActiveTrue(terminalId)
+                .map(t -> t.getPollingUnitId())
+                .orElse(null);
+
+        Map<String, Object> config = new java.util.LinkedHashMap<>();
+        config.put("electionId",    election.getId().toString());
+        config.put("electionTitle", election.getName());
+        config.put("electionType",  election.getType());
+        config.put("closingTime",   election.getEndTime().toString());
+        config.put("pollingUnitId", pollingUnitId != null ? pollingUnitId : 0);
+        // NEW: tell firmware which liveness model to use
+        config.put("livenessMode",  biometricService.getLivenessMode());
+
+        log.info("[CONFIG] Terminal {} → election={} liveness={}",
+                terminalId, election.getName(), biometricService.getLivenessMode());
+
+        return ResponseEntity.ok(config);
     }
 }

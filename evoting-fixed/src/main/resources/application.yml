@@ -61,18 +61,18 @@ spring:
 
 
   mail:
-     host: ${SMTP_HOST:smtp.sendgrid.net}
-     port: ${SMTP_PORT:587}
-     username: ${SMTP_USERNAME:apikey}
-     password: ${SMTP_PASSWORD:}
-     from: ${SMTP_FROM:noreply@evoting.gov.ng}
-     properties:
+    host: ${SMTP_HOST:smtp.sendgrid.net}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:apikey}
+    password: ${SMTP_PASSWORD:}
+    from: ${SMTP_FROM:noreply@evoting.gov.ng}
+    properties:
       mail:
         smtp:
-         auth: true
+          auth: true
         starttls:
-         enable: true
-         required: true
+          enable: true
+          required: true
 
   # ADD IT HERE: Perfectly nested inside the single 'spring' block
   security:
@@ -134,27 +134,27 @@ management:
 websocket:
   allowed-origin: ${WEBSOCKET_ALLOWED_ORIGIN:http://localhost:3000,http://localhost:5173,https://localhost:3000,https://localhost:5173,http://localhost:4173,https://localhost:4173,https://192.168.0.159:3000}
 
-# ══════════════════════════════════════════════════════════════════════════════
-# application.yml ADDITIONS — paste these blocks into the appropriate sections
-# of your existing application.yml. They are not a full replacement.
-# ══════════════════════════════════════════════════════════════════════════════
 
-# ── REPLACE existing liveness block with this ─────────────────────────────────
 # Self-hosted Silent-Face-Anti-Spoofing liveness microservice
 liveness:
   service:
     url: ${LIVENESS_SERVICE_URL:http://127.0.0.1:5001}
-    timeout-ms: ${LIVENESS_TIMEOUT_MS:12000}
-    fail-open: ${LIVENESS_FAIL_OPEN:true}
-
-    # FIX DQ2: Shared secret between Spring Boot and the Python liveness service.
-    # Generate with: openssl rand -hex 32
-    # Set the SAME value in:
-    #   1. This env var: LIVENESS_SECRET=<value>
-    #   2. liveness-service/.env: LIVENESS_SECRET=<value>
-    # The Python service will reject any request that does not include
-    # header: X-Liveness-Secret: <value>
+    timeout-ms: ${LIVENESS_TIMEOUT_MS:20000}
+    fail-open: ${LIVENESS_FAIL_OPEN:false}
+    # Shared secret — generate with: openssl rand -hex 32
+    # Must be identical in liveness-service/.env AND active/.env
     secret: ${LIVENESS_SECRET}
+
+  # Active liveness (MediaPipe challenge-response) — runs on port 5002
+  # to avoid conflict with the passive MiniFASNet service on port 5001.
+  active-service:
+    url: ${ACTIVE_LIVENESS_SERVICE_URL:http://127.0.0.1:5002}
+
+  # Initial liveness mode. Can be changed at runtime via
+  # PUT /api/camera/liveness-mode  (SUPER_ADMIN only).
+  # PASSIVE = MiniFASNet/CDCN++ burst  (default, best anti-spoof)
+  # ACTIVE  = MediaPipe challenge      (no Python model required, lower latency)
+  mode: ${LIVENESS_MODE:PASSIVE}
 
 
 logging:
