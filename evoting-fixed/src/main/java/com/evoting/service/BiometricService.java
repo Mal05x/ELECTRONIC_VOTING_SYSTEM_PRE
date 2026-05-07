@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -66,7 +67,9 @@ public class BiometricService {
 
     // ── Dependencies ───────────────────────────────────────────────────────
     @Autowired private LivenessResultRepository livenessRepo;
-    @Autowired private AuditLogService          auditLog;
+    @Autowired
+    @Lazy
+    private AuditLogService auditLog;
     @Autowired private ObjectMapper             objectMapper;
 
     // ── Circuit breaker ────────────────────────────────────────────────────
