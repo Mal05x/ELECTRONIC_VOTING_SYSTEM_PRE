@@ -44,6 +44,9 @@ public class BiometricController {
     @Autowired private BiometricService biometricService;
     @Value("${liveness.service.url:http://127.0.0.1:5001}")
     private String livenessServiceUrl;
+    
+    @Value("${liveness.active.url:http://127.0.0.1:5002}")
+    private String activeServiceUrl;
 
     @Value("${liveness.service.secret:}")
     private String livenessSecret;
