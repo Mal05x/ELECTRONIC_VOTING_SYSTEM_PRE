@@ -58,13 +58,19 @@ function MonitoringTab() {
       const data = await getTerminals();
       const now  = Date.now();
       const mapped = data.map(t => {
-        const lastMs  = t.reportedAt ? new Date(t.reportedAt).getTime() : 0;
-        const ageSecs = (now - lastMs) / 1000;
-        let status = "OFFLINE";
-        if (lastMs > 0) {
-          if (ageSecs < 300)  status = "ONLINE";
-          else if (ageSecs < 900) status = "WARNING";
-        }
+              // Look for either property name to catch the backend's timestamp
+              const timestampStr = t.reportedAt || t.lastSeen;
+
+              const lastMs  = timestampStr ? new Date(timestampStr).getTime() : 0;
+              const ageSecs = (now - lastMs) / 1000;
+              let status = "OFFLINE";
+
+              if (lastMs > 0) {
+                // If the timestamp is in the future due to server timezone mismatch, ageSecs will be negative
+                // Using Math.abs() ensures it stays ONLINE even if the server clock is slightly ahead
+                if (Math.abs(ageSecs) < 300)  status = "ONLINE";
+                else if (Math.abs(ageSecs) < 900) status = "WARNING";
+              }
         if (t.tamperFlag) status = "ALERT";
         return {
           id:       t.terminalId,
