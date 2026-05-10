@@ -59,7 +59,7 @@ function MonitoringTab() {
       const now  = Date.now();
       const mapped = data.map(t => {
               // Look for either property name to catch the backend's timestamp
-              const timestampStr = t.reportedAt || t.lastSeen;
+              const timestampStr = t.reportedAt || t.lastSeen || t.lastHeartbeat;
 
               const lastMs  = timestampStr ? new Date(timestampStr).getTime() : 0;
               const ageSecs = (now - lastMs) / 1000;
