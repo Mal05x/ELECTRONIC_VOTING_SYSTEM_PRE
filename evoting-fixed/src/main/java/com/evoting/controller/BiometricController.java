@@ -48,6 +48,10 @@ public class BiometricController {
     @Value("${liveness.service.secret:}")
     private String livenessSecret;
 
+    @Value("${liveness.active.service.url:http://127.0.0.1:5002}")   
+    private String activeServiceUrl;
+    
+
     // ─────────────────────────────────────────────────────────────────────────
     //  V2 — Single frame (kept for backward compatibility)
     // ─────────────────────────────────────────────────────────────────────────
