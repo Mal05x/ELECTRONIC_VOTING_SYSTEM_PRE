@@ -17,6 +17,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.context.annotation.Lazy;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -67,7 +68,10 @@ public class BiometricService {
 
     // ── Dependencies ───────────────────────────────────────────────────────
     @Autowired private LivenessResultRepository livenessRepo;
-    @Autowired private AuditLogService          auditLog;
+    
+    @Autowired
+    @Lazy
+    private AuditLogService          auditLog;
     @Autowired private ObjectMapper             objectMapper;
 
     // ── Circuit breaker ────────────────────────────────────────────────────
