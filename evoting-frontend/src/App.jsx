@@ -22,7 +22,8 @@ import RegistrationView   from "./pages/RegistrationView.jsx";
 import ResetPasswordPage  from "./pages/ResetPasswordPage.jsx";
 import OAuthCallback      from "./components/OAuthCallback";
 import PopupRenderer from "./components/PopupRenderer.jsx";
-import BiometricCaptureView from "./pages/BiometricCaptureView.jsx";
+import BiometricCaptureView  from "./pages/BiometricCaptureView.jsx";
+import ActiveLivenessView   from "./pages/ActiveLivenessView.jsx";
 
 
 function RequireAuth({ children }) {
@@ -69,6 +70,7 @@ function AppShell() {
     registration: wrap("Registration",       <RegistrationView />),
     settings:     wrap("Settings",           <SettingsView />),
     biometric:    wrap("Biometric Capture",  <BiometricCaptureView />),
+    liveness:     wrap("Active Liveness",     <ActiveLivenessView />),
   };
 
   return (
