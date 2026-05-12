@@ -45,9 +45,6 @@ public class BiometricController {
     @Value("${liveness.service.url:http://127.0.0.1:5001}")
     private String livenessServiceUrl;
 
-    @Value("${liveness.active.url:http://127.0.0.1:5002}")
-    private String activeServiceUrl;
-
     @Value("${liveness.service.secret:}")
     private String livenessSecret;
 
@@ -219,38 +216,38 @@ public class BiometricController {
                     .body(Map.of("error", "Liveness service unreachable: " + e.getMessage()));
         }
     }
-
+    
     @PostMapping(value = "/debug-preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> debugPreview(
-            @RequestParam("frame") MultipartFile frame) {
+     public ResponseEntity<?> debugPreview(
+        @RequestParam("frame") MultipartFile frame) {
         try {
-            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("frame", new ByteArrayResource(frame.getBytes()) {
-                @Override public String getFilename() { return "frame.jpg"; }
-            });
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("frame", new ByteArrayResource(frame.getBytes()) {
+            @Override public String getFilename() { return "frame.jpg"; }
+        });
 
-            HttpHeaders h = new HttpHeaders();
-            h.setContentType(MediaType.MULTIPART_FORM_DATA);
-            if (livenessSecret != null && !livenessSecret.isBlank()) {
-                h.set("X-Liveness-Secret", livenessSecret);
-            }
-
-            RestTemplate rt = new RestTemplate();
-            ResponseEntity<String> resp = rt.exchange(
-                    livenessServiceUrl + "/debug/preview",
-                    HttpMethod.POST,
-                    new HttpEntity<>(body, h),
-                    String.class
-            );
-            return ResponseEntity.status(resp.getStatusCode())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(resp.getBody());
-
-        } catch (Exception e) {
-            return ResponseEntity.status(503)
-                    .body(Map.of("error", "Debug preview failed: " + e.getMessage()));
+        HttpHeaders h = new HttpHeaders();
+        h.setContentType(MediaType.MULTIPART_FORM_DATA);
+        if (livenessSecret != null && !livenessSecret.isBlank()) {
+            h.set("X-Liveness-Secret", livenessSecret);
         }
+
+        RestTemplate rt = new RestTemplate();
+        ResponseEntity<String> resp = rt.exchange(
+            livenessServiceUrl + "/debug/preview",
+            HttpMethod.POST,
+            new HttpEntity<>(body, h),
+            String.class
+        );
+        return ResponseEntity.status(resp.getStatusCode())
+                             .contentType(MediaType.APPLICATION_JSON)
+                             .body(resp.getBody());
+
+    } catch (Exception e) {
+        return ResponseEntity.status(503)
+                .body(Map.of("error", "Debug preview failed: " + e.getMessage()));
     }
+  }
 
     // ─────────────────────────────────────────────────────────────────────────
     //  Liveness Mode — PASSIVE (MiniFASNet/burst) vs ACTIVE (MediaPipe challenge)
@@ -265,15 +262,51 @@ public class BiometricController {
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     public ResponseEntity<Map<String, Object>> getLivenessMode() {
         return ResponseEntity.ok(Map.of(
-                "mode",               biometricService.getLivenessMode(),
-                "failOpen",           biometricService.isFailOpen(),
-                "circuitOpen",        biometricService.isCircuitOpen(),
-                "passiveServiceUrl",  livenessServiceUrl,
-                "activeServiceUrl",   activeServiceUrl,
-                "description", biometricService.getLivenessMode().equals("ACTIVE")
-                        ? "ACTIVE — MediaPipe challenge-response (head-turn / blink / smile via WebSocket)"
-                        : "PASSIVE — MiniFASNet multi-scale burst (5 frames, optical-flow anti-spoof)"
+            "mode",               biometricService.getLivenessMode(),
+            "failOpen",           biometricService.isFailOpen(),
+            "circuitOpen",        biometricService.isCircuitOpen(),
+            "passiveServiceUrl",  livenessServiceUrl,
+            "activeServiceUrl",   activeServiceUrl,
+            "description", biometricService.getLivenessMode().equals("ACTIVE")
+                ? "ACTIVE — MediaPipe challenge-response (head-turn / blink / smile via WebSocket)"
+                : "PASSIVE — MiniFASNet multi-scale burst (5 frames, optical-flow anti-spoof)"
         ));
+    }
+
+    /**
+     * POST /api/camera/analyze-frame
+     * Proxies a single browser-captured JPEG frame to the MediaPipe active
+     * liveness service (active/app.py · port 5002) and returns the result.
+     *
+     * Used by ActiveLivenessView.jsx in the admin dashboard to demo/test
+     * active liveness without needing a physical ESP32 terminal.
+     *
+     * Headers:
+     *   X-Challenge   — TURN_HEAD_LEFT | TURN_HEAD_RIGHT | SMILE | BLINK
+     *   X-Session-Id  — browser-generated session UUID
+     *   X-Terminal-Id — BROWSER-ADMIN (or any string for logging)
+     *
+     * Body: raw JPEG bytes (Content-Type: image/jpeg)
+     *
+     * Returns: { "passed": bool, "challenge": str }
+     */
+    @PostMapping(value = "/analyze-frame", consumes = MediaType.IMAGE_JPEG_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    public ResponseEntity<Map<String, Object>> analyzeFrame(
+            @RequestHeader("X-Challenge")   String challenge,
+            @RequestHeader("X-Session-Id")  String sessionId,
+            @RequestHeader(value = "X-Terminal-Id", defaultValue = "BROWSER-ADMIN") String terminalId,
+            @RequestBody byte[] jpegBytes) {
+
+        if (jpegBytes == null || jpegBytes.length < 512) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Frame too small or missing body"));
+        }
+
+        Map<String, Object> result = biometricService.analyzeFrameForAdmin(
+                sessionId, terminalId, challenge, jpegBytes);
+
+        return ResponseEntity.ok(result);
     }
 
     /**
@@ -304,8 +337,8 @@ public class BiometricController {
         log.info("Admin {} set livenessMode={}", auth.getName(), mode);
 
         return ResponseEntity.ok(Map.of(
-                "mode",    mode,
-                "message", "Liveness mode updated. Terminals will use new mode on next config fetch."
+            "mode",    mode,
+            "message", "Liveness mode updated. Terminals will use new mode on next config fetch."
         ));
     }
 }
