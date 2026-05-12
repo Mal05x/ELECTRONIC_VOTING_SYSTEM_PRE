@@ -894,6 +894,34 @@ export default function SettingsView() {
                               </p>
                             </div>
                           )}
+
+                          {/* Test active liveness in-browser */}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              window.dispatchEvent(
+                                new CustomEvent("evoting:navigate", { detail: { view: "liveness" } })
+                              )
+                            }
+                            className="w-full mt-3 flex items-center justify-between px-4 py-3
+                                        rounded-xl border border-purple-500/30 bg-purple-500/6
+                                        hover:bg-purple-500/12 hover:border-purple-500/50
+                                        transition-all group"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-purple-500/15 flex items-center justify-center">
+                                <Ic n="eye" s={15} c="#a78bfa" />
+                              </div>
+                              <div className="text-left">
+                                <p className="text-sm font-semibold text-purple-300">Test Active Liveness</p>
+                                <p className="text-xs text-muted">
+                                  Run a challenge in your browser webcam
+                                </p>
+                              </div>
+                            </div>
+                            <Ic n="arrow-right" s={14} c="#7c3aed"
+                                className="group-hover:translate-x-0.5 transition-transform" />
+                          </button>
                         </div>
 
                         <Toggle
