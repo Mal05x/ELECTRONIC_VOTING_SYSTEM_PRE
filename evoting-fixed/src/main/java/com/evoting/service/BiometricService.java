@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -67,9 +66,7 @@ public class BiometricService {
 
     // ── Dependencies ───────────────────────────────────────────────────────
     @Autowired private LivenessResultRepository livenessRepo;
-    @Autowired
-    @Lazy
-    private AuditLogService auditLog;
+    @Autowired private AuditLogService          auditLog;
     @Autowired private ObjectMapper             objectMapper;
 
     // ── Circuit breaker ────────────────────────────────────────────────────
@@ -138,7 +135,7 @@ public class BiometricService {
         storeResult(sessionId, terminalId, passed, finalTotalBytes);
         auditLog.log("LIVENESS_" + (passed ? "PASS" : "FAIL"), terminalId,
                 "SessionID=" + sessionId + " mode=BURST frames=" + frames.size() +
-                        " totalBytes=" + finalTotalBytes + (circuitOpen ? " [CIRCUIT_OPEN]" : ""));
+                " totalBytes=" + finalTotalBytes + (circuitOpen ? " [CIRCUIT_OPEN]" : ""));
         return passed;
     }
 
@@ -342,6 +339,78 @@ public class BiometricService {
                 .livenessPassed(passed).frameBytes(frameBytes)
                 .evaluatedAt(OffsetDateTime.now()).consumed(false)
                 .build());
+    }
+
+    /**
+     * analyzeFrameForAdmin — proxy a single JPEG frame to the MediaPipe active
+     * liveness service and return the raw { passed, challenge } result.
+     *
+     * Called by BiometricController.analyzeFrame() for the browser-based
+     * admin demo in ActiveLivenessView.jsx.
+     *
+     * This is a lightweight proxy call — it does NOT store a liveness result
+     * in the database.  The frontend calls it in a 10 fps loop and declares
+     * success on the first { passed: true } response.  Only once the
+     * challenge is complete and the frontend stores the session via
+     * storeActiveLivenessResult() is a record written.
+     *
+     * @param sessionId  Browser-generated session UUID (for logging).
+     * @param terminalId "BROWSER-ADMIN" or similar label.
+     * @param challenge  One of TURN_HEAD_LEFT | TURN_HEAD_RIGHT | SMILE | BLINK.
+     * @param jpegBytes  Raw JPEG frame captured from the browser webcam.
+     * @return Map with "passed" (boolean) and "challenge" (string).
+     */
+    public Map<String, Object> analyzeFrameForAdmin(String sessionId,
+                                                      String terminalId,
+                                                      String challenge,
+                                                      byte[] jpegBytes) {
+        // Validate challenge name to prevent arbitrary header injection
+        java.util.Set<String> valid = java.util.Set.of(
+                "TURN_HEAD_LEFT", "TURN_HEAD_RIGHT", "SMILE", "BLINK");
+        if (!valid.contains(challenge)) {
+            log.warn("[ActiveLiveness] Unknown challenge '{}' from session={}", challenge, sessionId);
+            return Map.of("passed", false, "error", "Unknown challenge: " + challenge);
+        }
+
+        try {
+            String url = activeServiceUrl + "/analyze-frame";
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.IMAGE_JPEG);
+            headers.set("X-Session-Id",  sessionId);
+            headers.set("X-Terminal-Id", terminalId);
+            headers.set("X-Challenge",   challenge);
+            if (livenessSecret != null && !livenessSecret.isBlank()) {
+                headers.set("X-Liveness-Secret", livenessSecret);
+            }
+
+            HttpEntity<byte[]> req = new HttpEntity<>(jpegBytes, headers);
+            ResponseEntity<Map> resp = buildRestTemplate()
+                    .postForEntity(url, req, Map.class);
+
+            if (resp.getBody() != null) {
+                boolean passed = Boolean.TRUE.equals(resp.getBody().get("passed"));
+                if (passed) {
+                    log.info("[ActiveLiveness] Browser session={} PASSED challenge={}",
+                             sessionId, challenge);
+                }
+                return Map.of("passed",    passed,
+                              "challenge", challenge);
+            }
+            return Map.of("passed", false, "challenge", challenge);
+
+        } catch (Exception e) {
+            log.warn("[ActiveLiveness] analyzeFrameForAdmin error: {}", e.getMessage());
+            return Map.of("passed", false, "error", e.getMessage());
+        }
+    }
+
+    // Build a RestTemplate with short timeouts (per-frame calls must be fast)
+    private org.springframework.web.client.RestTemplate buildRestTemplate() {
+        var factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(2_000);
+        factory.setReadTimeout(4_000);
+        return new org.springframework.web.client.RestTemplate(factory);
     }
 
     @Scheduled(fixedDelay = 300_000)
