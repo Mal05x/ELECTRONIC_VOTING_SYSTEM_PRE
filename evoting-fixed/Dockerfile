@@ -4,7 +4,12 @@ WORKDIR /app
 COPY pom.xml .
 RUN mvn dependency:go-offline -q
 COPY src ./src
-RUN mvn package -DskipTests -q
+
+# Set memory limit so Render's free/starter tier doesn't kill the build
+ENV MAVEN_OPTS="-Xmx300m"
+
+# Build the app, showing errors (-e) but hiding download spam (--no-transfer-progress)
+RUN mvn package -DskipTests --no-transfer-progress -e
 
 # Stage 2 — Runtime
 FROM eclipse-temurin:21-jre-alpine
