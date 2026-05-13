@@ -314,7 +314,7 @@ public class MFAVotingApplet extends Applet {
      * it must abort enrollment, deactivate the card, and alert the admin.
      * The fingerprint is verified separately via INS_VERIFY_FINGERPRINT.
      */
-    private void personalize(APDU apdu) {
+        private void personalize(APDU apdu) {
         if (personalized || locked)
             ISOException.throwIt(SW_CARD_LOCKED);
 
@@ -328,39 +328,37 @@ public class MFAVotingApplet extends Applet {
 
         short off = ISO7816.OFFSET_CDATA;
 
-        // Store cardStaticKey
+        // Start Atomic EEPROM Write
+        JCSystem.beginTransaction();
+
         Util.arrayCopy(buffer, off, cardStaticKey, (short) 0, STATIC_KEY_SIZE);
         off += STATIC_KEY_SIZE;
 
-        // Hash PIN (4 raw bytes → SHA-256 → storedPINHash)
         sha256.reset();
         sha256.doFinal(buffer, off, (short) 4, storedPINHash, (short) 0);
         off += 4;
 
-        // Store voterID
         Util.arrayCopy(buffer, off, voterID, (short) 0, VOTER_ID_SIZE);
         off += VOTER_ID_SIZE;
 
-        // Store fingerprint template
         Util.arrayCopy(buffer, off, fingerprintTemplate, (short) 0, FINGERPRINT_TEMPLATE_SIZE);
         off += FINGERPRINT_TEMPLATE_SIZE;
 
-        // Store adminTokenHash (32 raw bytes — SHA-256(rawAdminToken))
         Util.arrayCopy(buffer, off, adminTokenHash, (short) 0, ADMIN_TOKEN_SIZE);
 
         fingerprintStored = true;
         Util.arrayFillNonAtomic(lastElectionId, (short) 0, ELECTION_ID_SIZE, (byte) 0);
         pinTriesRemaining = MAX_PIN_TRIES;
 
-        // Generate EC keypair for this card
         ecKeyPair.genKeyPair();
         ecdsaSignature.init(ecKeyPair.getPrivate(), Signature.MODE_SIGN);
 
         personalized = true;
+        
+        // Commit Atomic EEPROM Write
+        JCSystem.commitTransaction();
 
-        // ── FIX-1: Compute and return write-acceptance commitment ─────────────
-        // commitment = SHA-256(cardStaticKey || storedPINHash || voterID || adminTokenHash)
-        // Assembled in scratchPad to avoid multi-part sha256 on EEPROM arrays.
+        // Compute and return write-acceptance commitment
         sha256.reset();
         sha256.update(cardStaticKey,   (short) 0, STATIC_KEY_SIZE);
         sha256.update(storedPINHash,   (short) 0, PIN_HASH_SIZE);
@@ -368,10 +366,10 @@ public class MFAVotingApplet extends Applet {
         sha256.doFinal(adminTokenHash, (short) 0, ADMIN_TOKEN_SIZE,
                        scratchPad,     (short) 0);
 
-        // Write commitment into APDU buffer and respond
         Util.arrayCopy(scratchPad, (short) 0, buffer, (short) 0, COMMITMENT_SIZE);
         apdu.setOutgoingAndSend((short) 0, COMMITMENT_SIZE);
     }
+
 
     // ==================== SECURE CHANNEL ====================
     private void initSecureChannel(APDU apdu) {
@@ -431,7 +429,7 @@ public class MFAVotingApplet extends Applet {
     }
 
     // ==================== PIN VERIFICATION ====================
-    private void verifyPIN(APDU apdu) {
+        private void verifyPIN(APDU apdu) {
         if (!secureChannelEstablished) ISOException.throwIt(SW_SECURE_CHANNEL_NOT_ESTABLISHED);
         if (!personalized)             ISOException.throwIt(SW_NOT_PERSONALIZED);
         if (pinTriesRemaining == 0)    ISOException.throwIt(SW_PIN_BLOCKED);
@@ -441,36 +439,26 @@ public class MFAVotingApplet extends Applet {
         if (lc != PIN_HASH_SIZE)
             ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
 
-        // Terminal sends AES-CBC-ZeroIV-Encrypt(sessionKey, pinHash[16])
-        // Lc=16: terminal sends the first 16 bytes (one AES block) of
-        // SHA-256(raw_pin_bytes) encrypted under the session key.
-        // The applet decrypts and compares with storedPINHash[0:16].
-        // The PIN hash comparison uses only the first block for timing safety.
+        // 1. ATOMIC DECREMENT FIRST (Tearing Protection)
+        JCSystem.beginTransaction();
+        pinTriesRemaining--;
+        JCSystem.commitTransaction();
+
         aesCBCDecryptZeroIV(buffer, ISO7816.OFFSET_CDATA, PIN_HASH_SIZE, scratchPad, (short) 0);
 
         if (Util.arrayCompare(scratchPad, (short) 0, storedPINHash, (short) 0, PIN_HASH_SIZE) == 0) {
+            // 2. RESTORE ON SUCCESS
+            JCSystem.beginTransaction();
             pinTriesRemaining = MAX_PIN_TRIES;
+            JCSystem.commitTransaction();
+            
             pinValidatedThisSession = true;
         } else {
-            if (pinTriesRemaining > 0) pinTriesRemaining--;
+            // Return tries remaining in the lower nibble
             ISOException.throwIt((short)(0x6300 | (pinTriesRemaining & 0x0F)));
         }
     }
 
-    // ==================== FINGERPRINT STORAGE ====================
-    private void storeFingerprint(APDU apdu) {
-        if (!secureChannelEstablished) ISOException.throwIt(SW_SECURE_CHANNEL_NOT_ESTABLISHED);
-        if (!pinValidatedThisSession)  ISOException.throwIt(SW_PIN_VERIFICATION_REQUIRED);
-        if (locked)                    ISOException.throwIt(SW_CARD_LOCKED);
-
-        byte[] buffer = apdu.getBuffer();
-        short lc = apdu.setIncomingAndReceive();
-        if (lc == 0 || lc > FINGERPRINT_TEMPLATE_SIZE)
-            ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
-
-        aesCBCDecryptZeroIV(buffer, ISO7816.OFFSET_CDATA, lc, fingerprintTemplate, (short) 0);
-        fingerprintStored = true;
-    }
 
     // ==================== MATCH-ON-CARD (FIX-2) ====================
     /**
@@ -489,7 +477,7 @@ public class MFAVotingApplet extends Applet {
      * Both paths produce the same match result — the IV only affects
      * ciphertext patterns, not the plaintext that is compared.
      */
-    private void verifyFingerprint(APDU apdu) {
+        private void verifyFingerprint(APDU apdu) {
         if (!secureChannelEstablished) ISOException.throwIt(SW_SECURE_CHANNEL_NOT_ESTABLISHED);
         if (!pinValidatedThisSession)  ISOException.throwIt(SW_PIN_VERIFICATION_REQUIRED);
         if (!personalized)             ISOException.throwIt(SW_NOT_PERSONALIZED);
@@ -503,7 +491,6 @@ public class MFAVotingApplet extends Applet {
         short dataOff;
 
         if (p1 == FP_MODE_CBC_IV) {
-            // CBC with transmitted IV
             if (lc < (short)(IV_SIZE + 16) || lc > (short)(IV_SIZE + FINGERPRINT_TEMPLATE_SIZE))
                 ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
             decryptedLen = (short)(lc - IV_SIZE);
@@ -512,14 +499,12 @@ public class MFAVotingApplet extends Applet {
                                 buffer, dataOff, decryptedLen,
                                 scratchPad, (short) 0);
         } else {
-            // Legacy: CBC with zero IV
             if (lc == 0 || lc > FINGERPRINT_TEMPLATE_SIZE)
                 ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
             decryptedLen = lc;
             aesCBCDecryptZeroIV(buffer, ISO7816.OFFSET_CDATA, lc, scratchPad, (short) 0);
         }
 
-        // Hamming-distance match-on-card
         short totalBits    = (short)(decryptedLen * 8);
         short differentBits = 0;
 
@@ -536,17 +521,18 @@ public class MFAVotingApplet extends Applet {
         }
 
         short matchingBits = (short)(totalBits - differentBits);
-        short chunk        = (short)(totalBits / 100);
-        short matchPercent = (chunk == 0)
-                ? (short)((short)(matchingBits * 100) / totalBits)
-                : (short)(matchingBits / chunk);
+        
+        // Accurate Cross-Multiplication for 80% (4/5)
+        short leftSide = (short)(matchingBits * 5);
+        short rightSide = (short)(totalBits * 4);
 
-        if (matchPercent >= MATCH_THRESHOLD_PERCENT) {
+        if (leftSide >= rightSide) {
             fingerprintVerifiedThisSession = true;
         } else {
             ISOException.throwIt(SW_FINGERPRINT_NOT_MATCH);
         }
     }
+
 
     // ==================== VOTER ID ====================
     private void getVoterID(APDU apdu) {
