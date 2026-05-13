@@ -620,6 +620,28 @@ public class MFAVotingApplet extends Applet {
         apdu.setOutgoingAndSend((short) 0, len);
     }
 
+    
+        // ==================== FINGERPRINT STORAGE ====================
+    private void storeFingerprint(APDU apdu) {
+        if (!secureChannelEstablished) ISOException.throwIt(SW_SECURE_CHANNEL_NOT_ESTABLISHED);
+        if (!pinValidatedThisSession)  ISOException.throwIt(SW_PIN_VERIFICATION_REQUIRED);
+        if (locked)                    ISOException.throwIt(SW_CARD_LOCKED);
+
+        byte[] buffer = apdu.getBuffer();
+        short lc = apdu.setIncomingAndReceive();
+        if (lc == 0 || lc > FINGERPRINT_TEMPLATE_SIZE)
+            ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+
+        // Decrypt to RAM first
+        aesCBCDecryptZeroIV(buffer, ISO7816.OFFSET_CDATA, lc, scratchPad, (short) 0);
+        
+        // Atomic bulk write to EEPROM
+        JCSystem.beginTransaction();
+        Util.arrayCopy(scratchPad, (short) 0, fingerprintTemplate, (short) 0, lc);
+        fingerprintStored = true;
+        JCSystem.commitTransaction();
+    }
+
     // ==================== LIVENESS EMBEDDING (v2.4) ====================
 
     /**
@@ -644,6 +666,7 @@ public class MFAVotingApplet extends Applet {
      *
      * SW_SUCCESS on success. SW_WRONG_LENGTH if Lc ≠ 256.
      */
+    // ==================== LIVENESS EMBEDDING ====================
     private void storeLiveness(APDU apdu) {
         if (!secureChannelEstablished) ISOException.throwIt(SW_SECURE_CHANNEL_NOT_ESTABLISHED);
         if (!pinValidatedThisSession)  ISOException.throwIt(SW_PIN_VERIFICATION_REQUIRED);
@@ -655,44 +678,14 @@ public class MFAVotingApplet extends Applet {
         if (lc != LIVENESS_EMBEDDING_SIZE)
             ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
 
-        // Decrypt AES-128-CBC-ZeroIV into livenessEmbedding[]
-        aesCBCDecryptZeroIV(buffer, ISO7816.OFFSET_CDATA,
-                            LIVENESS_EMBEDDING_SIZE,
-                            livenessEmbedding, (short) 0);
+        // Decrypt to RAM first
+        aesCBCDecryptZeroIV(buffer, ISO7816.OFFSET_CDATA, LIVENESS_EMBEDDING_SIZE, scratchPad, (short) 0);
+        
+        // Atomic bulk write to EEPROM
+        JCSystem.beginTransaction();
+        Util.arrayCopy(scratchPad, (short) 0, livenessEmbedding, (short) 0, LIVENESS_EMBEDDING_SIZE);
         livenessStored = true;
-        // SW_9000 implicit — no response data
-    }
-
-    /**
-     * INS_GET_LIVENESS (0x43) — retrieve 256-byte face embedding from EEPROM.
-     *
-     * Called at the start of the voting liveness check, after the secure
-     * channel is established but before PIN verification (the embedding is
-     * needed to initialise the ESP32-CAM, not to authenticate the voter).
-     *
-     * Requires: secureChannelEstablished only (no PIN gate — the embedding
-     * is public data in the sense that a card holder can read their own
-     * face data; the ECDSA private key is the secret that matters).
-     *
-     * Response (256 bytes):
-     *   AES-128-CBC-ZeroIV-Encrypt(sessionKey, livenessEmbedding[256])
-     *
-     * If no embedding is stored (livenessStored == false), returns
-     * SW_CONDITIONS_NOT_SATISFIED (0x6985). The terminal must handle this
-     * by falling back to session-based-only liveness (no identity matching).
-     */
-    private void getLiveness(APDU apdu) {
-        if (!secureChannelEstablished) ISOException.throwIt(SW_SECURE_CHANNEL_NOT_ESTABLISHED);
-        if (!personalized)             ISOException.throwIt(SW_NOT_PERSONALIZED);
-        if (!livenessStored)           ISOException.throwIt(SW_CONDITIONS_NOT_SATISFIED);
-
-        byte[] buffer = apdu.getBuffer();
-
-        // Encrypt embedding under session key before returning
-        aesCBCEncryptZeroIV(livenessEmbedding, (short) 0,
-                            LIVENESS_EMBEDDING_SIZE,
-                            buffer, (short) 0);
-        apdu.setOutgoingAndSend((short) 0, LIVENESS_EMBEDDING_SIZE);
+        JCSystem.commitTransaction();
     }
 
     // ==================== WRITE VOTER CREDENTIAL ====================
@@ -706,9 +699,16 @@ public class MFAVotingApplet extends Applet {
         if (lc == 0 || lc > FINGERPRINT_TEMPLATE_SIZE)
             ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
 
-        aesCBCDecryptZeroIV(buffer, ISO7816.OFFSET_CDATA, lc, fingerprintTemplate, (short) 0);
+        // Decrypt to RAM first
+        aesCBCDecryptZeroIV(buffer, ISO7816.OFFSET_CDATA, lc, scratchPad, (short) 0);
+        
+        // Atomic bulk write to EEPROM
+        JCSystem.beginTransaction();
+        Util.arrayCopy(scratchPad, (short) 0, fingerprintTemplate, (short) 0, lc);
         fingerprintStored = true;
+        JCSystem.commitTransaction();
     }
+
 
     // ==================== LOCK CARD (FIX-4) ====================
     /**
