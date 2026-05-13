@@ -688,6 +688,22 @@ public class MFAVotingApplet extends Applet {
         JCSystem.commitTransaction();
     }
 
+        // ==================== GET LIVENESS ====================
+    private void getLiveness(APDU apdu) {
+        if (!secureChannelEstablished) ISOException.throwIt(SW_SECURE_CHANNEL_NOT_ESTABLISHED);
+        if (!personalized)             ISOException.throwIt(SW_NOT_PERSONALIZED);
+        if (!livenessStored)           ISOException.throwIt(SW_CONDITIONS_NOT_SATISFIED);
+
+        byte[] buffer = apdu.getBuffer();
+
+        // Encrypt embedding under session key before returning
+        aesCBCEncryptZeroIV(livenessEmbedding, (short) 0,
+                            LIVENESS_EMBEDDING_SIZE,
+                            buffer, (short) 0);
+        apdu.setOutgoingAndSend((short) 0, LIVENESS_EMBEDDING_SIZE);
+    }
+
+
     // ==================== WRITE VOTER CREDENTIAL ====================
     private void writeVoterCredential(APDU apdu) {
         if (!secureChannelEstablished) ISOException.throwIt(SW_SECURE_CHANNEL_NOT_ESTABLISHED);
