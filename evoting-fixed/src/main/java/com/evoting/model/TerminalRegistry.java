@@ -52,6 +52,15 @@ public class TerminalRegistry {
     @Column(name = "registered_by", nullable = false)
     private String registeredBy;
 
+    /**
+     * SHA-256 hex digest of the 6-digit Polling Officer PIN for this terminal.
+     * Set by SUPER_ADMIN via PUT /api/admin/terminals/{terminalId}/officer-pin.
+     * Null until provisioned — terminal will refuse to enter protected modes
+     * until this is set and fetched.
+     */
+    @Column(name = "officer_pin_hash", length = 64)
+    private String officerPinHash;
+
     @Column(name = "last_seen")
     private OffsetDateTime lastSeen;
 }

@@ -21,6 +21,7 @@ import com.evoting.repository.TerminalHeartbeatRepository;
 import com.evoting.service.VoteProcessingService;
 import com.evoting.dto.VoteReceiptDTO;
 import com.evoting.exception.InvalidSessionException;
+import com.evoting.model.TerminalRegistry;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
 
 @RestController
 @RequestMapping("/api/terminal")
@@ -175,6 +177,44 @@ public class TerminalController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Vote processing failed"));
         }
+    }
+
+    /**
+     * GET /api/terminal/officer-pin-hash
+     *
+     * Returns the SHA-256 hex hash of the officer PIN provisioned for this
+     * terminal. Called by the terminal firmware on first boot (or whenever
+     * the hash is absent from NVS) over the ECDSA-authenticated channel.
+     *
+     * This endpoint is NOT in EXEMPT_PATHS — the terminal must provide a
+     * valid X-Terminal-Signature header (verified by TerminalAuthFilter).
+     * This guarantees only the genuine registered terminal can fetch its
+     * own hash — another terminal cannot retrieve a different terminal's hash.
+     */
+    @GetMapping("/officer-pin-hash")
+    public ResponseEntity<?> getOfficerPinHash(HttpServletRequest request) {
+        String terminalId = request.getHeader("X-Terminal-Id");
+        if (terminalId == null || terminalId.isBlank()) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("error", "X-Terminal-Id header required"));
+        }
+
+        TerminalRegistry reg = terminalRegistryRepo
+                .findByTerminalIdAndActiveTrue(terminalId)
+                .orElse(null);
+        if (reg == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    Map.of("error", "Terminal not registered"));
+        }
+        if (reg.getOfficerPinHash() == null) {
+            // Admin has not yet set an officer PIN for this terminal
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    Map.of("error",  "Officer PIN not provisioned for this terminal",
+                            "action", "Contact SUPER_ADMIN to set officer PIN via " +
+                                    "PUT /api/admin/terminals/{terminalId}/officer-pin"));
+        }
+
+        return ResponseEntity.ok(Map.of("pinHash", reg.getOfficerPinHash()));
     }
 
     // ── ORIGINAL ENROLLMENT & CANDIDATE LOGIC ─────────────────────────────────

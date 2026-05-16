@@ -11,6 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
+import lombok.extern.slf4j.Slf4j;
 import com.evoting.repository.EnrollmentQueueRepository;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -31,6 +34,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  */
 @RestController
 @RequestMapping("/api/admin")
+@Slf4j
 public class AdminController {
 
     private static final int DEFAULT_PAGE_SIZE = 50;
@@ -926,6 +930,70 @@ public class AdminController {
                 "registeredAt",  reg.getRegisteredAt().toString(),
                 "message",       "Terminal provisioned. Requests from this terminal " +
                         "must now include X-Terminal-Signature headers."
+        ));
+    }
+
+    /**
+     * PUT /api/admin/terminals/{terminalId}/officer-pin
+     *
+     * Sets or rotates the Polling Officer PIN for a registered terminal.
+     * The plain PIN is received, hashed with SHA-256, and stored in
+     * terminal_registry.officer_pin_hash. The plain PIN is never persisted.
+     *
+     * The admin communicates the plain PIN to the Returning Officer
+     * out-of-band (sealed envelope, secure admin channel) before election day.
+     *
+     * The terminal fetches the hash via GET /api/terminal/officer-pin-hash
+     * on first boot after this endpoint is called.
+     *
+     * Requires: SUPER_ADMIN
+     */
+    @PutMapping("/terminals/{terminalId}/officer-pin")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<Map<String, Object>> setOfficerPin(
+            @PathVariable String terminalId,
+            @RequestBody Map<String, String> body) {
+
+        String pin = body.get("pin");
+        if (pin == null || !pin.matches("\\d{6}")) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("error", "pin must be exactly 6 digits"));
+        }
+
+        TerminalRegistry reg = terminalRegistryRepo
+                .findByTerminalIdAndActiveTrue(terminalId)
+                .orElse(null);
+        if (reg == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    Map.of("error", "Terminal not found or inactive: " + terminalId));
+        }
+
+        // Hash the PIN — SHA-256, hex-encoded, lowercase
+        String hash;
+        try {
+            java.security.MessageDigest md =
+                    java.security.MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(pin.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(64);
+            for (byte b : digest) sb.append(String.format("%02x", b));
+            hash = sb.toString();
+        } catch (java.security.NoSuchAlgorithmException e) {
+            return ResponseEntity.internalServerError().body(
+                    Map.of("error", "SHA-256 unavailable"));
+        }
+
+        reg.setOfficerPinHash(hash);
+        terminalRegistryRepo.save(reg);
+
+        log.info("[OFFICER-PIN] PIN hash set for terminal {} by {}",
+                terminalId, SecurityContextHolder.getContext()
+                        .getAuthentication().getName());
+
+        return ResponseEntity.ok(Map.of(
+                "terminalId", terminalId,
+                "message",    "Officer PIN set. Communicate the plain PIN to the " +
+                        "Returning Officer via a secure out-of-band channel. " +
+                        "The terminal will fetch the hash on next boot."
         ));
     }
 
