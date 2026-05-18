@@ -1,5 +1,7 @@
 package com.evoting.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.OffsetDateTime;
@@ -59,7 +61,14 @@ public class TerminalRegistry {
      * until this is set and fetched.
      */
     @Column(name = "officer_pin_hash", length = 64)
+    @JsonIgnore                          // ← add this
     private String officerPinHash;
+
+    @Transient
+    @JsonProperty("pinProvisioned")      // ← add this getter
+    public boolean isPinProvisioned() {
+        return officerPinHash != null;
+    }
 
     @Column(name = "last_seen")
     private OffsetDateTime lastSeen;
