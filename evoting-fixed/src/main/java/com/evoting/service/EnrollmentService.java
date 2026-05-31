@@ -217,9 +217,9 @@ public class EnrollmentService {
         if ("COMPLETED".equals(record.getStatus()))
             throw new IllegalStateException("Enrollment already completed");
 
-        if (voterRepo.findByCardIdHashAndElectionId(
-                dto.getCardIdHash(), record.getElectionId()).isPresent())
-            throw new EvotingAuthException("Card already registered for this election");
+        // V8 Permanent Identity Fix: Check the global registry, completely ignoring Election ID
+        if (voterRepo.findByCardIdHash(dto.getCardIdHash()).isPresent())
+            throw new EvotingAuthException("Card is already registered in the permanent global registry");
 
         PollingUnit pu = pollingUnitRepo.findById(record.getPollingUnitId())
                 .orElseThrow(() -> new IllegalArgumentException("Polling unit not found"));
@@ -227,7 +227,7 @@ public class EnrollmentService {
         String votingId = votingIdService.generate(pu);
 
         VoterRegistry voter = VoterRegistry.builder()
-                .electionId(record.getElectionId())
+                .electionId(record.getElectionId()) // This will correctly save as NULL
                 .votingId(votingId)
                 .cardIdHash(dto.getCardIdHash())
                 .voterPublicKey(record.getVoterPublicKey())
@@ -245,8 +245,6 @@ public class EnrollmentService {
                 CardEvent.REGISTRATION, terminalId));
 
         // Zero the raw static key; mark completed.
-        // adminTokenHash is NOT zeroed — it is already on the card and
-        // is needed to verify future decommission requests.
         enrollmentRepo.markCompleted(record.getId(), dto.getCardIdHash(), votingId);
 
         auditLog.log("ENROLLMENT_COMPLETED", terminalId,
@@ -260,9 +258,9 @@ public class EnrollmentService {
                 pu.getName(),
                 pu.getLga().getName(),
                 pu.getLga().getState().getName(),
-                "Voter enrolled. Voting ID: " + votingId);
+                "Voter enrolled permanently. Voting ID: " + votingId);
     }
-
+    
     /** Admin monitoring: list pending enrollments for an election. */
     @Transactional(readOnly = true)
     public java.util.List<EnrollmentQueue> listPendingEnrollments(java.util.UUID electionId) {
