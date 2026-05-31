@@ -82,12 +82,36 @@ export default function VotersView() {
     if (!electionId) return;
     setLoading(true);
     getVoters(electionId)
+      getVoters(electionId)
       .then(data => {
-        // Unpack the Spring Boot pagination object 'content' array
-        const items = data?.content ? data.content : (Array.isArray(data) ? data : []);
+        // 1. PRINT THE HIDDEN DATA TO THE CONSOLE
+        console.log("🕵️ RAW SPRING BOOT DATA:", data);
+
+        // 2. AGGRESSIVELY SEARCH FOR THE ARRAY
+        let items = [];
+        if (Array.isArray(data)) {
+            items = data; // It's a direct array
+        } else if (data?.content && Array.isArray(data.content)) {
+            items = data.content; // It's a Spring Boot Page object
+        } else if (data?.data && Array.isArray(data.data)) {
+            items = data.data; // It's a custom ApiResponse wrapper
+        } else if (data?.data?.content && Array.isArray(data.data.content)) {
+            items = data.data.content; // It's a nested Page inside an ApiResponse
+        } else if (data?._embedded?.voterRegistries) {
+            items = data._embedded.voterRegistries; // It's Spring Data REST
+        }
+
+        // 3. RENDER THE TABLE
         setVoters(items);
+        
+        if (items.length === 0) {
+            console.warn("⚠️ Data was received from the backend, but React couldn't find an array of voters inside it.");
+        }
       })
-      .catch(() => setVoters([]))
+      .catch(err => {
+        console.error("❌ BACKEND FETCH ERROR:", err);
+        setVoters([]);
+      })
       .finally(() => setLoading(false));
   }, [electionId]);
 
