@@ -18,9 +18,22 @@ public class VoterDemographics {
     @Column(name = "encrypted_data", nullable = false, columnDefinition = "TEXT")
     private String encryptedData;
 
-    @Column(name = "created_at") private OffsetDateTime createdAt = OffsetDateTime.now();
+    // FIX: Added @Builder.Default so Lombok stops erasing the timestamp!
+    @Builder.Default
+    @Column(name = "created_at") 
+    private OffsetDateTime createdAt = OffsetDateTime.now();
+    
     @Column(name = "last_accessed_by") private String lastAccessedBy;
     @Column(name = "last_accessed_at") private OffsetDateTime lastAccessedAt;
+    
     @Builder.Default
     @Column(name = "access_count")     private int accessCount = 0;
+
+    // BULLETPROOFING: Guarantees a timestamp exists before saving to PostgreSQL
+    @PrePersist
+    protected void onCreate() {
+        if (this.createdAt == null) {
+            this.createdAt = OffsetDateTime.now();
+        }
+    }
 }
