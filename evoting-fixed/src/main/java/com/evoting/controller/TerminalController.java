@@ -252,6 +252,12 @@ public class TerminalController {
     }
 
     // ... your other methods (/heartbeat, /vote, /enrollment) ...
+    @PostMapping("/tap")
+    public ResponseEntity<?> handleTerminalTap(@RequestBody java.util.Map<String, String> payload) {
+        log.info("[TAP] Card " + payload.get("cardIdHash") + " tapped on " + payload.get("terminalId"));
+        // This is a UI webhook. It returns 200 OK so the terminal can proceed.
+        return ResponseEntity.ok().build();
+    }
 
     // ── ADMIN DASHBOARD ENDPOINTS ─────────────────────────────────────────────
 
