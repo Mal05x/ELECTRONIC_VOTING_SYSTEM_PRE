@@ -82,7 +82,11 @@ export default function VotersView() {
     if (!electionId) return;
     setLoading(true);
     getVoters(electionId)
-      .then(data => setVoters(Array.isArray(data) ? data : []))
+      .then(data => {
+        // Unpack the Spring Boot pagination object 'content' array
+        const items = data?.content ? data.content : (Array.isArray(data) ? data : []);
+        setVoters(items);
+      })
       .catch(() => setVoters([]))
       .finally(() => setLoading(false));
   }, [electionId]);
