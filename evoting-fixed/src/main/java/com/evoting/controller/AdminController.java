@@ -512,30 +512,6 @@ public class AdminController {
                 saved.getState().getName(),
                 "Voter registered. Voting ID: " + saved.getVotingId()));
     }
-
-/**
-     * POST /api/admin/enrollment/unified-queue
-     * PRODUCTION PIPELINE: Takes Stage 1 Demographics + Location, generates keys, 
-     * deletes the pending scan, and stages the hardware queue in one atomic action.
-     */
-    @PostMapping("/enrollment/unified-queue")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPER_ADMIN')")
-    @RequiresStepUp("QUEUE_ENROLLMENT")
-    public ResponseEntity<?> queueUnifiedEnrollment(
-            @RequestBody @Valid UnifiedEnrollmentDTO dto, Authentication auth) {
-        
-        EnrollmentService.EnrollmentQueueResult result = 
-                enrollmentService.unifiedQueueEnrollment(dto, auth.getName());
-        
-        return ResponseEntity.ok(java.util.Map.of(
-                "enrollmentId",    result.record().getId(),
-                "terminalId",      result.record().getTerminalId(),
-                "status",          result.record().getStatus(),
-                "rawAdminToken",   result.rawAdminTokenB64(), // 32-byte HSM lock token
-                "adminTokenHash",  result.adminTokenHashB64(),
-                "message",         "Unified Enrollment deployed to hardware."
-        ));
-    }
     
     // ── Fix B-01: Enrollment Queue Management ────────────────────────────────
 
@@ -572,6 +548,30 @@ public class AdminController {
                 "message",         "Enrollment queued. Terminal " + queued.getTerminalId()
                         + " can fetch and process this enrollment. "
                         + "STORE rawAdminToken SECURELY — it cannot be recovered."));
+    }
+
+    /**
+     * POST /api/admin/enrollment/unified-queue
+     * PRODUCTION PIPELINE: Takes Stage 1 Demographics + Location, generates keys, 
+     * deletes the pending scan, and stages the hardware queue in one atomic action.
+     */
+    @PostMapping("/enrollment/unified-queue")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPER_ADMIN')")
+    @RequiresStepUp("QUEUE_ENROLLMENT")
+    public ResponseEntity<?> queueUnifiedEnrollment(
+            @RequestBody @Valid UnifiedEnrollmentDTO dto, Authentication auth) {
+        
+        EnrollmentService.EnrollmentQueueResult result = 
+                enrollmentService.unifiedQueueEnrollment(dto, auth.getName());
+        
+        return ResponseEntity.ok(java.util.Map.of(
+                "enrollmentId",    result.record().getId(),
+                "terminalId",      result.record().getTerminalId(),
+                "status",          result.record().getStatus(),
+                "rawAdminToken",   result.rawAdminTokenB64(), // 32-byte HSM lock token
+                "adminTokenHash",  result.adminTokenHashB64(),
+                "message",         "Unified Enrollment deployed to hardware."
+        ));
     }
 
    /**
