@@ -5,7 +5,6 @@ import com.evoting.exception.EvotingAuthException;
 import com.evoting.model.*;
 import com.evoting.model.CardStatusLog.CardEvent;
 import com.evoting.repository.*;
-import com.evoting.model.AuditLog;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,40 +17,6 @@ import java.util.Base64;
 import java.util.HexFormat;
 import java.util.UUID;
 
-/**
- * Manages the terminal-side voter enrollment workflow.
- *
- * Flow overview
- * ─────────────
- * 1. SUPER_ADMIN calls POST /api/admin/enrollment/queue.
- *    This method generates:
- *      a) 16-byte per-card SCP03 cardStaticKey  — stored Base64, hash stored for audit.
- *      b) 32-byte raw adminToken                — SHA-256 stored, raw returned ONCE to admin.
- *    Response includes rawAdminToken (Base64) — the admin must store this securely.
- *    It is used later to decommission (lock) the card via INS_LOCK_CARD.
- *
- * 2. Terminal GETs /api/terminal/pending_enrollment.
- *    Receives cardStaticKey (raw Base64) and adminTokenHash (Base64 SHA-256).
- *
- * 3. Terminal personalises card via INS_PERSONALIZE (596-byte APDU):
- *      bytes [0..15]   = cardStaticKey   (raw 16 bytes)
- *      bytes [16..19]  = voter PIN       (entered at terminal, never sent here)
- *      bytes [20..51]  = voterID         = SHA-256(enrollmentId UTF-8)
- *      bytes [52..563] = fingerprintTemplate (captured at terminal)
- *      bytes [564..595]= adminTokenHash  (raw 32 bytes — SHA-256 of rawAdminToken)
- *
- * 4. Terminal also saves cardStaticKey to its local NVS (keyed by SHA-256(cardUID))
- *    so it can derive the session key on every future voting session.
- *
- * 5. Terminal POSTs completion to /api/terminal/enrollment.
- *    Service creates voter_registry row, zeroes raw cardStaticKey in DB.
- *    adminTokenHash is kept for audit (it's already on the card anyway).
- *
- * Card locking (decommissioning):
- *    SUPER_ADMIN supplies rawAdminToken to terminal via secure channel.
- *    Terminal AES-encrypts it under the NFC session key → sends INS_LOCK_CARD.
- *    Applet decrypts, SHA-256s, compares against stored adminTokenHash → lock.
- */
 @Service @Slf4j
 public class EnrollmentService {
 
@@ -61,23 +26,19 @@ public class EnrollmentService {
     @Autowired private CardStatusLogRepository   cardLogRepo;
     @Autowired private AuditLogService           auditLog;
     @Autowired private VotingIdService           votingIdService;
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     private static final SecureRandom RNG = new SecureRandom();
 
-    // ── Internal: SHA-256 raw bytes → hex string ──────────────────────────────
+    // ── Internal Cryptography Utilities ───────────────────────────────────────
 
     private static String sha256Hex(byte[] input) {
         try {
-            return HexFormat.of().formatHex(
-                    MessageDigest.getInstance("SHA-256").digest(input));
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(input));
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("SHA-256 not available", e);
         }
     }
-
-    // ── Internal: SHA-256 raw bytes → Base64 string ───────────────────────────
-    // Used to transmit adminTokenHash to the terminal.
-    // The terminal decodes Base64 → 32 bytes and writes them to the card.
 
     private static String sha256Base64(byte[] input) {
         try {
@@ -88,46 +49,80 @@ public class EnrollmentService {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // queueEnrollment
-    // Called by: POST /api/admin/enrollment/queue  (SUPER_ADMIN + step-up)
-    // ─────────────────────────────────────────────────────────────────────────
+    private static String hexToBase64(String hexHash) {
+        if (hexHash == null || hexHash.isEmpty()) {
+            return Base64.getEncoder().encodeToString(new byte[32]);
+        }
+        byte[] raw = HexFormat.of().parseHex(hexHash);
+        return Base64.getEncoder().encodeToString(raw);
+    }
+
+    // ── Production Pipeline: Unified Enrollment ───────────────────────────────
 
     /**
-     * Admin queues an enrollment record for a terminal to process.
-     *
-     * Generates:
-     *   a) 16-byte per-card SCP03 cardStaticKey (stored Base64, hash stored for audit)
-     *   b) 32-byte raw adminToken (SHA-256 stored in DB, raw returned to caller)
-     *
-     * @return EnrollmentQueueResult containing the saved record AND the
-     *         one-time rawAdminToken (Base64) for the admin to store securely.
+     * STAGE 1 to STAGE 2 MIGRATION:
+     * Takes Demographics and Target Location from the React unified modal,
+     * generates card keys, deletes the volatile scan, and stages the queue.
      */
     @Transactional
-    public EnrollmentQueueResult queueEnrollment(EnrollmentQueueRequestDTO dto,
-                                                 String queuedBy) {
-        // Validate polling unit exists
+    public EnrollmentQueueResult unifiedQueueEnrollment(UnifiedEnrollmentDTO dto, String queuedBy) {
         PollingUnit pu = pollingUnitRepo.findById(dto.getPollingUnitId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Polling unit not found: " + dto.getPollingUnitId()));
+                .orElseThrow(() -> new IllegalArgumentException("Polling unit not found: " + dto.getPollingUnitId()));
 
-        // ── a) Generate 16-byte per-card SCP03 static key ────────────────────
-        byte[] staticKey     = new byte[16];
-        RNG.nextBytes(staticKey);
-        String staticKeyB64  = Base64.getEncoder().encodeToString(staticKey);
+        // 1. Generate 16-byte per-card SCP03 static key
+        byte[] staticKey = new byte[16]; RNG.nextBytes(staticKey);
+        String staticKeyB64 = Base64.getEncoder().encodeToString(staticKey);
         String staticKeyHash = AuditLog.sha256(staticKeyB64);
 
-        // ── b) Generate 32-byte admin token ───────────────────────────────────
-        // RAW token: returned once to the SUPER_ADMIN, never stored in DB.
-        // HASH (SHA-256 of raw bytes): stored in DB and sent to terminal.
-        //   → Terminal writes the hash (32 bytes) into card bytes [564..595].
-        //   → For card locking: admin supplies raw token → terminal encrypts →
-        //     applet decrypts → SHA-256 → compare with stored hash.
-        byte[] rawAdminToken     = new byte[32];
-        RNG.nextBytes(rawAdminToken);
-        String rawAdminTokenB64  = Base64.getEncoder().encodeToString(rawAdminToken);
-        String adminTokenHashHex = sha256Hex(rawAdminToken);    // stored in DB
-        String adminTokenHashB64 = sha256Base64(rawAdminToken); // sent to terminal
+        // 2. Generate 32-byte admin token
+        byte[] rawAdminToken = new byte[32]; RNG.nextBytes(rawAdminToken);
+        String rawAdminTokenB64 = Base64.getEncoder().encodeToString(rawAdminToken);
+        String adminTokenHashHex = sha256Hex(rawAdminToken);
+        String adminTokenHashB64 = sha256Base64(rawAdminToken);
+
+        // 3. Stage Demographics safely inside the Queue record (Not in the permanent registry!)
+        String demoJson = String.format("{\"firstName\":\"%s\",\"surname\":\"%s\",\"dob\":\"%s\",\"gender\":\"%s\"}",
+                dto.getFirstName(), dto.getSurname(), dto.getDateOfBirth(), dto.getGender());
+
+        EnrollmentQueue record = EnrollmentQueue.builder()
+                .terminalId(dto.getTerminalId())
+                .pollingUnitId(dto.getPollingUnitId())
+                .voterPublicKey("PENDING_FROM_TERMINAL")
+                .encryptedDemographic(demoJson)
+                .cardStaticKey(staticKeyB64)
+                .cardStaticKeyHash(staticKeyHash)
+                .adminTokenHash(adminTokenHashHex)
+                .status("PENDING")
+                .build();
+
+        EnrollmentQueue saved = enrollmentRepo.save(record);
+
+        // 4. Delete the initial Stage 1 volatile scan
+        jdbcTemplate.update("DELETE FROM pending_registrations WHERE card_id_hash = ?", dto.getCardIdHash());
+
+        auditLog.log("UNIFIED_ENROLLMENT_QUEUED", queuedBy, 
+                "Terminal=" + dto.getTerminalId() + " | PU=" + pu.getName() + " | EnrollmentId=" + saved.getId());
+
+        log.info("Unified Enrollment staged for terminal {} PU {} enrollmentId={}", 
+                dto.getTerminalId(), pu.getName(), saved.getId());
+
+        return new EnrollmentQueueResult(saved, rawAdminTokenB64, adminTokenHashB64);
+    }
+
+    // ── Legacy Standard Queue (Kept for backwards compatibility) ──────────────
+    @Transactional
+    public EnrollmentQueueResult queueEnrollment(EnrollmentQueueRequestDTO dto, String queuedBy) {
+        PollingUnit pu = pollingUnitRepo.findById(dto.getPollingUnitId())
+                .orElseThrow(() -> new IllegalArgumentException("Polling unit not found: " + dto.getPollingUnitId()));
+
+        byte[] staticKey = new byte[16]; RNG.nextBytes(staticKey);
+        String staticKeyB64 = Base64.getEncoder().encodeToString(staticKey);
+        String staticKeyHash = AuditLog.sha256(staticKeyB64);
+
+        byte[] rawAdminToken = new byte[32]; RNG.nextBytes(rawAdminToken);
+        String rawAdminTokenB64 = Base64.getEncoder().encodeToString(rawAdminToken);
+        String adminTokenHashHex = sha256Hex(rawAdminToken);
+        String adminTokenHashB64 = sha256Base64(rawAdminToken);
 
         EnrollmentQueue record = EnrollmentQueue.builder()
                 .terminalId(dto.getTerminalId())
@@ -137,78 +132,40 @@ public class EnrollmentService {
                 .encryptedDemographic(dto.getEncryptedDemographic())
                 .cardStaticKey(staticKeyB64)
                 .cardStaticKeyHash(staticKeyHash)
-                .adminTokenHash(adminTokenHashHex)  // hex in DB for readability
+                .adminTokenHash(adminTokenHashHex)
                 .status("PENDING")
                 .build();
 
         EnrollmentQueue saved = enrollmentRepo.save(record);
-
-        auditLog.log("ENROLLMENT_QUEUED", queuedBy,
-                "Terminal=" + dto.getTerminalId()
-                        + " | PU=" + pu.getName()
-                        + " | Election=" + dto.getElectionId()
-                        + " | EnrollmentId=" + saved.getId()
-                        + " | AdminTokenHashHex=" + adminTokenHashHex);
-
-        log.info("Enrollment queued for terminal {} PU {} enrollmentId={}",
-                dto.getTerminalId(), pu.getName(), saved.getId());
-
-        // Return both the saved record and the one-time raw admin token.
-        // The controller will include rawAdminTokenB64 in its response.
+        auditLog.log("ENROLLMENT_QUEUED", queuedBy, "EnrollmentId=" + saved.getId());
         return new EnrollmentQueueResult(saved, rawAdminTokenB64, adminTokenHashB64);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // getPendingEnrollment
-    // Called by: GET /api/terminal/pending_enrollment?terminalId=
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Terminal fetches its next PENDING enrollment record.
-     * Returns null (204) if none queued for this terminal.
-     *
-     * adminTokenHash is now included so the terminal can write it to the card
-     * during INS_PERSONALIZE (bytes [564..595] of the 596-byte payload).
-     */
+    // ── Terminal Fetch ────────────────────────────────────────────────────────
     @Transactional(readOnly = true)
     public TerminalEnrollmentRecordDTO getPendingEnrollment(String terminalId) {
         return enrollmentRepo
                 .findFirstByTerminalIdAndStatusOrderByCreatedAtAsc(terminalId, "PENDING")
                 .map(r -> {
-                    // Convert stored hex adminTokenHash → Base64 for terminal wire format.
-                    // Terminal Base64-decodes → 32 raw bytes → writes to card.
                     String adminTokenHashB64 = hexToBase64(r.getAdminTokenHash());
-
                     return new TerminalEnrollmentRecordDTO(
                             r.getId(),
                             r.getElectionId(),
                             r.getPollingUnitId(),
                             r.getVoterPublicKey(),
                             r.getEncryptedDemographic(),
-                            r.getCardStaticKey(),     // raw 16-byte key (Base64)
-                            adminTokenHashB64         // SHA-256(rawAdminToken) as Base64
+                            r.getCardStaticKey(),
+                            adminTokenHashB64
                     );
                 })
                 .orElse(null);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // completeEnrollment
-    // Called by: POST /api/terminal/enrollment
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Terminal reports successful card write.
-     * Updates the existing voter_registry row with the final Polling Unit,
-     * generates official Voting ID, and writes audit trail.
-     */
+    // ── Cryptographic Commit (Hardware Callback) ──────────────────────────────
     @Transactional
-    public VoterRegistrationResponseDTO completeEnrollment(
-            EnrollmentResultDTO dto, String terminalId) {
-
+    public VoterRegistrationResponseDTO completeEnrollment(EnrollmentResultDTO dto, String terminalId) {
         EnrollmentQueue record = enrollmentRepo.findById(dto.getEnrollmentId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Enrollment record not found: " + dto.getEnrollmentId()));
+                .orElseThrow(() -> new IllegalArgumentException("Enrollment record not found: " + dto.getEnrollmentId()));
 
         if (!record.getTerminalId().equals(dto.getTerminalId()))
             throw new EvotingAuthException("Terminal mismatch for enrollment record");
@@ -216,68 +173,45 @@ public class EnrollmentService {
         if ("COMPLETED".equals(record.getStatus()))
             throw new IllegalStateException("Enrollment already completed");
 
-        // V8 Permanent Identity Fix: Fetch the existing voter created during "Add Details"
-        VoterRegistry voter = voterRepo.findByCardIdHash(dto.getCardIdHash())
-                .orElseThrow(() -> new EvotingAuthException("Voter demographics not found! Complete 'Add Details' first."));
+        // V8 Permanent Identity: Check the global registry
+        if (voterRepo.findByCardIdHash(dto.getCardIdHash()).isPresent())
+            throw new EvotingAuthException("Card is already registered in the permanent global registry");
 
-        // Use the Polling Unit selected by the Admin in the Enrollment Queue!
         PollingUnit pu = pollingUnitRepo.findById(record.getPollingUnitId())
                 .orElseThrow(() -> new IllegalArgumentException("Polling unit not found"));
 
-        // Re-generate the official Voting ID based on the correct Polling Unit
-        String finalVotingId = votingIdService.generate(pu);
+        // Generate official Identity
+        String votingId = votingIdService.generate(pu);
 
-        // Overwrite the temporary Polling Unit with the final correct one
-        voter.setVotingId(finalVotingId);
-        voter.setPollingUnit(pu);
-        voter.setCardStaticKeyHash(record.getCardStaticKeyHash());
-        
+        // 100% Clean Insertion. NO placeholder overwriting.
+        VoterRegistry voter = VoterRegistry.builder()
+                .votingId(votingId)
+                .cardIdHash(dto.getCardIdHash())
+                .voterPublicKey(record.getVoterPublicKey())
+                .encryptedDemographic(record.getEncryptedDemographic()) // Safely pulled from Queue!
+                .pollingUnit(pu)
+                .cardStaticKeyHash(record.getCardStaticKeyHash())
+                .hasVoted(false)
+                .cardLocked(false)
+                .build();
+
         voterRepo.save(voter);
 
-        cardLogRepo.save(new CardStatusLog(
-                dto.getCardIdHash(), record.getElectionId(),
-                CardEvent.REGISTRATION, terminalId));
+        cardLogRepo.save(new CardStatusLog(dto.getCardIdHash(), record.getElectionId(), CardEvent.REGISTRATION, terminalId));
+        enrollmentRepo.markCompleted(record.getId(), dto.getCardIdHash(), votingId);
 
-        // Mark completed so the React website UI turns Green
-        enrollmentRepo.markCompleted(record.getId(), dto.getCardIdHash(), finalVotingId);
+        auditLog.log("ENROLLMENT_COMPLETED", terminalId, "VotingID=" + votingId + " | Card=" + dto.getCardIdHash());
 
-        auditLog.log("ENROLLMENT_COMPLETED", terminalId,
-                "VotingID=" + finalVotingId
-                        + " | Card=" + dto.getCardIdHash()
-                        + " | PU=" + pu.getName()
-                        + " | EnrollmentId=" + record.getId());
-
-        return new VoterRegistrationResponseDTO(
-                finalVotingId,
-                pu.getName(),
-                pu.getLga().getName(),
-                pu.getLga().getState().getName(),
-                "Voter enrolled permanently. Voting ID: " + finalVotingId);
+        return new VoterRegistrationResponseDTO(votingId, pu.getName(), pu.getLga().getName(), pu.getLga().getState().getName(), "Voter enrolled permanently. Voting ID: " + votingId);
     }
     
-    /** Admin monitoring: list pending enrollments for an election. */
+    // ── Admin Monitoring ──────────────────────────────────────────────────────
     @Transactional(readOnly = true)
     public java.util.List<EnrollmentQueue> listPendingEnrollments(java.util.UUID electionId) {
         return enrollmentRepo.findByElectionIdAndStatus(electionId, "PENDING");
     }
 
-    // ── Utility: hex string → Base64 ─────────────────────────────────────────
-    // adminTokenHash is stored as 64-char hex in the DB for human readability
-    // in audit logs. The terminal expects Base64 for wire efficiency.
-
-    private static String hexToBase64(String hexHash) {
-        if (hexHash == null || hexHash.isEmpty()) {
-            // Should not happen — log a warning upstream if needed.
-            return Base64.getEncoder().encodeToString(new byte[32]);
-        }
-        byte[] raw = HexFormat.of().parseHex(hexHash);
-        return Base64.getEncoder().encodeToString(raw);
-    }
-
-    // ── Inner result type ─────────────────────────────────────────────────────
-    // Carries both the persisted record and the one-time raw admin token.
-    // Using a record (Java 16+) keeps this tight without a separate file.
-
+    // ── Result Wrapper ────────────────────────────────────────────────────────
     public record EnrollmentQueueResult(
             EnrollmentQueue record,
             String rawAdminTokenB64,    // one-time; return to admin, do not persist
