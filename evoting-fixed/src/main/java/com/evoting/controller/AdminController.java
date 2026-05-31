@@ -458,17 +458,44 @@ public class AdminController {
      * Fix: V8 Database Migration explicitly sets election_id to NULL for permanent 
      * identity records. We must use findAll() to return the global registry!
      */
-    @GetMapping("/voters")
+   @GetMapping("/voters")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','OBSERVER')")
-    public ResponseEntity<Page<com.evoting.model.VoterRegistry>> listVoters(
+    public ResponseEntity<?> listVoters(
             @RequestParam(required = false) UUID electionId,
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "50") int size) {
         
         Pageable p = page(page, size);
+        Page<com.evoting.model.VoterRegistry> votersPage = voterRepo.findAll(p);
         
-        // Return the global paginated registry so permanent V8 voters are visible
-        return ResponseEntity.ok(voterRepo.findAll(p));
+        // Bulletproof DTO mapping to prevent Java JSON crashes
+        java.util.List<Map<String, Object>> safeVoters = votersPage.getContent().stream().map(v -> {
+            Map<String, Object> map = new java.util.HashMap<>();
+            map.put("id", v.getId());
+            map.put("votingId", v.getVotingId());
+            map.put("firstName", v.getFirstName());
+            map.put("surname", v.getSurname());
+            map.put("hasVoted", v.isHasVoted());
+            map.put("cardLocked", v.isCardLocked());
+            map.put("enrolled", true);
+            map.put("cardIdHash", v.getCardIdHash());
+            
+            if (v.getPollingUnit() != null) {
+                Map<String, Object> pu = new java.util.HashMap<>();
+                pu.put("name", v.getPollingUnit().getName());
+                if (v.getPollingUnit().getLga() != null) {
+                    pu.put("lga", Map.of("name", v.getPollingUnit().getLga().getName()));
+                }
+                map.put("pollingUnit", pu);
+            }
+            return map;
+        }).collect(java.util.stream.Collectors.toList());
+
+        Map<String, Object> response = new java.util.HashMap<>();
+        response.put("content", safeVoters);
+        response.put("totalElements", votersPage.getTotalElements());
+        
+        return ResponseEntity.ok(response);
     }
 
     // ── Voter Registration ────────────────────────────────────────────────────
