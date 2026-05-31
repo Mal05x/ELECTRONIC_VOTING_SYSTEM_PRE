@@ -199,9 +199,8 @@ public class EnrollmentService {
 
     /**
      * Terminal reports successful card write.
-     * Creates voter_registry row, zeroes the raw static key, writes audit trail.
-     * adminTokenHash is intentionally kept (not zeroed) — it is already public
-     * knowledge (written to the card) and needed for audit / decommission.
+     * Updates the existing voter_registry row with the final Polling Unit,
+     * generates official Voting ID, and writes audit trail.
      */
     @Transactional
     public VoterRegistrationResponseDTO completeEnrollment(
@@ -217,48 +216,43 @@ public class EnrollmentService {
         if ("COMPLETED".equals(record.getStatus()))
             throw new IllegalStateException("Enrollment already completed");
 
-        // V8 Permanent Identity Fix: Check the global registry, completely ignoring Election ID
-        if (voterRepo.findByCardIdHash(dto.getCardIdHash()).isPresent())
-            throw new EvotingAuthException("Card is already registered in the permanent global registry");
+        // V8 Permanent Identity Fix: Fetch the existing voter created during "Add Details"
+        VoterRegistry voter = voterRepo.findByCardIdHash(dto.getCardIdHash())
+                .orElseThrow(() -> new EvotingAuthException("Voter demographics not found! Complete 'Add Details' first."));
 
+        // Use the Polling Unit selected by the Admin in the Enrollment Queue!
         PollingUnit pu = pollingUnitRepo.findById(record.getPollingUnitId())
                 .orElseThrow(() -> new IllegalArgumentException("Polling unit not found"));
 
-        String votingId = votingIdService.generate(pu);
+        // Re-generate the official Voting ID based on the correct Polling Unit
+        String finalVotingId = votingIdService.generate(pu);
 
-        VoterRegistry voter = VoterRegistry.builder()
-                .electionId(record.getElectionId()) // This will correctly save as NULL
-                .votingId(votingId)
-                .cardIdHash(dto.getCardIdHash())
-                .voterPublicKey(record.getVoterPublicKey())
-                .encryptedDemographic(record.getEncryptedDemographic())
-                .pollingUnit(pu)
-                .cardStaticKeyHash(record.getCardStaticKeyHash())
-                .hasVoted(false)
-                .cardLocked(false)
-                .build();
-
+        // Overwrite the temporary Polling Unit with the final correct one
+        voter.setVotingId(finalVotingId);
+        voter.setPollingUnit(pu);
+        voter.setCardStaticKeyHash(record.getCardStaticKeyHash());
+        
         voterRepo.save(voter);
 
         cardLogRepo.save(new CardStatusLog(
                 dto.getCardIdHash(), record.getElectionId(),
                 CardEvent.REGISTRATION, terminalId));
 
-        // Zero the raw static key; mark completed.
-        enrollmentRepo.markCompleted(record.getId(), dto.getCardIdHash(), votingId);
+        // Mark completed so the React website UI turns Green
+        enrollmentRepo.markCompleted(record.getId(), dto.getCardIdHash(), finalVotingId);
 
         auditLog.log("ENROLLMENT_COMPLETED", terminalId,
-                "VotingID=" + votingId
+                "VotingID=" + finalVotingId
                         + " | Card=" + dto.getCardIdHash()
                         + " | PU=" + pu.getName()
                         + " | EnrollmentId=" + record.getId());
 
         return new VoterRegistrationResponseDTO(
-                votingId,
+                finalVotingId,
                 pu.getName(),
                 pu.getLga().getName(),
                 pu.getLga().getState().getName(),
-                "Voter enrolled permanently. Voting ID: " + votingId);
+                "Voter enrolled permanently. Voting ID: " + finalVotingId);
     }
     
     /** Admin monitoring: list pending enrollments for an election. */
