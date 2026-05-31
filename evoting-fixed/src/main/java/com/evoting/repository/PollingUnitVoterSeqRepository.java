@@ -11,7 +11,6 @@ public interface PollingUnitVoterSeqRepository extends JpaRepository<PollingUnit
      * Atomically inserts or increments the counter for a polling unit.
      * Safe across multiple application instances because the DB executes this atomically.
      */
-    @Modifying
     @Query(value =
             "INSERT INTO polling_unit_voter_seq (polling_unit_id, next_val) VALUES (:id, 1) " +
                     "ON CONFLICT (polling_unit_id) DO UPDATE " +
