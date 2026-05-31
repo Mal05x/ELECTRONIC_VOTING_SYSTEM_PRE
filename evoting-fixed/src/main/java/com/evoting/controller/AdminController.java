@@ -453,18 +453,22 @@ public class AdminController {
                                 pu.getCapacity())));
     }
 
-    /**
+   /**
      * GET /api/admin/voters?electionId={uuid}&page=0&size=50
-     * Fix 10: paginated voter list per election.
+     * Fix: V8 Database Migration explicitly sets election_id to NULL for permanent 
+     * identity records. We must use findAll() to return the global registry!
      */
     @GetMapping("/voters")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','OBSERVER')")
     public ResponseEntity<Page<com.evoting.model.VoterRegistry>> listVoters(
-            @RequestParam UUID electionId,
+            @RequestParam(required = false) UUID electionId,
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "50") int size) {
+        
         Pageable p = page(page, size);
-        return ResponseEntity.ok(voterRepo.findByElectionIdPageable(electionId, p));
+        
+        // Return the global paginated registry so permanent V8 voters are visible
+        return ResponseEntity.ok(voterRepo.findAll(p));
     }
 
     // ── Voter Registration ────────────────────────────────────────────────────
@@ -519,25 +523,23 @@ public class AdminController {
                         + "STORE rawAdminToken SECURELY — it cannot be recovered."));
     }
 
-    /**
-     * GET /api/admin/enrollment/pending?electionId={uuid}
-     * Lists all PENDING enrollment records for an election (admin monitoring).
+   /**
+     * GET /api/admin/enrollment/pending
+     * Lists all enrollment records (Admin monitoring).
+     * FIX: Removed the "PENDING" filter so the React frontend 
+     * can display "COMPLETED" and "CANCELLED" statuses in the table history!
      */
     @GetMapping("/enrollment/pending")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','OBSERVER')")
     public ResponseEntity<?> listPendingEnrollments(
             @RequestParam(required = false) UUID electionId) {
-        if (electionId == null) {
-            List<EnrollmentQueue> allPending = enrollmentQueueRepo.findAll().stream()
-                    .filter(record -> "PENDING".equals(record.getStatus()))
-                    .collect(Collectors.toList());
-            return ResponseEntity.ok(allPending);
-        }
-
-        // Otherwise, filter by the specific election ID
-        return ResponseEntity.ok(
-                enrollmentService.listPendingEnrollments(electionId));
-
+        
+        // Fetch all records from the database directly, bypassing the status filter
+        java.util.List<EnrollmentQueue> allRecords = enrollmentQueueRepo.findAll();
+        
+        // We return everything so the frontend table shows the green COMPLETED badge
+        // instead of making the row disappear.
+        return ResponseEntity.ok(allRecords);
     }
 
     // ── Added in v4 patch: profile, stats, terminals, audit verify ────────────
