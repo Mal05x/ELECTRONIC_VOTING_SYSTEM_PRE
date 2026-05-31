@@ -1,20 +1,14 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import client from "../api/client.js";
 import { getEnrollmentQueue, queueEnrollment, cancelEnrollment } from "../api/enrollment.js";
-import { getElections } from "../api/elections.js";
 import { getStates, getLgasByState, getPollingUnitsByLga } from "../api/locations.js";
 import { StatCard, StatusBadge, SectionHeader, Modal, Label, Spinner, EmptyState } from "../components/ui.jsx";
 import { useStepUpAction } from "../components/StepUpModal.jsx";
 import { Ic } from "../components/ui.jsx";
 
 // ── AdminTokenRevealModal ──────────────────────────────────────────────────────
-// Shown exactly ONCE after a successful queueEnrollment.
-// rawAdminToken is the 32-byte secret needed to decommission the card via
-// INS_LOCK_CARD.  It is never stored in the DB and never returned by the API again.
-// Dismissal requires an explicit acknowledgement checkbox.
-
 function AdminTokenRevealModal({ enrollmentId, rawAdminToken, onAcknowledge }) {
-  const [copied,       setCopied]       = useState(false);
+  const [copied,        setCopied]       = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
 
   const handleCopy = () => {
@@ -113,23 +107,23 @@ function AdminTokenRevealModal({ enrollmentId, rawAdminToken, onAcknowledge }) {
 // ── EnrollmentView ────────────────────────────────────────────────────────────
 
 export default function EnrollmentView() {
-  const [queue,        setQueue]        = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [showModal,    setShowModal]    = useState(false);
+  const [queue,         setQueue]        = useState([]);
+  const [loading,       setLoading]      = useState(true);
+  const [showModal,     setShowModal]    = useState(false);
   const [queueHeaders, setQueueHeaders] = useState(null);
-  const [saving,       setSaving]       = useState(false);
-  const [retryingId,   setRetryingId]   = useState(null);
-  const [toast,        setToast]        = useState({ msg: "", type: "success" });
+  const [saving,        setSaving]       = useState(false);
+  const [retryingId,    setRetryingId]   = useState(null);
+  const [toast,         setToast]        = useState({ msg: "", type: "success" });
   const [tokenReveal,  setTokenReveal]  = useState(null);
-  const [elections,    setElections]    = useState([]);
-  const [locStates,    setLocStates]    = useState([]);
-  const [lgas,         setLgas]         = useState([]);
-  const [pus,          setPus]          = useState([]);
-  const [puFetched,    setPuFetched]    = useState(false);
-  const [puError,      setPuError]      = useState(null);
+  const [locStates,     setLocStates]    = useState([]);
+  const [lgas,          setLgas]         = useState([]);
+  const [pus,           setPus]          = useState([]);
+  const [puFetched,     setPuFetched]    = useState(false);
+  const [puError,       setPuError]      = useState(null);
 
+  // FIX: electionId removed entirely from local state
   const [form, setForm] = useState({
-    terminalId: "", electionId: "", stateId: "", lgaId: "", pollingUnit: "",
+    terminalId: "", stateId: "", lgaId: "", pollingUnit: "",
   });
 
   const { trigger: queueWithAuth, modal: queueAuthModal } = useStepUpAction(
@@ -159,9 +153,6 @@ export default function EnrollmentView() {
     getStates()
       .then(setLocStates)
       .catch(e => console.error("States:", e.message));
-    getElections()
-      .then(data => setElections(Array.isArray(data) ? data : data?.content || []))
-      .catch(e => console.error("Elections:", e.message));
   }, []);
 
   useEffect(() => {
@@ -185,24 +176,22 @@ export default function EnrollmentView() {
   const handleQueue = async () => {
     setSaving(true);
     try {
+      // FIX: Payload strictly ignores election ID for global registration
       const payload = {
         terminalId:           form.terminalId,
         pollingUnitId:        parseInt(form.pollingUnit),
-        electionId:           form.electionId || undefined,
         voterPublicKey:       "PENDING_FROM_TERMINAL",
         encryptedDemographic: "PENDING_BIOMETRIC_CAPTURE",
       };
 
-      // CRITICAL: capture the response — rawAdminToken is only returned here
       const result = await queueEnrollment(payload, queueHeaders || {});
 
       await load();
       setShowModal(false);
-      setForm({ terminalId: "", electionId: "", stateId: "", lgaId: "", pollingUnit: "" });
+      setForm({ terminalId: "", stateId: "", lgaId: "", pollingUnit: "" });
       setQueueHeaders(null);
 
       if (result?.rawAdminToken) {
-        // Show one-time reveal modal — toast fires only AFTER admin acknowledges
         setTokenReveal({ enrollmentId: result.enrollmentId, rawAdminToken: result.rawAdminToken });
       } else {
         showToast("Enrollment queued. WARNING: server did not return admin token. Upgrade backend to V19.");
@@ -222,14 +211,14 @@ export default function EnrollmentView() {
     }
   };
 
-  // ── handleRetry — captures new token on retry ──────────────────────────────
+  // ── handleRetry ────────────────────────────────────────────────────────────
   const handleRetry = async (record) => {
     setRetryingId(record.id);
     try {
+      // FIX: Retry payload strictly ignores election ID
       const payload = {
         terminalId:           record.terminalId,
         pollingUnitId:        record.pollingUnitId || parseInt(record.pollingUnit) || null,
-        electionId:           record.electionId    || undefined,
         voterPublicKey:       "PENDING_FROM_TERMINAL",
         encryptedDemographic: "PENDING_BIOMETRIC_CAPTURE",
       };
@@ -266,7 +255,6 @@ export default function EnrollmentView() {
         </div>
       )}
 
-      {/* One-time token reveal — rendered above all other content */}
       {tokenReveal && (
         <AdminTokenRevealModal
           enrollmentId={tokenReveal.enrollmentId}
@@ -299,8 +287,9 @@ export default function EnrollmentView() {
         />
 
         <div className="hidden xl:grid px-4 py-2 mb-1 gap-3"
-          style={{ gridTemplateColumns: "110px 1fr 1fr 130px 65px 120px" }}>
-          {["Terminal", "Polling Unit", "Election", "Status", "Time", "Action"].map(h => (
+          style={{ gridTemplateColumns: "110px 1fr 130px 65px 120px" }}>
+          {/* FIX: Election column removed */}
+          {["Terminal", "Polling Unit", "Status", "Time", "Action"].map(h => (
             <span key={h} className="sect-lbl">{h}</span>
           ))}
         </div>
@@ -313,10 +302,10 @@ export default function EnrollmentView() {
         ) : (
           queue.map((e, i) => (
             <div key={e.id} className="trow animate-fade-up"
-              style={{ gridTemplateColumns: "110px 1fr 1fr 130px 65px 120px", gap: "12px", animationDelay: `${i * 25}ms` }}>
+              style={{ gridTemplateColumns: "110px 1fr 130px 65px 120px", gap: "12px", animationDelay: `${i * 25}ms` }}>
               <span className="mono text-[11px] font-medium text-purple-400">{e.terminalId}</span>
               <span className="text-xs font-semibold text-ink truncate">{e.pollingUnit || e.pollingUnitId}</span>
-              <span className="text-xs text-sub truncate">{e.election || "—"}</span>
+              {/* FIX: Election row removed */}
               <StatusBadge status={e.status}/>
               <span className="mono text-[11px] text-muted">
                 {e.createdAt
@@ -367,22 +356,7 @@ export default function EnrollmentView() {
               />
             </div>
 
-            <div>
-              <Label>Election *</Label>
-              <select
-                className="inp inp-md"
-                value={form.electionId}
-                onChange={e => setForm(p => ({ ...p, electionId: e.target.value }))}
-              >
-                <option value="">Select Election…</option>
-                {elections.map(el => (
-                  <option key={el.id} value={el.id}>{el.title || el.name}</option>
-                ))}
-              </select>
-              <p className="text-[11px] text-muted mt-1">
-                The election this card will vote in. The applet scopes the voted flag per election.
-              </p>
-            </div>
+            {/* FIX: Election Dropdown Form Group Completely Removed */}
 
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -428,7 +402,6 @@ export default function EnrollmentView() {
               )}
             </div>
 
-            {/* Admin token warning */}
             <div className="rounded-xl bg-warning/10 border border-warning/30 p-3 text-[11px] text-warning flex items-start gap-2">
               <Ic n="warning" s={12} c="#FCD34D" className="mt-0.5 flex-shrink-0"/>
               <span>
