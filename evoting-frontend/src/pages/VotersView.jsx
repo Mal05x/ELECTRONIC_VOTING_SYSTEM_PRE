@@ -126,6 +126,18 @@ export default function VotersView() {
   useEffect(() => { loadVoters(); }, [loadVoters]);
   useEffect(() => { if (tab === "PENDING CARDS") loadPending(); }, [tab, loadPending]);
 
+// 1. Add the decryption parser helper
+  const getDemographic = (encryptedString, field) => {
+    if (!encryptedString || encryptedString === "PENDING") return "—";
+    try {
+      const parsed = JSON.parse(encryptedString);
+      return parsed[field] || "—";
+    } catch (e) {
+      return "—"; 
+    }
+  };
+
+  // 2. Update the filter to search inside the encrypted string
   const filtered = voters.filter(v => {
     const matchFilter =
       filter === "ALL"          ? true :
@@ -133,13 +145,18 @@ export default function VotersView() {
       filter === "PENDING"      ? !v.hasVoted :
       filter === "LOCKED"       ? v.cardLocked :
       filter === "NOT ENROLLED" ? !v.enrolled : true;
+    
     if (!matchFilter) return false;
     if (!query.trim()) return true;
+    
     const q = query.toLowerCase();
+    const fName = getDemographic(v.encryptedDemographic, 'firstName').toLowerCase();
+    const sName = getDemographic(v.encryptedDemographic, 'surname').toLowerCase();
+
     return (v.votingId || "").toLowerCase().includes(q) ||
            (v.pollingUnit?.name || "").toLowerCase().includes(q) ||
-           (v.firstName || "").toLowerCase().includes(q) ||
-           (v.surname   || "").toLowerCase().includes(q);
+           fName.includes(q) ||
+           sName.includes(q);
   });
 
   const counts = {
@@ -302,8 +319,15 @@ export default function VotersView() {
             filtered.map((v, i) => (
               <div key={v.id} className="trow animate-fade-up"
                 style={{ gridTemplateColumns: "120px 120px 160px 1fr 130px 70px 70px 90px", gap: "12px", animationDelay: `${i * 15}ms` }}>
-                <span className="text-xs font-semibold text-ink truncate">{v.surname || "—"}</span>
-                <span className="text-xs font-medium text-sub truncate">{v.firstName || "—"}</span>
+                
+                {/* 3. Extract the names from the encrypted string */}
+                <span className="text-xs font-semibold text-ink truncate">
+                  {getDemographic(v.encryptedDemographic, 'surname')}
+                </span>
+                <span className="text-xs font-medium text-sub truncate">
+                  {getDemographic(v.encryptedDemographic, 'firstName')}
+                </span>
+                
                 <span className="mono text-[11px] text-purple-400 truncate">{v.votingId}</span>
                 <span className="text-xs text-sub truncate hidden xl:block">{v.pollingUnit?.name || "—"}</span>
                 <span className="text-xs text-sub truncate hidden xl:block">{v.pollingUnit?.lga?.name || "—"}</span>
