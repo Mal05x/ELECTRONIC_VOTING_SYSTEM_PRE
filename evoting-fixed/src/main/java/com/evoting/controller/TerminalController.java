@@ -46,6 +46,7 @@ public class TerminalController {
     @Autowired private ElectionRepository electionRepo;
     @Autowired private SimpMessagingTemplate messagingTemplate;
     @Autowired private TerminalHeartbeatRepository terminalHeartbeatRepo;
+    @Autowired private VotingSessionRepository sessionRepo;
 
     /**
      * PATCH-3: Wired to VoteProcessingService — replaces the stub that
