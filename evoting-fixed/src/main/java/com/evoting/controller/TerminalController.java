@@ -254,19 +254,19 @@ public class TerminalController {
         }
     }
 
- @PostMapping("/tap")
+@PostMapping("/tap")
     public ResponseEntity<?> handleTerminalTap(@RequestBody java.util.Map<String, String> payload) {
-        log.info("[TAP] Card " + payload.get("cardIdHash") + " tapped on " + payload.get("terminalId"));
+        log.info("[TAP] Incoming Payload: " + payload.toString());
         
         String terminalId = payload.get("terminalId");
-        String electionId = payload.get("electionId"); // We will now send this from the ESP32!
+        String electionId = payload.get("electionId"); 
         
-        // If no election ID is passed, it's just an Enrollment tap.
-        if (electionId == null) {
+        if (electionId == null || electionId.trim().isEmpty()) {
+            log.warn("⚠️ [TAP] electionId is missing! Skipping session generation.");
             return ResponseEntity.ok().build();
         }
 
-        // It is a Voting Tap! Generate a highly secure, one-time session token
+        log.info("[TAP] Generating secure session for Election: " + electionId);
         String sessionToken = java.util.UUID.randomUUID().toString();
         
         VotingSession session = new VotingSession();
@@ -278,9 +278,9 @@ public class TerminalController {
         session.setUsed(false);
         sessionRepo.save(session);
         
-        // Return the secure token to the terminal
         return ResponseEntity.ok(java.util.Map.of("sessionToken", sessionToken));
     }
+    
     // ── ADMIN DASHBOARD ENDPOINTS ─────────────────────────────────────────────
 
     @GetMapping("/all")
