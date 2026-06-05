@@ -22,6 +22,8 @@ import com.evoting.service.VoteProcessingService;
 import com.evoting.dto.VoteReceiptDTO;
 import com.evoting.exception.InvalidSessionException;
 import com.evoting.model.TerminalRegistry;
+import com.evoting.model.VotingSession;
+import com.evoting.repository.VotingSessionRepository;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
