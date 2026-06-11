@@ -86,6 +86,24 @@ public class VoteProcessingService {
         if (ballotRepo.existsBySessionTokenHash(tokenHash))
             throw new InvalidSessionException("Vote already submitted for this session");
 
+        // BUG-5 FIX: cross-check session was created for this exact card
+        // Prevents a stolen session token being paired with a different voter's card
+        if (session.getCardIdHash() != null &&
+            !session.getCardIdHash().equals(packet.getCardIdHash())) {
+            auditLog.log("VOTE_FAIL_CARD_MISMATCH", session.getTerminalId(),
+                    "Session card=" + session.getCardIdHash() + " Packet card=" + packet.getCardIdHash());
+            throw new InvalidSessionException("Card identity mismatch — session was not created for this card");
+        }
+
+        // BUG-6 FIX: cross-check electionId in packet matches the session's election
+        // Prevents a valid session being reused to submit a vote for a different election
+        if (packet.getElectionId() != null &&
+            !session.getElectionId().equals(UUID.fromString(packet.getElectionId()))) {
+            auditLog.log("VOTE_FAIL_ELECTION_MISMATCH", session.getTerminalId(),
+                    "Session election=" + session.getElectionId() + " Packet election=" + packet.getElectionId());
+            throw new InvalidSessionException("Election ID mismatch between session and vote packet");
+        }
+
         // Mark session used before writing ballot (prevents concurrent double-submit)
         session.setUsed(true);
         sessionRepo.save(session);
