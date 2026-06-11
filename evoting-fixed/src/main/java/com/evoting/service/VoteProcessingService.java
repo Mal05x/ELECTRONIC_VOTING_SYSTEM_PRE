@@ -98,7 +98,7 @@ public class VoteProcessingService {
         // BUG-6 FIX: cross-check electionId in packet matches the session's election
         // Prevents a valid session being reused to submit a vote for a different election
         if (packet.getElectionId() != null &&
-            !session.getElectionId().equals(UUID.fromString(packet.getElectionId()))) {
+            !session.getElectionId().equals(packet.getElectionId())) {
             auditLog.log("VOTE_FAIL_ELECTION_MISMATCH", session.getTerminalId(),
                     "Session election=" + session.getElectionId() + " Packet election=" + packet.getElectionId());
             throw new InvalidSessionException("Election ID mismatch between session and vote packet");
@@ -167,11 +167,11 @@ public class VoteProcessingService {
                 .transactionId(transactionId)
                 .build());
 
-      tallyService.incrementTally(session.getElectionId().toString(), packet.getCandidateId());
+        tallyService.incrementTally(session.getElectionId(), packet.getCandidateId());
         if (session.getStateId() != null)
-            tallyService.incrementStateTally(session.getElectionId().toString(),
-                    session.getStateId(), packet.getCandidateId());
-        tallyService.updateMerkleRoot(session.getElectionId().toString(), voteHash);
+            tallyService.incrementStateTally(session.getElectionId(),
+            session.getStateId(), packet.getCandidateId());
+        tallyService.updateMerkleRoot(session.getElectionId(), voteHash);
 
         anomalyService.recordVote(session.getTerminalId());
 
