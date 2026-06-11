@@ -21,4 +21,8 @@ public class VotingSession {
     @Column(name = "is_used",   nullable = false) private boolean      used      = false;
     @Column(name = "expires_at", nullable = false) private OffsetDateTime expiresAt;
     @Column(name = "created_at") private OffsetDateTime createdAt = OffsetDateTime.now();
+    /** BUG-4 FIX: Binds the session to a specific voter card at tap time.
+     *  Used by processVote() to cross-check the decrypted packet's cardIdHash,
+     *  preventing a stolen session token from being paired with a different card. */
+    @Column(name = "card_id_hash", length = 64) private String cardIdHash;
 }
