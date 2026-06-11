@@ -24,6 +24,7 @@ import OAuthCallback      from "./components/OAuthCallback";
 import PopupRenderer from "./components/PopupRenderer.jsx";
 import BiometricCaptureView  from "./pages/BiometricCaptureView.jsx";
 import ActiveLivenessView   from "./pages/ActiveLivenessView.jsx";
+import OfflineBanner from "./components/OfflineBanner.jsx"
 
 
 function RequireAuth({ children }) {
@@ -116,6 +117,7 @@ export default function App() {
   return (
       <>
       <PopupRenderer />
+      <OfflineBanner />
 
     <Routes>
       <Route path="/login"        element={user ? <Navigate to="/" replace /> : <LoginPage />} />
