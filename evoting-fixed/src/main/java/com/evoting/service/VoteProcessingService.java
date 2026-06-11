@@ -167,11 +167,11 @@ public class VoteProcessingService {
                 .transactionId(transactionId)
                 .build());
 
-        tallyService.incrementTally(session.getElectionId(), packet.getCandidateId());
+      tallyService.incrementTally(session.getElectionId().toString(), packet.getCandidateId());
         if (session.getStateId() != null)
-            tallyService.incrementStateTally(session.getElectionId(),
+            tallyService.incrementStateTally(session.getElectionId().toString(),
                     session.getStateId(), packet.getCandidateId());
-        tallyService.updateMerkleRoot(session.getElectionId(), voteHash);
+        tallyService.updateMerkleRoot(session.getElectionId().toString(), voteHash);
 
         anomalyService.recordVote(session.getTerminalId());
 
