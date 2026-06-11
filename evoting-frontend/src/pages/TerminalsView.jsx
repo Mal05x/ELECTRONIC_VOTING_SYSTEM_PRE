@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
 import {
   getTerminals, resolveTamperAlert,
-  getTerminalRegistry, provisionTerminal, setOfficerPin,
+  getTerminalRegistry, provisionTerminal, setOfficerPin, deactivateTerminal,
 } from "../api/terminals.js";
 import {
   StatCard, StatusBadge, SectionHeader, EmptyState, Spinner, Label,
@@ -341,10 +341,13 @@ function SetOfficerPinModal({ terminal, onClose, onSuccess }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function MonitoringTab() {
-  const [terminals, setTerminals] = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [resolving, setResolving] = useState(null);
-  const [toast,     setToast]     = useState({ msg: "", type: "success" });
+  const [terminals,   setTerminals]   = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [resolving,   setResolving]   = useState(null);
+  const [toast,       setToast]       = useState({ msg: "", type: "success" });
+  // BUG-14 FIX: track last successful refresh so officers know if data is stale
+  const [lastRefresh, setLastRefresh] = useState(null);
+  const [refreshing,  setRefreshing]  = useState(false);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -353,6 +356,7 @@ function MonitoringTab() {
 
   const load = async (silent = false) => {
     if (!silent) setLoading(true);
+    else setRefreshing(true);
     try {
       const data = await getTerminals();
       const now  = Date.now();
@@ -378,10 +382,12 @@ function MonitoringTab() {
         };
       });
       setTerminals(mapped);
+      setLastRefresh(new Date()); // BUG-14 FIX: record when data was last fetched
     } catch (e) {
       if (!silent) setTerminals([]);
     } finally {
       if (!silent) setLoading(false);
+      else setRefreshing(false);
     }
   };
 
@@ -432,11 +438,25 @@ function MonitoringTab() {
           sub="ESP32-S3 terminal heartbeats and security status — updates every 10s"
           action={
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-success
-                              bg-green-500/10 px-3 py-1.5 rounded-lg border border-green-500/20">
-                <span className="live-dot" /> Live
+              {/* BUG-14 FIX: last-refresh timestamp so officers know data freshness */}
+              {lastRefresh && (
+                <span className="text-[11px] text-muted font-mono hidden sm:block">
+                  Updated {lastRefresh.toLocaleTimeString("en-NG", { hour:"2-digit", minute:"2-digit", second:"2-digit" })}
+                </span>
+              )}
+              <div className={`flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-lg border
+                ${refreshing
+                  ? "text-amber-300 bg-amber-500/10 border-amber-500/20"
+                  : "text-success bg-green-500/10 border-green-500/20"}`}>
+                <span className={refreshing ? "animate-spin inline-block" : "live-dot"}>
+                  {refreshing ? "↻" : ""}
+                </span>
+                {refreshing ? "Refreshing…" : "Live"}
               </div>
-              <button className="btn btn-surface btn-sm" onClick={() => load(false)}>
+              <button
+                className="btn btn-surface btn-sm"
+                aria-label="Refresh terminal status"
+                onClick={() => load(false)}>
                 <Ic n="refresh" s={13} />
               </button>
             </div>
@@ -521,6 +541,8 @@ function RegistryTab() {
   const [toast,       setToast]       = useState({ msg:"", type:"success" });
   const [rotateId,    setRotateId]    = useState(null);
   const [pinModal,    setPinModal]    = useState(null); // terminal object for PIN modal
+  // BUG-11 FIX: track which terminal is being deactivated
+  const [deactivating, setDeactivating] = useState(null);
   const pubKeyRef                     = useRef(null);
 
   const showToast = (msg, type = "success") => {
@@ -594,6 +616,24 @@ function RegistryTab() {
       setFormError("");
     } catch (_) {
       showToast("Clipboard access denied — paste manually", "warning");
+    }
+  };
+
+  // BUG-11 FIX: deactivate a terminal (requires confirmation)
+  const handleDeactivate = async (terminalId) => {
+    if (!window.confirm(
+      `Deactivate terminal ${terminalId}?\n\nThis will immediately prevent the terminal from authenticating requests. ` +
+      `Any ongoing voter sessions at this terminal will be rejected. This action can be reversed by re-provisioning the terminal.`
+    )) return;
+    setDeactivating(terminalId);
+    try {
+      await deactivateTerminal(terminalId);
+      showToast(`Terminal ${terminalId} deactivated`, "warning");
+      load();
+    } catch (e) {
+      showToast(`Failed to deactivate ${terminalId}: ` + (e.response?.data?.error || e.message), "error");
+    } finally {
+      setDeactivating(null);
     }
   };
 
@@ -830,6 +870,7 @@ function RegistryTab() {
                     <>
                       <button
                         className="btn btn-surface btn-sm !text-[11px]"
+                        aria-label={`Rotate ECDSA signing key for ${t.terminalId}`}
                         title="Rotate ECDSA signing key"
                         onClick={() => openProvision(t)}>
                         <Ic n="refresh" s={11} /> Rotate Key
@@ -840,11 +881,26 @@ function RegistryTab() {
                           ${t.pinProvisioned
                             ? "btn-surface"
                             : "btn-warning border border-amber-500/40 text-amber-300 hover:bg-amber-500/15"}`}
+                        aria-label={t.pinProvisioned ? `Rotate officer PIN for ${t.terminalId}` : `Set officer PIN for ${t.terminalId}`}
                         title={t.pinProvisioned ? "Rotate officer PIN" : "Set officer PIN"}
                         onClick={() => setPinModal(t)}>
                         <Ic n="shield" s={11} />
                         {t.pinProvisioned ? "Rotate PIN" : "Set PIN"}
                       </button>
+
+                      {/* BUG-11 FIX: deactivate button — only shown for active terminals */}
+                      {t.active && (
+                        <button
+                          className="btn btn-sm !text-[11px] btn-danger"
+                          aria-label={`Deactivate terminal ${t.terminalId}`}
+                          title="Immediately revoke terminal access"
+                          onClick={() => handleDeactivate(t.terminalId)}
+                          disabled={deactivating === t.terminalId}>
+                          {deactivating === t.terminalId
+                            ? <><Spinner s={11} /> Deactivating…</>
+                            : <><Ic n="warning" s={11} /> Deactivate</>}
+                        </button>
+                      )}
                     </>
                   )}
                 </div>

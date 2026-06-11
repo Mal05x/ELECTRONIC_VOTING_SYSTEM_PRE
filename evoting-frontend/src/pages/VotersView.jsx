@@ -386,7 +386,13 @@ export default function VotersView() {
                     <Ic n="chip" s={16} c="#A78BFA" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="mono text-xs font-bold text-purple-400 truncate">{rec.cardIdHash}</div>
+                    <div
+                      className="mono text-xs font-bold text-purple-400 truncate cursor-pointer"
+                      title={rec.cardIdHash}
+                      onClick={() => navigator.clipboard?.writeText(rec.cardIdHash)}
+                    >
+                      {rec.cardIdHash ? rec.cardIdHash.slice(0, 8) + "…" : "—"}
+                    </div>
                     <div className="text-xs text-muted mt-0.5">
                       Terminal: {rec.terminalId} · Scanned: {new Date(rec.initiatedAt).toLocaleString()}
                     </div>
