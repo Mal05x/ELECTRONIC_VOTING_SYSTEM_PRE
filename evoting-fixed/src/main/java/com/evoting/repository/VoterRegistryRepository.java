@@ -22,6 +22,10 @@ public interface VoterRegistryRepository extends JpaRepository<VoterRegistry, UU
             "WHERE v.cardIdHash = :cardIdHash AND v.electionId = :electionId")
     int markAsVotedAndLock(@Param("cardIdHash") String cardIdHash,
                            @Param("electionId") UUID electionId);
+    @Modifying
+    @Query("UPDATE VoterRegistry v SET v.hasVoted = true, v.cardLocked = true " +
+        "WHERE v.cardIdHash = :cardIdHash AND v.hasVoted = false")
+    int markAsVotedAndLockByCardHash(@Param("cardIdHash") String cardIdHash);
 
     @Modifying
     @Query("UPDATE VoterRegistry v SET v.cardLocked = false WHERE v.electionId = :electionId")
