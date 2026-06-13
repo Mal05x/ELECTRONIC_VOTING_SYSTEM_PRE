@@ -109,13 +109,14 @@ public class VoteProcessingService {
         sessionRepo.save(session);
 
         // Atomic mark-as-voted + card lock
-        int updated = voterRepo.markAsVotedAndLock(packet.getCardIdHash(), session.getElectionId());
-        if (updated == 0)
-            throw new InvalidSessionException("Voter not found or already voted");
+        VoterRegistry voter = voterRepo.findByCardIdHash(packet.getCardIdHash())
+        .orElseThrow(() -> new InvalidSessionException("Voter not found for this card"));
+        if (voter.isHasVoted())
+            throw new InvalidSessionException("Voter has already cast a ballot");
 
-        VoterRegistry voter = voterRepo
-                .findByCardIdHashAndElectionId(packet.getCardIdHash(), session.getElectionId())
-                .orElseThrow(() -> new InvalidSessionException("Voter record not found after lock"));
+        int updated = voterRepo.markAsVotedAndLockByCardHash(packet.getCardIdHash());
+        if (updated == 0)
+            throw new InvalidSessionException("Vote lock failed — possible concurrent attempt");
 
         // ── FIX BUG 2: Election-scoped burn proof ────────────────────────────
         //
