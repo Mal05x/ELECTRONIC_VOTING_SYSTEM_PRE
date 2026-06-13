@@ -10,4 +10,5 @@ public class EnrollmentResultDTO {
     @NotNull  private UUID   enrollmentId;
     @NotBlank private String cardIdHash;   // SHA-256 of JCOP 4 UID
     @NotBlank private String terminalId;
+    private String           voterPublicKey;   // real EC key from card, nullable for legacy
 }
