@@ -121,17 +121,26 @@ public class CryptoService {
      * @param message         The canonical signed message (use buildBurnProofPayload())
      * @param signatureBase64 Base64-encoded ECDSA signature from card (P1363 format)
      */
-    public boolean verifyCardSignature(String publicKeyBase64, String message,
-                                       String signatureBase64) throws Exception {
-        PublicKey pub = KeyFactory.getInstance("EC")
-                .generatePublic(new X509EncodedKeySpec(
-                        Base64.getDecoder().decode(publicKeyBase64)));
-        // P1363 format matches Web Crypto and the JCOP4 applet output
-        Signature sig = Signature.getInstance("SHA256withECDSAinP1363Format");
-        sig.initVerify(pub);
-        sig.update(message.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        return sig.verify(Base64.getDecoder().decode(signatureBase64));
-    }
+public boolean verifyCardSignature(String publicKeyBase64, String message,
+                                   String signatureBase64) throws Exception {
+
+    // 1. Normalize both strings to Standard Base64 to support keys from any frontend
+    String normalizedPubKey = publicKeyBase64.replace('-', '+').replace('_', '/');
+    String normalizedSig = signatureBase64.replace('-', '+').replace('_', '/');
+
+    // 2. Decode the normalized public key
+    PublicKey pub = KeyFactory.getInstance("EC")
+            .generatePublic(new X509EncodedKeySpec(
+                    Base64.getDecoder().decode(normalizedPubKey)));
+
+    // 3. Verify signature
+    Signature sig = Signature.getInstance("SHA256withECDSAinP1363Format");
+    sig.initVerify(pub);
+    sig.update(message.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    
+    // 4. Decode the normalized signature
+    return sig.verify(Base64.getDecoder().decode(normalizedSig));
+}
 
     // ── FIX DQ5: ECDH ephemeral key pair and session key derivation ──────────
 
