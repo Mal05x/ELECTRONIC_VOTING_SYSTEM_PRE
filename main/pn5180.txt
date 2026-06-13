@@ -1,0 +1,487 @@
+#include "pn5180.h"
+#include "driver/gpio.h"
+#include "driver/spi_master.h"
+#include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include <string.h>
+
+static const char *TAG = "PN5180";
+
+// ── PN5180 SPI commands ───────────────────────────────────
+#define PN5180_WRITE_REGISTER           0x00
+#define PN5180_WRITE_REGISTER_OR_MASK   0x01
+#define PN5180_WRITE_REGISTER_AND_MASK  0x02
+#define PN5180_READ_REGISTER            0x04
+#define PN5180_WRITE_EEPROM             0x06
+#define PN5180_READ_EEPROM              0x07
+#define PN5180_SEND_DATA                0x09
+#define PN5180_READ_DATA                0x0A
+#define PN5180_SWITCH_MODE              0x0B
+#define PN5180_LOAD_RF_CONFIG           0x11
+#define PN5180_RF_ON                    0x16
+#define PN5180_RF_OFF                   0x17
+
+// ── PN5180 Register addresses ─────────────────────────────
+#define PN5180_SYSTEM_CONFIG            0x00
+#define PN5180_IRQ_ENABLE               0x01
+#define PN5180_IRQ_STATUS               0x02
+#define PN5180_IRQ_CLEAR                0x03
+#define PN5180_TRANSCEIVER_CONFIG       0x04
+#define PN5180_TX_DATA_MOD              0x28
+#define PN5180_RX_STATUS                0x13
+#define PN5180_RX_WAIT_TIME             0x16
+#define PN5180_TX_WAIT_TIME             0x17
+// Add these with the other registers around line 24
+#define PN5180_CRC_RX_CONFIG            0x11
+#define PN5180_CRC_TX_CONFIG            0x12
+
+// ── RF configurations ─────────────────────────────────────
+#define RF_CONFIG_ISO14443A_106         0x00  // TX cfg
+#define RF_CONFIG_ISO14443A_106_RX      0x80  // RX cfg
+
+// ── State ─────────────────────────────────────────────────
+static spi_device_handle_t s_spi = NULL;
+static int s_nss_pin  = -1;
+static int s_busy_pin = -1;
+static int s_rst_pin  = -1;
+
+static bool    s_iso4_active = false;
+static uint8_t s_iblock_pcb  = 0x02;
+
+// ── SPI helpers ───────────────────────────────────────────
+
+static void pn5180_wait_busy(void) {
+    // Busy is ACTIVE HIGH — wait for it to go LOW before sending
+    int timeout = 1000;
+    while (gpio_get_level((gpio_num_t)s_busy_pin) == 1 && timeout-- > 0)
+        vTaskDelay(1);
+    if (timeout <= 0) ESP_LOGW(TAG, "BUSY timeout");
+}
+
+static void pn5180_spi_write(const uint8_t *data, size_t len) {
+    pn5180_wait_busy();
+    gpio_set_level((gpio_num_t)s_nss_pin, 0);
+
+    spi_transaction_t t = {};
+    t.length    = len * 8;
+    t.tx_buffer = data;
+    t.rx_buffer = NULL;
+    spi_device_polling_transmit(s_spi, &t);
+
+    gpio_set_level((gpio_num_t)s_nss_pin, 1);
+}
+
+static void pn5180_spi_read(uint8_t *buf, size_t len) {
+    pn5180_wait_busy();
+    gpio_set_level((gpio_num_t)s_nss_pin, 0);
+
+    spi_transaction_t t = {};
+    t.length    = len * 8;
+    t.rxlength  = len * 8;
+    t.tx_buffer = NULL;
+    t.rx_buffer = buf;
+    spi_device_polling_transmit(s_spi, &t);
+
+    gpio_set_level((gpio_num_t)s_nss_pin, 1);
+}
+
+// ── Register access ───────────────────────────────────────
+
+static void pn5180_write_reg(uint8_t reg, uint32_t val) {
+    uint8_t cmd[6];
+    cmd[0] = PN5180_WRITE_REGISTER;
+    cmd[1] = reg;
+    cmd[2] = (uint8_t)(val);
+    cmd[3] = (uint8_t)(val >> 8);
+    cmd[4] = (uint8_t)(val >> 16);
+    cmd[5] = (uint8_t)(val >> 24);
+    pn5180_spi_write(cmd, 6);
+}
+
+static void pn5180_write_reg_or(uint8_t reg, uint32_t mask) {
+    uint8_t cmd[6];
+    cmd[0] = PN5180_WRITE_REGISTER_OR_MASK;
+    cmd[1] = reg;
+    cmd[2] = (uint8_t)(mask);
+    cmd[3] = (uint8_t)(mask >> 8);
+    cmd[4] = (uint8_t)(mask >> 16);
+    cmd[5] = (uint8_t)(mask >> 24);
+    pn5180_spi_write(cmd, 6);
+}
+
+static void pn5180_write_reg_and(uint8_t reg, uint32_t mask) {
+    uint8_t cmd[6];
+    cmd[0] = PN5180_WRITE_REGISTER_AND_MASK;
+    cmd[1] = reg;
+    cmd[2] = (uint8_t)(mask);
+    cmd[3] = (uint8_t)(mask >> 8);
+    cmd[4] = (uint8_t)(mask >> 16);
+    cmd[5] = (uint8_t)(mask >> 24);
+    pn5180_spi_write(cmd, 6);
+}
+
+static uint32_t pn5180_read_reg(uint8_t reg) {
+    uint8_t cmd[2] = { PN5180_READ_REGISTER, reg };
+    pn5180_wait_busy();
+    gpio_set_level((gpio_num_t)s_nss_pin, 0);
+
+    // TX phase
+    spi_transaction_t t = {};
+    t.length    = 16;
+    t.tx_buffer = cmd;
+    spi_device_polling_transmit(s_spi, &t);
+    gpio_set_level((gpio_num_t)s_nss_pin, 1);
+
+    // RX phase (separate NSS pulse)
+    uint8_t resp[4];
+    pn5180_spi_read(resp, 4);
+
+    return ((uint32_t)resp[3] << 24) | ((uint32_t)resp[2] << 16) |
+           ((uint32_t)resp[1] << 8)  | resp[0];
+}
+
+// ── IRQ clear ─────────────────────────────────────────────
+
+static void pn5180_clear_irq(uint32_t mask) {
+    uint8_t cmd[6];
+    cmd[0] = PN5180_IRQ_CLEAR;
+    cmd[1] = 0x00;
+    cmd[2] = (uint8_t)(mask);
+    cmd[3] = (uint8_t)(mask >> 8);
+    cmd[4] = (uint8_t)(mask >> 16);
+    cmd[5] = (uint8_t)(mask >> 24);
+    pn5180_spi_write(cmd, 6);
+}
+
+// ── Send raw frame ────────────────────────────────────────
+
+static bool pn5180_send_frame(const uint8_t *data, uint8_t len) {
+    pn5180_clear_irq(0xFFFFFFFF);
+
+    // BUG-7 FIX (send_frame): Replace VLA uint8_t cmd[2+len] with heap
+    // allocation.  VLA of up to 257 bytes on the task stack is unsafe
+    // in FreeRTOS tasks with 4–8 KB default stacks.
+    uint8_t *cmd = (uint8_t *)malloc((size_t)2 + len);
+    if (!cmd) { ESP_LOGE("PN5180", "malloc fail in send_frame"); return false; }
+    cmd[0] = PN5180_SEND_DATA;
+    cmd[1] = 0x00;   // 0 = all 8 bits of last byte are valid
+    memcpy(&cmd[2], data, len);
+    pn5180_spi_write(cmd, 2 + len);
+    free(cmd);
+
+    // Wait for TX_IRQ (bit 4) or timeout
+    int timeout = 200;
+    while (timeout-- > 0) {
+        uint32_t irq = pn5180_read_reg(PN5180_IRQ_STATUS);
+        if (irq & (1 << 4)) return true;  // TX_IRQ
+        if (irq & (1 << 1)) break;        // RX_IRQ — faster path
+        vTaskDelay(1);
+    }
+    return timeout > 0;
+}
+
+// ── Read received frame ───────────────────────────────────
+
+static int pn5180_read_frame(uint8_t *buf, int max_len) {
+    // Wait for RX_IRQ (bit 1)
+    int timeout = 200;
+    while (timeout-- > 0) {
+        uint32_t irq = pn5180_read_reg(PN5180_IRQ_STATUS);
+        if (irq & (1 << 1)) break;
+        vTaskDelay(1);
+    }
+    if (timeout <= 0) return 0;
+
+    uint32_t rx_status = pn5180_read_reg(PN5180_RX_STATUS);
+    int len = (int)(rx_status & 0x01FF);
+    if (len == 0 || len > max_len) return 0;
+
+    uint8_t cmd[2] = { PN5180_READ_DATA, 0x00 };
+    pn5180_wait_busy();
+    gpio_set_level((gpio_num_t)s_nss_pin, 0);
+
+    spi_transaction_t t = {};
+    t.length    = 16;
+    t.tx_buffer = cmd;
+    spi_device_polling_transmit(s_spi, &t);
+    gpio_set_level((gpio_num_t)s_nss_pin, 1);
+
+    // Read data
+    pn5180_spi_read(buf, len);
+    return len;
+}
+
+// ── Init ──────────────────────────────────────────────────
+
+void pn5180_init(spi_host_device_t host, int nss, int busy, int rst) {
+    s_nss_pin  = nss;
+    s_busy_pin = busy;
+    s_rst_pin  = rst;
+
+    // Configure GPIO
+    gpio_config_t io = {};
+    io.mode = GPIO_MODE_OUTPUT;
+    io.pin_bit_mask = (1ULL << nss) | (1ULL << rst);
+    io.pull_up_en   = GPIO_PULLUP_DISABLE;
+    io.intr_type    = GPIO_INTR_DISABLE;
+    gpio_config(&io);
+
+    gpio_config_t bi = {};
+    bi.mode = GPIO_MODE_INPUT;
+    bi.pin_bit_mask = (1ULL << busy);
+    bi.pull_up_en   = GPIO_PULLUP_ENABLE;
+    bi.intr_type    = GPIO_INTR_DISABLE;
+    gpio_config(&bi);
+
+    gpio_set_level((gpio_num_t)nss, 1);
+
+    // PN5180 requires SPI mode 0, 7 MHz max
+    spi_device_interface_config_t dev = {};
+    // BUG-14 FIX: 7 MHz → 4 MHz. PN5180 shares SPI2 with ILI9341 TFT.
+    // PCB trace capacitance on the shared bus makes 7 MHz (datasheet max)
+    // marginal — random MISO bit errors cause card detection to fail.
+    // 4 MHz is reliable on all layouts and plenty fast for ISO 14443-3.
+    dev.clock_speed_hz = 4 * 1000 * 1000;
+    dev.mode           = 0;
+    dev.spics_io_num   = -1;   // CS managed manually (NSS + BUSY handshake)
+    dev.queue_size     = 4;
+    spi_bus_add_device(host, &dev, &s_spi);
+
+    pn5180_reset();
+    ESP_LOGI(TAG, "PN5180 initialised");
+}
+
+bool pn5180_reset(void) {
+    gpio_set_level((gpio_num_t)s_rst_pin, 0);
+    vTaskDelay(pdMS_TO_TICKS(10));
+    gpio_set_level((gpio_num_t)s_rst_pin, 1);
+    vTaskDelay(pdMS_TO_TICKS(50));
+
+    // FIX: Send LOAD_RF_CONFIG + TX param + RX param in a single 3-byte transaction
+    uint8_t cmd_rf_cfg[3] = {
+        PN5180_LOAD_RF_CONFIG,
+        RF_CONFIG_ISO14443A_106,
+        RF_CONFIG_ISO14443A_106_RX
+    };
+    pn5180_spi_write(cmd_rf_cfg, 3);
+    vTaskDelay(pdMS_TO_TICKS(2));
+
+    // FIX: Send RF_ON + 0x00 (collision avoidance param) in a single 2-byte transaction
+    uint8_t rf_on[2] = { PN5180_RF_ON, 0x00 };
+    pn5180_spi_write(rf_on, 2);
+    vTaskDelay(pdMS_TO_TICKS(5));
+
+    s_iso4_active = false;
+    s_iblock_pcb  = 0x02;
+    return true;
+}
+
+void pn5180_reset_iso_dep(void) {
+    s_iso4_active = false;
+    s_iblock_pcb  = 0x02;
+}
+
+// ── Lightweight card-presence probe ──────────────────────
+//
+// Sends a 7-bit REQA short frame.  If the card responds with an ATQA
+// (2 bytes) it is still in the RF field.  Used by the watchdog in main.cpp
+// to detect removal mid-session without disturbing the ISO-DEP PCB state.
+//
+// Rate-limit note: callers should not invoke this more than once every
+// 500 ms to avoid generating unnecessary RF noise and battery drain.
+// The idle-state poll loop in main.cpp enforces this via vTaskDelay.
+
+bool pn5180_is_card_present(void) {
+    if (s_iso4_active) {
+        // BUG-3 FIX: ISO-DEP session is active — do NOT send REQA.
+        // REQA causes the JCOP4 to transition ACTIVE→IDLE, destroying the
+        // secure channel and PCB sequence number.  Instead, send an ISO-DEP
+        // R(NAK) block (PCB = 0xB2).  A present card responds with R(ACK)
+        // = 0xA2.  A removed card gives no response within the RX timeout.
+        // This leaves the ISO-DEP session and PCB state fully intact.
+        uint8_t rnak = 0xB2;
+        if (!pn5180_send_frame(&rnak, 1)) return false;
+        uint8_t resp[4];
+        int rlen = pn5180_read_frame(resp, sizeof(resp));
+        // Any response (R(ACK) = 0xA2/0xA3) means the card is still present
+        return rlen >= 1;
+    }
+
+    // ISO-DEP not yet active — use WUPA to detect cards in HALT state too.
+    pn5180_clear_irq(0xFFFFFFFF);
+    uint8_t cmd_rf[3] = { PN5180_SEND_DATA, 0x07, 0x52 };  // 0x52 = WUPA
+    pn5180_spi_write(cmd_rf, 3);
+    uint8_t atqa[2];
+    int rlen = pn5180_read_frame(atqa, 2);
+    return rlen == 2;
+}
+
+// ── Anti-collision / card UID read ────────────────────────
+
+int pn5180_read_card_uid(uint8_t *uid_out) {
+    pn5180_clear_irq(0xFFFFFFFF);
+    // Enable transceiver
+    pn5180_write_reg_or(PN5180_SYSTEM_CONFIG, 0x00000003);
+
+    // BUG-13 FIX: WUPA (0x52) instead of REQA (0x26).
+    // REQA is ignored by JCOP4 cards left in HALT state from a previous
+    // aborted session. WUPA wakes both IDLE and HALT state cards.
+    // For short frame, last byte has only 7 valid bits (sent as 7-bit frame).
+    uint8_t cmd_rf[3] = { PN5180_SEND_DATA, 0x07, 0x52 };  // 0x52 = WUPA
+    pn5180_clear_irq(0xFFFFFFFF);
+    pn5180_spi_write(cmd_rf, 3);
+
+    uint8_t atqa[2];
+    int rlen = pn5180_read_frame(atqa, 2);
+    if (rlen != 2) return 0;
+
+    // Anticollision CL1
+    // Disable CRC for Anticollision
+    pn5180_write_reg_and(PN5180_CRC_TX_CONFIG, ~0x01);
+    pn5180_write_reg_and(PN5180_CRC_RX_CONFIG, ~0x01);
+
+    uint8_t anticol1[2] = { 0x93, 0x20 };
+    pn5180_send_frame(anticol1, 2);
+    uint8_t uid1[5];
+    rlen = pn5180_read_frame(uid1, 5);
+
+    // Re-enable CRC for SELECT
+    pn5180_write_reg_or(PN5180_CRC_TX_CONFIG, 0x01);
+    pn5180_write_reg_or(PN5180_CRC_RX_CONFIG, 0x01);
+
+    if (rlen < 4) return 0;
+    // SELECT CL1
+    // BUG-1 FIX: 7 bytes only (SEL+NVB+uid[0..3]+BCC).
+    // PN5180 appends 2 CRC bytes automatically = 9 bytes total on the wire.
+    // The original 9-byte array + 2 CRC = 11 bytes caused JCOP4 to reject SELECT.
+    uint8_t sel1[7] = { 0x93, 0x70,
+                        uid1[0], uid1[1], uid1[2], uid1[3], uid1[4] };
+    pn5180_send_frame(sel1, 7);
+    uint8_t sak[3];
+    rlen = pn5180_read_frame(sak, 3);
+    if (rlen < 1) return 0;
+
+    if (sak[0] & 0x04) {
+        // 7-byte UID — need CL2
+    	pn5180_write_reg_and(PN5180_CRC_TX_CONFIG, ~0x01);
+    	pn5180_write_reg_and(PN5180_CRC_RX_CONFIG, ~0x01);
+
+        uint8_t anticol2[2] = { 0x95, 0x20 };
+        pn5180_send_frame(anticol2, 2);
+        uint8_t uid2[5];
+        rlen = pn5180_read_frame(uid2, 5);
+
+        pn5180_write_reg_or(PN5180_CRC_TX_CONFIG, 0x01);
+        pn5180_write_reg_or(PN5180_CRC_RX_CONFIG, 0x01);
+
+        if (rlen < 4) return 0;
+
+        // BUG-2 FIX: same trailing-zero fix for 7-byte UID CL2 SELECT.
+        // JCOP4 J3R180 is a 7-byte UID card — this path is the primary one.
+        uint8_t sel2[7] = { 0x95, 0x70,
+                            uid2[0], uid2[1], uid2[2], uid2[3], uid2[4] };
+        pn5180_send_frame(sel2, 7);
+        pn5180_read_frame(sak, 3);
+
+        uid_out[0] = uid1[0]; uid_out[1] = uid1[1]; uid_out[2] = uid1[2];
+        uid_out[3] = uid2[0]; uid_out[4] = uid2[1]; uid_out[5] = uid2[2];
+        uid_out[6] = uid2[3];
+        return 7;
+    }
+
+    // 4-byte UID
+    memcpy(uid_out, uid1, 4);
+    return 4;
+}
+
+// ── ISO-DEP (RATS) ────────────────────────────────────────
+
+bool pn5180_activate_iso14443_4(void) {
+    // BUG-4 FIX: FSDI=8 (0x80) = 256-byte max frame (was FSDI=5 = 64 bytes).
+    // 64-byte limit caused liveness embedding (256+2 bytes) to chain without
+    // a chaining handler, truncating the response.  256 bytes covers all
+    // normal JCOP4 APDU responses.  CID=0 (lower nibble unchanged).
+    uint8_t rats[2] = { 0xE0, 0x80 };
+    pn5180_send_frame(rats, 2);
+
+    uint8_t ats[32];
+    int len = pn5180_read_frame(ats, 32);
+    if (len < 1) {
+        ESP_LOGW(TAG, "RATS: no ATS");
+        return false;
+    }
+    s_iso4_active = true;
+    s_iblock_pcb  = 0x02;
+    ESP_LOGI(TAG, "ISO-DEP active, ATS=%d bytes", len);
+    return true;
+}
+
+// ── APDU over ISO-DEP ─────────────────────────────────────
+
+bool pn5180_send_apdu(const uint8_t *apdu, uint16_t apdu_len,
+                       uint8_t *resp_out, uint16_t *resp_len_out) {
+    if (!s_iso4_active) {
+        if (!pn5180_activate_iso14443_4()) return false;
+    }
+
+    // BUG-7 FIX: Heap-allocate I-block instead of VLA.
+    // VLA of up to 257 bytes on the FreeRTOS task stack was a stack-overflow risk.
+    uint8_t *iblock = (uint8_t *)malloc(apdu_len + 1);
+    if (!iblock) { ESP_LOGE(TAG, "malloc fail in send_apdu"); return false; }
+    iblock[0] = s_iblock_pcb;
+    memcpy(&iblock[1], apdu, apdu_len);
+    pn5180_send_frame(iblock, (uint8_t)(apdu_len + 1));
+    free(iblock);
+
+    // Toggle PCB for our next I-block send
+    s_iblock_pcb = (s_iblock_pcb == 0x02) ? 0x03 : 0x02;
+
+    // BUG-5+6 FIX: Collect response with ISO-DEP chaining support.
+    // BUG-5: resp_len_out was cast to uint8_t — silently truncated to 1 byte
+    //        for responses of 258 bytes (e.g. 256-byte embedding + 2-byte SW).
+    // BUG-6: No chaining handler — when PICC sets PCB bit 4 (more data),
+    //        subsequent chain blocks were never requested.
+    //
+    // ISO-DEP chaining protocol (ISO 14443-4 §7.6):
+    //   PICC response I-block PCB bit 4 = 1 → more data follows.
+    //   PCD sends R(ACK) to request the next block.
+    //   R(ACK) PCB = 0xA2 | (block_number & 0x01).
+    //
+    // Max iterations: 16 × 256 bytes = 4 KB — well above any JCOP4 response.
+    *resp_len_out = 0;
+    // resp_out callers must provide at least 512 bytes (see pn5180.h)
+    static const uint16_t RESP_MAX = 512;
+
+    for (int chain_iter = 0; chain_iter < 16; chain_iter++) {
+        uint8_t raw[258];   // 256-byte FSDI=8 frame + PCB + CRC headroom
+        int rawlen = pn5180_read_frame(raw, sizeof(raw));
+
+        if (rawlen < 1) {
+            ESP_LOGW(TAG, "APDU resp too short: %d (iter=%d)", rawlen, chain_iter);
+            return false;
+        }
+
+        uint8_t pcb      = raw[0];
+        bool    chaining = (pcb & 0x10) != 0;   // bit 4: PICC chaining
+
+        // Data payload of this block (strip PCB byte)
+        int block_data = rawlen - 1;
+        if (*resp_len_out + (uint16_t)block_data > RESP_MAX) {
+            ESP_LOGE(TAG, "Response overflow: %d + %d > %d",
+                     *resp_len_out, block_data, RESP_MAX);
+            return false;
+        }
+        memcpy(resp_out + *resp_len_out, &raw[1], block_data);
+        *resp_len_out += (uint16_t)block_data;
+
+        if (!chaining) break;   // No more chain blocks — we have the full APDU
+
+        // Send R(ACK) to request next chain block
+        // PCB = 1010 00bN where b=block_number alternates to match PICC
+        uint8_t rack = (uint8_t)(0xA2 | (pcb & 0x01));
+        pn5180_send_frame(&rack, 1);
+    }
+
+    return (*resp_len_out >= 2);   // Minimum valid APDU response is 2 bytes (SW1 SW2)
+}
