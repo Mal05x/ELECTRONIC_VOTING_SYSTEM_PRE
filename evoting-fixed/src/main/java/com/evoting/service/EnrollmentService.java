@@ -161,7 +161,7 @@ public class EnrollmentService {
                 .orElse(null);
     }
 
-    // ── Cryptographic Commit (Hardware Callback) ──────────────────────────────
+  // ── Cryptographic Commit (Hardware Callback) ──────────────────────────────
     @Transactional
     public VoterRegistrationResponseDTO completeEnrollment(EnrollmentResultDTO dto, String terminalId) {
         EnrollmentQueue record = enrollmentRepo.findById(dto.getEnrollmentId())
@@ -183,12 +183,18 @@ public class EnrollmentService {
         // Generate official Identity
         String votingId = votingIdService.generate(pu);
 
+        // 💥 THE FIX: Capture the real ECDSA key sent by the ESP32 hardware
+        String resolvedPublicKey = (dto.getVoterPublicKey() != null 
+                && !dto.getVoterPublicKey().startsWith("PENDING"))
+                ? dto.getVoterPublicKey()
+                : record.getVoterPublicKey();
+
         // 100% Clean Insertion. NO placeholder overwriting.
         VoterRegistry voter = VoterRegistry.builder()
                 .votingId(votingId)
                 .cardIdHash(dto.getCardIdHash())
-                .voterPublicKey(record.getVoterPublicKey())
-                .encryptedDemographic(record.getEncryptedDemographic()) // Safely pulled from Queue!
+                .voterPublicKey(resolvedPublicKey) // <-- Now saving the REAL key!
+                .encryptedDemographic(record.getEncryptedDemographic()) 
                 .pollingUnit(pu)
                 .cardStaticKeyHash(record.getCardStaticKeyHash())
                 .hasVoted(false)
