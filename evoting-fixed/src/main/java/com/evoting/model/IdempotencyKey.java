@@ -28,6 +28,7 @@ public class IdempotencyKey {
     @Column(name = "transaction_id", nullable = false, length = 16)
     private String transactionId;     // the receipt returned for this payload
 
-    @Column(name = "created_at", nullable = false)
+   @Builder.Default
+    @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt = OffsetDateTime.now();
 }
