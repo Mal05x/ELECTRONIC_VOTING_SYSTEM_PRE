@@ -55,6 +55,8 @@
 #include "officer_auth.h"
 
 
+
+
 static const char *TAG = "MAIN";
 
 // ── Global state ──────────────────────────────────────────
@@ -73,6 +75,8 @@ TerminalMode      g_terminal_mode   = MODE_VOTING;
 // ── Homepage / settings selection ─────────────────────────
 static int g_home_sel = HOME_VOTE;
 static int g_sett_sel = SETTINGS_LIVENESS;
+
+static int s_current_digit = 0;
 
 // ── Timing state ──────────────────────────────────────────
 static TickType_t s_session_start_tick  = 0;
@@ -278,7 +282,7 @@ static void task_network(void *pvParameters) {
             EVT_NET_AUTH_TRIGGER | EVT_NET_VOTE_TRIGGER |
             EVT_NET_ENROLL_FETCH | EVT_NET_ENROLL_CONFIRM,
             pdTRUE, pdFALSE, portMAX_DELAY);
-        if (bits & EVT_NET_AUTH_TRIGGER)   xEventGroupSetBits(s_net_eg, net_authenticate_voter()      ? EVT_NET_SUCCESS : EVT_NET_ERROR);
+        if (bits & EVT_NET_AUTH_TRIGGER)   xEventGroupSetBits(s_net_eg, net_request_tap_session()     ? EVT_NET_SUCCESS : EVT_NET_ERROR);
         if (bits & EVT_NET_VOTE_TRIGGER)   xEventGroupSetBits(s_net_eg, net_submit_vote()              ? EVT_NET_SUCCESS : EVT_NET_ERROR);
         if (bits & EVT_NET_ENROLL_FETCH)   xEventGroupSetBits(s_net_eg, net_fetch_pending_enrollment() ? EVT_NET_SUCCESS : EVT_NET_ERROR);
         if (bits & EVT_NET_ENROLL_CONFIRM) xEventGroupSetBits(s_net_eg, net_complete_enrollment()      ? EVT_NET_SUCCESS : EVT_NET_ERROR);
@@ -409,6 +413,101 @@ static void handle_settings(void) {
         buzzer_beep_ok();
     }
     if (btn == BTN_BACK) { g_state = STATE_HOME; ui_display_home(g_home_sel); }
+    if (btn == BTN_CENTER && g_sett_sel == SETTINGS_ADMIN_RESET) {
+            g_state = STATE_ADMIN_RESET_SCAN;
+            ui_display_status("Admin Reset Mode\nTap Locked Card...");
+            buzzer_beep_ok();
+        }
+}
+
+// Add the Admin Reset Scanner State
+// 1. Pass 'Button btn' as an argument
+static void handle_admin_reset_scan(Button btn) {
+    // 2. Fix the button check syntax
+    if (btn == BTN_BACK) {
+        reset_session();
+        return;
+    }
+
+    TickType_t now = xTaskGetTickCount();
+    if ((now - s_last_idle_poll_tick) < pdMS_TO_TICKS(1000)) return;
+    s_last_idle_poll_tick = now;
+
+    uint8_t uid[10];
+    uint8_t uid_len = 0;
+
+    if (!wrapper_pn5180_read_card(uid, &uid_len)) {
+        if (btn_pressed(BTN_BACK)) reset_session();
+        return;
+    }
+
+    // Format UID securely
+    g_session.cardUID = "";
+    for (int i = 0; i < uid_len; i++) {
+        char hex[4]; if (i > 0) g_session.cardUID += ":";
+        snprintf(hex, sizeof(hex), "%02x", uid[i]); g_session.cardUID += hex;
+    }
+
+    if (sc_select_applet() &&
+        enrollment_store_load(g_session.cardUID.c_str(), g_session.applet_session.card_static_key)) {
+
+        if (!sc_establish_secure_channel()) {
+            ui_display_error("Secure Channel\nFailed.");
+            vTaskDelay(pdMS_TO_TICKS(2000)); reset_session(); return;
+        }
+
+        g_state = STATE_ADMIN_RESET_PIN_ENTRY;
+        g_pinBuffer = "";
+        s_current_digit = 0;
+        ui_display_status("Enter NEW PIN\nfor Voter");
+        buzzer_beep_ok();
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        ui_display_pin_entry();
+    } else {
+        ui_display_error("Card not recognized!");
+        vTaskDelay(pdMS_TO_TICKS(2000)); reset_session();
+    }
+}
+
+// Add the Admin Reset PIN Entry State
+// 1. Pass 'Button btn' as an argument
+static void handle_admin_reset_pin_entry(Button btn) {
+    if (btn == BTN_BACK) {
+        g_state = STATE_ADMIN_RESET_SCAN;
+        ui_display_prompt("Tap Card to Reset");
+        return;
+    }
+
+    if (g_pinBuffer.length() < 4) {
+        if (btn == BTN_UP)    { s_current_digit = (s_current_digit + 1) % 10; ui_display_pin_digit_selector(s_current_digit); }
+        if (btn == BTN_DOWN)  { s_current_digit = (s_current_digit + 9) % 10; ui_display_pin_digit_selector(s_current_digit); }
+        if (btn == BTN_RIGHT) {
+            g_pinBuffer += (char)s_current_digit; // RAW BYTE FIX APPLIED
+            s_current_digit = 0;
+            ui_update_pin_display();
+        }
+    }
+
+    if (btn == BTN_CENTER && g_pinBuffer.length() == 4) {
+        ui_display_status("Unlocking Card...");
+
+        // 💥 TODO: Retrieve the 32-byte Admin Token you generated during Personalization
+        uint8_t admin_token[32] = { /* Fetch from Spring Boot or offline NVS */ };
+
+        uint8_t new_pin[4] = { (uint8_t)g_pinBuffer[0], (uint8_t)g_pinBuffer[1], (uint8_t)g_pinBuffer[2], (uint8_t)g_pinBuffer[3] };
+
+        if (sc_admin_reset_pin(admin_token, new_pin)) {
+            ui_display_status("Card Unlocked!\nPIN Reset Success.");
+            set_led(0, 255, 0);
+            buzzer_beep_ok();
+            vTaskDelay(pdMS_TO_TICKS(3000));
+        } else {
+            ui_display_error("Admin Reset\nRejected.");
+            buzzer_beep_error();
+            vTaskDelay(pdMS_TO_TICKS(3000));
+        }
+        reset_session();
+    }
 }
 
 // ── STATE_ABOUT ───────────────────────────────────────────
@@ -430,7 +529,7 @@ static void handle_check_for_card(void) {
     s_last_idle_poll_tick = now;
 
     // 1. Turn on the RF field right before polling
-    wrapper_reset_rf();
+   // wrapper_reset_rf();
 
     uint8_t uid[10];
     uint8_t uid_len = 0;
@@ -439,11 +538,6 @@ static void handle_check_for_card(void) {
     if (!wrapper_pn5180_read_card(uid, &uid_len)) return;
 
     // 3. Transition to ISO-DEP Protocol (Layer 4)
-    if (!wrapper_iso14443_rats()) {
-        ui_display_error("Invalid card type!");
-        buzzer_beep_error(); vTaskDelay(pdMS_TO_TICKS(2000));
-        return;
-    }
 
     s_session_start_tick = s_last_activity_tick = xTaskGetTickCount();
 
@@ -476,11 +570,17 @@ static void handle_check_for_card(void) {
 
 // ── STATE_SECURE_CHANNEL ──────────────────────────────────
 static void handle_secure_channel(void) {
-    if (!sc_establish_secure_channel() || !sc_get_public_key()) {
-        ui_display_error("Secure channel failed!"); buzzer_beep_error();
-        vTaskDelay(pdMS_TO_TICKS(2000)); reset_session(); return;
-    }
-    net_register_pending();
+	uint8_t pub_key[65];
+	uint16_t pub_len = 0;
+
+	if (!sc_establish_secure_channel() || !sc_get_public_key(pub_key, &pub_len)) {
+	        ui_display_error("Secure channel failed!");
+	        buzzer_beep_error();
+	        vTaskDelay(pdMS_TO_TICKS(2000));
+	        reset_session();
+	        return;
+	    }
+
     g_state = STATE_PIN_ENTRY;
     ui_display_pin_entry();
 }
@@ -516,25 +616,53 @@ static void handle_pin_entry(void) {
     if (g_pinBuffer.length() < 4) {
         if (btn == BTN_UP)    { s_current_digit = (s_current_digit + 1) % 10; ui_display_pin_digit_selector(s_current_digit); }
         if (btn == BTN_DOWN)  { s_current_digit = (s_current_digit + 9) % 10; ui_display_pin_digit_selector(s_current_digit); }
-        if (btn == BTN_RIGHT) { g_pinBuffer += (char)('0' + s_current_digit); s_current_digit = 0; ui_update_pin_display(); }
+        // 💥 THE FIX: Remove the ('0' +) to send the raw integer byte, perfectly matching enrollment!
+                if (btn == BTN_RIGHT) {
+                    g_pinBuffer += (char)s_current_digit;
+                    s_current_digit = 0;
+                    ui_update_pin_display();
+                }
     }
 }
 
 // ── STATE_FINGERPRINT_SCAN ────────────────────────────────
 static void handle_fingerprint_scan(void) {
-    ui_display_fingerprint(false); set_led(0, 0, 255);
-    if (!fp_capture_image() || !fp_generate_template()) { vTaskDelay(pdMS_TO_TICKS(100)); return; }
-    uint8_t fp_tmpl[512]; uint16_t fp_tmpl_len = fp_get_template(fp_tmpl);
-    if (fp_tmpl_len == 0) { vTaskDelay(pdMS_TO_TICKS(100)); return; }
-    if (sc_verify_fingerprint(fp_tmpl, fp_tmpl_len)) {
-        g_session.fingerprintVerified = true;
-        g_state = STATE_LIVENESS_CHECK;
-        ui_display_fingerprint(true); set_led(0, 255, 0); buzzer_beep_ok();
-        vTaskDelay(pdMS_TO_TICKS(1000));
-    } else {
-        ui_display_error("Fingerprint\nnot matched!"); buzzer_beep_error();
-        vTaskDelay(pdMS_TO_TICKS(2000)); reset_session();
+    ui_display_fingerprint(false);
+    set_led(0, 0, 255);
+
+    const int MAX_ATTEMPTS = 3;
+
+    for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        if (!fp_capture_image() || !fp_generate_template()) {
+            vTaskDelay(pdMS_TO_TICKS(500));
+            continue;
+        }
+
+        uint8_t fp_tmpl[512];
+        uint16_t fp_tmpl_len = fp_get_template(fp_tmpl);
+        if (fp_tmpl_len == 0) continue;
+
+        if (sc_verify_fingerprint(fp_tmpl, fp_tmpl_len)) {
+            g_session.fingerprintVerified = true;
+            g_state = STATE_LIVENESS_CHECK;
+            ui_display_fingerprint(true);
+            set_led(0, 255, 0);
+            buzzer_beep_ok();
+            vTaskDelay(pdMS_TO_TICKS(1000));
+            return;
+        } else if (attempt < MAX_ATTEMPTS) {
+            ui_display_error("Mismatch.\nTry again...");
+            buzzer_beep_error();
+            vTaskDelay(pdMS_TO_TICKS(1500));
+            ui_display_fingerprint(false);
+        }
     }
+
+    // Fallthrough: Failed all 3 attempts
+    ui_display_error("Fingerprint\nverification failed!");
+    buzzer_beep_error();
+    vTaskDelay(pdMS_TO_TICKS(2000));
+    reset_session();
 }
 
 // ── STATE_LIVENESS_CHECK ──────────────────────────────────
@@ -585,22 +713,59 @@ static void handle_voting(void) {
 // ── STATE_VOTE_CONFIRMATION ───────────────────────────────
 static void handle_vote_confirmation(void) {
     ui_display_status("Confirm: place\nfinger again");
-    if (!fp_capture_image() || !fp_generate_template()) { vTaskDelay(pdMS_TO_TICKS(100)); return; }
-    uint8_t fp_tmpl[512]; uint16_t fp_tmpl_len = fp_get_template(fp_tmpl);
-    if (fp_tmpl_len == 0) return;
-    if (!sc_verify_fingerprint(fp_tmpl, fp_tmpl_len)) {
-        ui_display_error("Fingerprint failed."); buzzer_beep_error();
-        vTaskDelay(pdMS_TO_TICKS(2000)); g_state = STATE_VOTING; ui_display_voting_interface(); return;
+
+    if (!fp_capture_image() || !fp_generate_template()) {
+        vTaskDelay(pdMS_TO_TICKS(100));
+        return;
     }
+
+    uint8_t fp_tmpl[512];
+    uint16_t fp_tmpl_len = fp_get_template(fp_tmpl);
+    if (fp_tmpl_len == 0) return;
+
+    if (!sc_verify_fingerprint(fp_tmpl, fp_tmpl_len)) {
+        ui_display_error("Fingerprint failed.");
+        buzzer_beep_error();
+        vTaskDelay(pdMS_TO_TICKS(2000));
+        g_state = STATE_VOTING;
+        ui_display_voting_interface();
+        return;
+    }
+
+    // 💥 1. PRE-BURN TAP INITIALIZATION
+    ui_display_status("Securing Session...");
+
+    // We repurpose EVT_NET_AUTH_TRIGGER to call task_network's net_request_tap_session
+    if (!trigger_network_and_wait(EVT_NET_AUTH_TRIGGER)) {
+        ui_display_error("Network Timeout.\nCard NOT Burned.\nPlease Try Again.");
+        buzzer_beep_error();
+        vTaskDelay(pdMS_TO_TICKS(3000));
+        reset_session();
+        return;
+    }
+
+    // 💥 2. THE HARDWARE BURN
     ui_display_status("Burning card...");
     if (!sc_set_voted_capture_burn_proof()) {
-        ui_display_error("Card write failed."); buzzer_beep_error(); g_state = STATE_ERROR; return;
+        ui_display_error("Card write failed.");
+        buzzer_beep_error();
+        g_state = STATE_ERROR;
+        return;
     }
+
+    // 💥 3. SUBMIT ENCRYPTED VOTE
     if (!trigger_network_and_wait(EVT_NET_VOTE_TRIGGER)) {
-        ui_display_error("Network error.\nVote saved locally."); buzzer_beep_error(); g_state = STATE_ERROR; return;
+        // If HTTP 429 triggers here, the offline NVS Cache secures the payload.
+        ui_display_error("Network error.\nVote saved locally.");
+        buzzer_beep_error();
+        g_state = STATE_ERROR;
+        return;
     }
+
     g_state = STATE_VOTE_SUBMITTED;
-    ui_display_vote_success(g_lastTransactionId.c_str()); set_led(0, 255, 0); buzzer_beep_vote_success();
+    ui_display_vote_success(g_lastTransactionId.c_str());
+    set_led(0, 255, 0);
+    buzzer_beep_vote_success();
 }
 
 // ── STATE_SLEEP ───────────────────────────────────────────
@@ -697,6 +862,13 @@ static void task_ui(void *pvParameters) {
             // Enrollment states driven by enroll_task (enrollment.cpp)
             case STATE_ERROR:
                 vTaskDelay(pdMS_TO_TICKS(3000)); reset_session();             break;
+            case STATE_ADMIN_RESET_SCAN:
+                        handle_admin_reset_scan(btn);
+                        break;
+
+                    case STATE_ADMIN_RESET_PIN_ENTRY:
+                        handle_admin_reset_pin_entry(btn);
+                        break;
             default: break;
         }
         vTaskDelay(pdMS_TO_TICKS(50));
@@ -738,9 +910,8 @@ extern "C" void app_main(void) {
     gpio_set_direction((gpio_num_t)TFT_LED, GPIO_MODE_OUTPUT);
     gpio_set_level((gpio_num_t)TFT_LED, 1);
 
-    // 2. TFT Display initialization (initializes SPI with DMA)
-    ili9341_init(SPI2_HOST, SPI_MOSI, SPI_MISO, SPI_CLK, TFT_CS, TFT_DC, TFT_RST);
-
+    // Uses the dedicated TFT pins we defined in pin_defs.h (39, -1, 14)
+    ili9341_init(SPI3_HOST, TFT_MOSI, TFT_MISO, TFT_SCLK, TFT_CS, TFT_DC, TFT_RST);
     // 3. PN5180 NFC initialization (attaches to the same SPI bus)
     wrapper_pn5180_init();
 

@@ -8,28 +8,40 @@
 #include "esp_log.h"
 #include "pin_defs.h"
 
+// Seamlessly pulls PN5180_NSS (15), PN5180_BUSY (4), and PN5180_RST (2) from pin_defs.h
 PN5180ISO14443 nfc(PN5180_NSS, PN5180_BUSY, PN5180_RST);
+
 #define PN5180_RX_IRQ_STAT (1<<0)
-static const char* TAG = "PN5180_WRAPPER";
+static const char* TAG = "PN5180_MAIN";
 static uint8_t iso_dep_block_num = 0;
 
 extern "C" {
     void wrapper_pn5180_init(void) {
         initArduino();
 
-        // Safely link the Arduino environment to the running ESP-IDF bus
+        // Safely map the Arduino SPI class to your dedicated SPI2 (FSPI) pins.
+        // We pass -1 for the SS pin so the ESP32 doesn't hijack the manual PN5180_NSS control.
         SPI.begin(SPI_CLK, SPI_MISO, SPI_MOSI, -1);
 
         nfc.begin();
         nfc.reset();
+        nfc.setupRF();
+        nfc.setRF_on();
 
-        ESP_LOGI(TAG, "PN5180 Initialized on Shared SPI Bus!");
+        // Allow 50ms for the magnetic field to stabilize before interacting
+        vTaskDelay(pdMS_TO_TICKS(50));
+
+        ESP_LOGI(TAG, "PN5180 Initialized on Isolated SPI2 Bus! RF Field Active.");
     }
-// ...
+
     void wrapper_reset_rf(void) {
-            nfc.setupRF(); // Configures the RF registers
-            nfc.setRF_on(); // Explicitly commands the transmitter to fire
-        }
+        // 💥 THE FIX: Hard power cycle the JCOP4 card
+        nfc.setRF_off();
+        vTaskDelay(pdMS_TO_TICKS(50)); // Allow card capacitors to drain (Power-On Reset)
+        nfc.setRF_on();
+        vTaskDelay(pdMS_TO_TICKS(50)); // Wait for boot
+        ESP_LOGI(TAG, "RF Field bounced. Card reset complete.");
+    }
 
     bool wrapper_pn5180_read_card(uint8_t *uid_out, uint8_t *uid_len) {
         uint8_t uid[10];
@@ -73,24 +85,32 @@ extern "C" {
 
         while (offset < cmd_len) {
             uint16_t remaining = cmd_len - offset;
+
+            // Max chunk size is 240 bytes to stay safely inside the J3R180's 256-byte FSC
             uint16_t chunk_size = (remaining > 240) ? 240 : remaining;
             bool is_last_chunk = (remaining <= 240);
             uint8_t tx_buffer[260];
 
+            // PCB: 0x02 (I-Block) | Block Num | Chaining Bit (0x10) if not the last chunk
             tx_buffer[0] = 0x02 | iso_dep_block_num | (is_last_chunk ? 0x00 : 0x10);
             memcpy(&tx_buffer[1], cmd + offset, chunk_size);
             uint16_t tx_len = chunk_size + 1;
             bool chunk_ack_received = false;
 
             while (!chunk_ack_received) {
+                ESP_LOGD(TAG, ">> Sending Frame (%u bytes). PCB: %02X", tx_len, tx_buffer[0]);
                 nfc.clearIRQStatus(0xFFFFFFFF);
+
                 if (!nfc.sendData(tx_buffer, tx_len, 0)) return false;
 
                 uint32_t start_time = millis();
                 while (1) {
                     uint32_t irq = nfc.getIRQStatus();
                     if (irq & PN5180_RX_IRQ_STAT) break;
-                    if (millis() - start_time > 3000) return false;
+                    if (millis() - start_time > 3000) {
+                        ESP_LOGE(TAG, "<< RX Timeout on chunk.");
+                        return false;
+                    }
                     vTaskDelay(pdMS_TO_TICKS(5));
                 }
 
@@ -102,12 +122,16 @@ extern "C" {
                     uint8_t *rx_buf = nfc.readData(rx_len);
                     if (!rx_buf) return false;
 
+                    // 1. Handle S-Block WTX (Wait Time Extension)
                     if (rx_buf[0] == 0xF2) {
+                        ESP_LOGW(TAG, "== Card requested WTX. Sending ACK...");
                         tx_buffer[0] = 0xF2;
                         tx_buffer[1] = (rx_len > 1) ? rx_buf[1] : 0x01;
                         tx_len = 2;
                         continue;
                     }
+
+                    // 2. Handle R-Block ACK (Card received our TX chunk)
                     if ((rx_buf[0] & 0xE6) == 0xA2) {
                         uint8_t ack_block_num = rx_buf[0] & 0x01;
                         if (ack_block_num == iso_dep_block_num) {
@@ -118,23 +142,36 @@ extern "C" {
                                 break;
                             }
                         } else {
+                            ESP_LOGE(TAG, "== R-Block mismatch.");
                             return false;
                         }
                     }
+
+                    // 3. Handle I-Block (Applet Response)
                     if ((rx_buf[0] & 0xE2) == 0x02) {
                         iso_dep_block_num ^= 1;
+
+                        // Append the received chunk to the total response buffer
                         memcpy(response + *response_len, &rx_buf[1], rx_len - 1);
                         *response_len += (rx_len - 1);
 
-                        if ((rx_buf[0] & 0x10) != 0) {
+                        bool is_rx_chaining = (rx_buf[0] & 0x10) != 0;
+
+                        if (is_rx_chaining) {
+                            ESP_LOGI(TAG, "== Card is chaining response. Sending R-ACK...");
                             tx_buffer[0] = 0xA2 | iso_dep_block_num;
                             tx_len = 1;
                             continue;
                         } else {
+                            if (*response_len >= 2) {
+                                uint16_t sw = (response[*response_len - 2] << 8) | response[*response_len - 1];
+                                ESP_LOGI(TAG, "== APDU SW: %04X", sw);
+                            }
                             return true;
                         }
                     }
                 } else {
+                    ESP_LOGE(TAG, "<< RX failed. rx_len=%u", rx_len);
                     return false;
                 }
             }

@@ -19,6 +19,7 @@
 #include "driver/gpio.h"
 #include <string.h>
 #include <stdio.h>
+#include "buzzer.h"
 
 static const char *TAG = "ENROLL";
 
@@ -55,11 +56,35 @@ static int get_btn(void) {
 // ── Session reset ─────────────────────────────────────────
 
 static void enroll_reset(void) {
-    memset(&g_enroll_session, 0, sizeof(g_enroll_session));
+    // 🛑 NEVER use memset on a struct containing std::string!
+    // memset(&g_enroll_session, 0, sizeof(g_enroll_session));
+
+    // ✅ Reset C++ objects properly and clear C-arrays manually:
+    g_enroll_session.cardUID = "";
+
+    memset(g_enroll_session.pin, 0, sizeof(g_enroll_session.pin));
+    memset(g_enroll_session.pinConfirm, 0, sizeof(g_enroll_session.pinConfirm));
+
+    memset(g_enroll_session.fpTemplate, 0, sizeof(g_enroll_session.fpTemplate));
+    g_enroll_session.fpTemplateLen = 0;
+    g_enroll_session.fingerprintCaptured = false;
+
+    memset(g_enroll_session.livenessEmbedding, 0, sizeof(g_enroll_session.livenessEmbedding));
+    g_enroll_session.livenessEmbeddingLen = 0;
+    g_enroll_session.livenessEmbeddingCaptured = false;
+
+    g_enroll_session.cardSelectOk = false;
+    g_enroll_session.pinSet = false;
+    g_enroll_session.pinConfirmed = false;
+    g_enroll_session.cardWritten = false;
+    g_enroll_session.enrollVerified = false;
+
+    // Reset UI state variables
     s_digit_val      = 0;
     s_digit_pos      = 0;
     s_confirm_pass   = false;
     s_return_to_home = false;
+
     wrapper_reset_rf();
     g_state = STATE_ENROLL_IDLE;
     ui_display_enroll_idle();
@@ -112,7 +137,7 @@ static void handle_enroll_idle(void) {
     ESP_LOGI(TAG, "Card detected: %s", g_enroll_session.cardUID.c_str());
     ui_display_status("Card detected\nSelecting applet...");
 
-    wrapper_reset_rf();
+    //wrapper_reset_rf();
     if (!sc_select_applet()) {
         ui_display_error("Applet not found!\nIs this a voting card?");
         vTaskDelay(pdMS_TO_TICKS(2000));
@@ -126,25 +151,28 @@ static void handle_enroll_idle(void) {
 // ── State: ENROLL_FETCH — get enrollment record ───────────
 
 static void handle_enroll_fetch(void) {
-    ui_display_status("Fetching enrollment\nrecord from server...");
+    ui_display_status("Initiating Secure\nEnrollment...");
 
-    // Signal TaskNetwork to do the fetch
+    // 💥 1. Fire the PENDING trigger required by the backend
+    net_register_pending();
+
+    ui_display_status("Awaiting Admin\nDashboard Input...");
+
+    // 2. Poll the server until the admin submits the demographics
     xEventGroupClearBits(g_net_eg, EVT_NET_SUCCESS | EVT_NET_ERROR);
     xEventGroupSetBits(g_net_eg, EVT_NET_ENROLL_FETCH);
 
     EventBits_t bits = xEventGroupWaitBits(
         g_net_eg, EVT_NET_SUCCESS | EVT_NET_ERROR,
-        pdTRUE, pdFALSE, pdMS_TO_TICKS(30000));
+        pdTRUE, pdFALSE, pdMS_TO_TICKS(35000));
 
     if (!(bits & EVT_NET_SUCCESS) || !g_enroll_record.loaded) {
-        ui_display_error("No enrollment record\nfor this terminal.\nCheck admin dashboard.");
+        ui_display_error("No enrollment record\nfound. Try again.");
         vTaskDelay(pdMS_TO_TICKS(3000));
         enroll_reset();
         return;
     }
 
-    ESP_LOGI(TAG, "Enrollment record loaded: %s",
-             g_enroll_record.enrollmentId.c_str());
     g_state = STATE_ENROLL_PIN_SET;
     ui_display_enroll_pin_set(false);
 }
@@ -241,26 +269,38 @@ static void handle_enroll_pin_confirm(void) {
 // ── State: ENROLL_FINGERPRINT — capture from R307 ────────
 
 static void handle_enroll_fingerprint(void) {
-    // Attempt capture — retries automatically on failure
-    if (!fp_capture_image() || !fp_generate_template()) {
-        vTaskDelay(pdMS_TO_TICKS(100));
-        return;
+	static_assert(sizeof(g_enroll_session.fpTemplate) >= 1536,
+	                  "CRITICAL: fpTemplate memory allocation is too small! Run 'idf.py fullclean'");
+    const char* prompts[] = {
+        "Scan 1/3: Flat\nCenter on glass",
+        "Scan 2/3: Left\nTilt finger left",
+        "Scan 3/3: Right\nTilt finger right"
+    };
+
+    // 💥 Interactive geometric acquisition loop
+    for (int i = 0; i < 3; i++) {
+        ui_display_status(prompts[i]);
+
+        uint16_t len = 0;
+        while (true) {
+            if (fp_capture_image() && fp_generate_template()) {
+                len = fp_get_template(g_enroll_session.fpTemplate + (i * 512));
+                if (len >= 512) break; // Valid scan captured
+            }
+            vTaskDelay(pdMS_TO_TICKS(400));
+        }
+
+        buzzer_beep_ok();
+        if (i < 2) {
+            ui_display_status("Lift finger...");
+            vTaskDelay(pdMS_TO_TICKS(2500));
+        }
     }
 
-    uint16_t len = fp_get_template(g_enroll_session.fpTemplate);
-    if (len == 0) {
-        vTaskDelay(pdMS_TO_TICKS(100));
-        return;
-    }
-    g_enroll_session.fpTemplateLen    = len;
     g_enroll_session.fingerprintCaptured = true;
-
-    // Zero-pad to 512 bytes if shorter
-    if (len < 512) memset(g_enroll_session.fpTemplate + len, 0, 512 - len);
-
     ui_display_enroll_fingerprint(true);
     vTaskDelay(pdMS_TO_TICKS(800));
-    g_state = STATE_ENROLL_LIVENESS;   // next: capture face embedding
+    g_state = STATE_ENROLL_LIVENESS;
 }
 
 // ── State: ENROLL_LIVENESS — capture face embedding ───────
@@ -293,14 +333,19 @@ static void handle_enroll_liveness(void) {
         bool ok = true;
         memset((char *)g_enroll_session.livenessEmbedding, 0xFF, 64); // Dummy embedding data
 
-    if (ok) {
-        g_enroll_session.livenessEmbeddingLen      = 64;
-        g_enroll_session.livenessEmbeddingCaptured = true;
-        ESP_LOGI(TAG, "Face embedding captured: 64 bytes");
-        ui_display_status("Face captured.\nProceeding...");
-        vTaskDelay(pdMS_TO_TICKS(1000));
-        g_state = STATE_ENROLL_WRITING;
-    } else {
+        if (ok) {
+                // 💥 THE FIX: Explicitly zero-pad the rest of the array (256 - 64 = 192 bytes)
+                memset(g_enroll_session.livenessEmbedding + 64, 0, 192);
+
+                // 💥 THE FIX: Tell the system the envelope is now the full 256 bytes
+                g_enroll_session.livenessEmbeddingLen      = 256;
+                g_enroll_session.livenessEmbeddingCaptured = true;
+
+                ESP_LOGI(TAG, "Face embedding captured (64 bytes), padded to 256 bytes for JavaCard.");
+                ui_display_status("Face captured.\nProceeding...");
+                vTaskDelay(pdMS_TO_TICKS(1000));
+                g_state = STATE_ENROLL_WRITING;
+            } else {
         // Retry once
         ui_display_status("No face detected.\nLook at camera...");
         vTaskDelay(pdMS_TO_TICKS(2000));
@@ -330,59 +375,53 @@ static void handle_enroll_liveness(void) {
 static void handle_enroll_writing(void) {
     ui_display_status("Writing to card...\nDo not remove.");
 
-    // Derive voterID = SHA-256(enrollmentId)
     uint8_t voter_id[32];
     derive_voter_id(g_enroll_record.enrollmentId.c_str(), voter_id);
 
-    // Send INS_PERSONALIZE
     bool ok = sc_personalize_card(
-        g_enroll_session.pin,
-        voter_id,
-        g_enroll_session.fpTemplate,
-        g_enroll_record.cardStaticKey,
-        g_enroll_record.adminTokenHash
+        g_enroll_session.pin, voter_id, g_enroll_session.fpTemplate,
+        g_enroll_record.cardStaticKey, g_enroll_record.adminTokenHash
     );
 
     if (!ok) {
-        ui_display_error("Card write failed!\nRetrying...");
-        vTaskDelay(pdMS_TO_TICKS(2000));
-        // Retry once
-        ok = sc_personalize_card(
-            g_enroll_session.pin,
-            voter_id,
-            g_enroll_session.fpTemplate,
-            g_enroll_record.cardStaticKey,
-            g_enroll_record.adminTokenHash
-        );
-        if (!ok) {
-            ui_display_error("Card write failed.\nContact supervisor.");
-            vTaskDelay(pdMS_TO_TICKS(3000));
-            enroll_reset();
-            return;
-        }
+        ui_display_error("Card write failed.\nContact supervisor.");
+        vTaskDelay(pdMS_TO_TICKS(3000));
+        enroll_reset();
+        return;
     }
 
-    // ── Immediately save cardStaticKey to NVS ─────────────
-    // This must happen before sc_establish_secure_channel() is
-    // ever called for this card during a future voting session.
-    if (!enrollment_store_save(g_enroll_session.cardUID.c_str(),
-                               g_enroll_record.cardStaticKey)) {
-        // NVS write failure is critical — the voter can never vote
-        // on any terminal that doesn't have their key. Log at error
-        // level and halt this enrollment.
-        ui_display_error("NVS write failed!\nContact supervisor.\nCard write was OK.");
-        ESP_LOGE(TAG, "CRITICAL: NVS save of cardStaticKey failed for %s",
-                 g_enroll_session.cardUID.c_str());
+    // 💥 Fetch Raw Key and Build Java X.509 SPKI Format
+    uint8_t pub_key_raw[65] = {0};
+    uint16_t pub_key_len = 0;
+
+    if (sc_get_public_key(pub_key_raw, &pub_key_len) && pub_key_len == 65) {
+        const uint8_t spki_header[26] = {
+            0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x02, 0x01,
+            0x06, 0x08, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x03, 0x01, 0x07, 0x03, 0x42, 0x00
+        };
+
+        uint8_t full_spki_key[91] = {0};
+        memcpy(full_spki_key, spki_header, 26);
+        memcpy(full_spki_key + 26, pub_key_raw, 65);
+
+        size_t b64len = 0;
+        mbedtls_base64_encode(NULL, 0, &b64len, full_spki_key, 91);
+        std::string b64(b64len + 1, '\0');
+        mbedtls_base64_encode((uint8_t*)b64.data(), b64len + 1, &b64len, full_spki_key, 91);
+        b64.resize(b64len); // Trim null terminator
+
+        g_enroll_session.voterPublicKey = b64;
+    }
+
+    if (!enrollment_store_save(g_enroll_session.cardUID.c_str(), g_enroll_record.cardStaticKey)) {
+        ui_display_error("NVS write failed!\nContact supervisor.");
         vTaskDelay(pdMS_TO_TICKS(4000));
         enroll_reset();
         return;
     }
 
     g_enroll_session.cardWritten = true;
-    ESP_LOGI(TAG, "Card personalized and key stored for %s",
-             g_enroll_session.cardUID.c_str());
-
-    g_state = STATE_ENROLL_VERIFY;  // next: verify write + store liveness embedding
+    g_state = STATE_ENROLL_VERIFY;
 }
 
 // ── State: ENROLL_VERIFY — confirm write + store embedding ─
@@ -442,6 +481,12 @@ static void handle_enroll_verify(void) {
 
 static void handle_enroll_confirm(void) {
     ui_display_status("Confirming with\nserver...");
+
+    ui_display_status("Syncing Data...\nWaiting 32s to bypass\nserver rate limits.");
+        ESP_LOGW(TAG, "⏳ Waiting 32 seconds to bypass Backend Rate Limiter before final confirmation...");
+        vTaskDelay(pdMS_TO_TICKS(32000));
+
+        ui_display_status("Confirming with\nserver...");
 
     xEventGroupClearBits(g_net_eg, EVT_NET_SUCCESS | EVT_NET_ERROR);
     xEventGroupSetBits(g_net_eg, EVT_NET_ENROLL_CONFIRM);

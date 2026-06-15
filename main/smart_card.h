@@ -15,7 +15,7 @@ typedef struct {
 
 bool sc_select_applet(void);
 bool sc_establish_secure_channel(void);
-bool sc_get_public_key(void);
+bool sc_get_public_key(uint8_t *pubkey_out, uint16_t *pubkey_len);
 bool sc_check_already_voted(void);
 bool sc_verify_pin(const std::string &pin);
 bool sc_verify_fingerprint(const uint8_t *tmpl, uint16_t tmpl_len);
@@ -25,9 +25,10 @@ bool sc_lock_card_admin_token(const uint8_t *admin_token_32);
 // ── Enrollment-only ───────────────────────────────────────
 bool sc_personalize_card(const uint8_t pin[4],
                          const uint8_t voter_id[32],
-                         const uint8_t fp_tmpl[512],
+                         const uint8_t fp_templates[1536], // 💥 Upgraded to 3 templates
                          const uint8_t card_static_key[16],
                          const uint8_t admin_token_hash[32]);
+
 
 bool sc_verify_enrollment(const uint8_t pin[4],
                           const uint8_t fp_tmpl[512],
@@ -35,6 +36,8 @@ bool sc_verify_enrollment(const uint8_t pin[4],
 
 bool sc_store_liveness_embedding(const uint8_t *embedding, uint16_t len);
 bool sc_get_liveness_embedding(uint8_t *out, uint16_t *len_out);
+// Add this near your other sc_ functions
+bool sc_admin_reset_pin(const uint8_t admin_token[32], const uint8_t new_pin[4]);
 
 // Internals
 void sc_derive_session_key(void);

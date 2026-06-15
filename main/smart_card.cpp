@@ -8,6 +8,7 @@
 #include <string.h>
 #include "esp_log.h"
 #include "esp_random.h"
+#include "crypto_utils.h"
 
 static const char *TAG = "SMART_CARD";
 
@@ -78,6 +79,10 @@ static esp_err_t send_apdu_nodata(const uint8_t *cmd, uint16_t cmd_len) {
 // ─── TERMINAL VOTING FUNCTIONS ───
 
 bool sc_select_applet(void) {
+	if (!wrapper_iso14443_rats()) {
+	        ESP_LOGE(TAG, "Failed to negotiate ISO-DEP (RATS) with card.");
+	        return false;
+	    }
     const uint8_t aid[] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x45, 0x56, 0x4F, 0x54, 0x45};
     uint8_t cmd[16];
     uint16_t cmd_len = apdu_build_short(cmd, 0x00, 0xA4, 0x04, 0x00, aid, 10, true, 0x00);
@@ -89,7 +94,7 @@ bool sc_establish_secure_channel(void) {
     esp_fill_random(term_random, sizeof(term_random));
 
     uint8_t cmd[22];
-    uint16_t cmd_len = apdu_build_short(cmd, 0x80, 0x12, 0x00, 0x00, term_random, 16, true, 0x20);
+    uint16_t cmd_len = apdu_build_short(cmd, 0x80, 0x60, 0x00, 0x00, term_random, 16, true, 0x20);
 
     uint8_t resp[32];
     uint16_t resp_len;
@@ -108,7 +113,7 @@ bool sc_establish_secure_channel(void) {
     crypto_compute_term_cryptogram(g_session.applet_session.session_key, term_random, card_random, term_cryptogram);
 
     uint8_t cmd2[21];
-    uint16_t cmd2_len = apdu_build_short(cmd2, 0x80, 0x13, 0x00, 0x00, term_cryptogram, 16, false, 0);
+    uint16_t cmd2_len = apdu_build_short(cmd2, 0x80, 0x61, 0x00, 0x00, term_cryptogram, 16, false, 0);
 
     bool ok = (send_apdu_nodata(cmd2, cmd2_len) == ESP_OK);
     if (ok) g_session.applet_session.established = true;
@@ -160,9 +165,21 @@ bool sc_check_already_voted(void) {
 
     uint8_t resp[1];
     uint16_t resp_len = 0;
-    if (send_apdu(cmd, cmd_len, resp, &resp_len, 0) != ESP_OK) return false;
 
-    return (resp_len >= 1 && resp[0] == 0x01);
+    esp_err_t ret = send_apdu(cmd, cmd_len, resp, &resp_len, 0);
+
+    // If the card throws 0x6A81, the terminal correctly identifies it as a burned card
+    if (ret == ESP_ERR_NOT_ALLOWED) {
+        return true;
+    }
+
+    // If APDU succeeded (0x9000), check if the payload indicates a previous vote
+    if (ret == ESP_OK) {
+        return (resp_len >= 1 && resp[0] == 0x01);
+    }
+
+    // Fail-safe: Any other APDU failure (card tear, invalid state) rejects the vote
+    return true;
 }
 
 bool sc_set_voted_capture_burn_proof(void) {
@@ -171,12 +188,12 @@ bool sc_set_voted_capture_burn_proof(void) {
     memcpy(election_id_bytes, g_electionCfg.electionId.c_str(),
            g_electionCfg.electionId.length() > 36 ? 36 : g_electionCfg.electionId.length());
 
-    static uint8_t payload[512];
+    static uint8_t payload[38];
     memcpy(payload, ballot_data, 2);
     memcpy(payload + 2, election_id_bytes, 36);
 
-    static uint8_t cmd[521];
-    uint16_t cmd_len = apdu_build_extended(cmd, 0x80, 0x51, 0x00, 0x00, payload, 38, true);
+    static uint8_t cmd[44];
+    uint16_t cmd_len = apdu_build_short(cmd, 0x80, 0x51, 0x00, 0x00, payload, 38, true, 0x00);
 
     uint8_t resp_sig[72];
     uint16_t sig_len = 0;
@@ -184,16 +201,23 @@ bool sc_set_voted_capture_burn_proof(void) {
     esp_err_t ret = send_apdu(cmd, cmd_len, resp_sig, &sig_len, 0);
     if (ret != ESP_OK || sig_len == 0) return false;
 
+    // 💥 THE FIX: Convert DER to P1363 BEFORE Base64 encoding!
+    uint8_t p1363_sig[64] = {0};
+    if (!der_to_p1363(resp_sig, sig_len, p1363_sig)) {
+        ESP_LOGE(TAG, "DER to P1363 conversion failed!");
+        return false;
+    }
+
     size_t b64len = 0;
-    mbedtls_base64_encode(NULL, 0, &b64len, resp_sig, sig_len);
+    mbedtls_base64_encode(NULL, 0, &b64len, p1363_sig, 64);
     uint8_t *b64 = (uint8_t *)malloc(b64len + 1);
     if (!b64) return false;
 
-    mbedtls_base64_encode(b64, b64len + 1, &b64len, resp_sig, sig_len);
+    mbedtls_base64_encode(b64, b64len + 1, &b64len, p1363_sig, 64);
     g_session.cardBurnProof = std::string((char *)b64, b64len);
     free(b64);
 
-    ESP_LOGI(TAG, "Burn proof captured and Base64 encoded (%d bytes)", sig_len);
+    ESP_LOGI(TAG, "Burn proof captured, converted to P1363, and Base64 encoded.");
 
     nvs_handle_t h_rec;
     if (nvs_open("vote_recovery", NVS_READWRITE, &h_rec) == ESP_OK) {
@@ -207,12 +231,10 @@ bool sc_set_voted_capture_burn_proof(void) {
     return true;
 }
 
-bool sc_get_public_key(void) {
+bool sc_get_public_key(uint8_t *pubkey_out, uint16_t *pubkey_len) {
     uint8_t cmd[5];
     uint16_t cmd_len = apdu_build_short(cmd, 0x80, 0x72, 0x00, 0x00, NULL, 0, true, 0x41);
-    uint8_t pubkey[65];
-    uint16_t pubkey_len;
-    return (send_apdu(cmd, cmd_len, pubkey, &pubkey_len, 0) == ESP_OK);
+    return (send_apdu(cmd, cmd_len, pubkey_out, pubkey_len, 0) == ESP_OK);
 }
 
 bool sc_lock_card_admin_token(const uint8_t *admin_token_32) {
@@ -233,20 +255,24 @@ bool sc_lock_card_admin_token(const uint8_t *admin_token_32) {
 
 // ─── ENROLLMENT & LIVENESS FUNCTIONS ───
 
-bool sc_personalize_card(const uint8_t pin[4], const uint8_t voter_id[32], const uint8_t fp_tmpl[512], const uint8_t card_static_key[16], const uint8_t admin_token_hash[32]) {
-    static uint8_t payload[596];
+bool sc_personalize_card(const uint8_t pin[4], const uint8_t voter_id[32], const uint8_t fp_templates[1536], const uint8_t card_static_key[16], const uint8_t admin_token_hash[32]) {
+
+    // Total Payload: 16 (Key) + 4 (PIN) + 32 (Voter) + 1536 (3 Templates) + 32 (Admin) = 1620
+    static uint8_t payload[1620];
     uint16_t off = 0;
     memcpy(payload + off, card_static_key, 16); off += 16;
     memcpy(payload + off, pin,             4);  off += 4;
     memcpy(payload + off, voter_id,        32); off += 32;
-    memcpy(payload + off, fp_tmpl,         512); off += 512;
+    memcpy(payload + off, fp_templates,  1536); off += 1536; // 💥 Copy all 3 templates
     memcpy(payload + off, admin_token_hash,32); off += 32;
 
-    static uint8_t cmd[605];
-    uint16_t cmd_len = apdu_build_extended(cmd, 0x80, 0x10, 0x00, 0x00, payload, 596, false);
+    // Command Buffer: 9 bytes header + 1620 payload = 1629 bytes
+    static uint8_t cmd[1629];
+    uint16_t cmd_len = apdu_build_extended(cmd, 0x80, 0x10, 0x00, 0x00, payload, 1620, false);
 
     if (send_apdu_nodata(cmd, cmd_len) != ESP_OK) return false;
 
+    // ── Commitment verification remains exactly the same ──
     uint8_t cmd2[5];
     uint16_t cmd2_len = apdu_build_short(cmd2, 0x80, 0x11, 0x00, 0x00, NULL, 0, true, 32);
     uint8_t commitment[32];
@@ -268,6 +294,19 @@ bool sc_personalize_card(const uint8_t pin[4], const uint8_t voter_id[32], const
 }
 
 bool sc_verify_enrollment(const uint8_t pin[4], const uint8_t fp_tmpl[512], const uint8_t card_static_key[16]) {
+
+    // 💥 THE FIX: Send a bare SELECT APPLET command to wipe the JavaCard's transient
+    // memory state after personalization, forcing it into Operational mode.
+    const uint8_t aid[] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x45, 0x56, 0x4F, 0x54, 0x45};
+    uint8_t cmd[16];
+    uint16_t cmd_len = apdu_build_short(cmd, 0x00, 0xA4, 0x04, 0x00, aid, 10, true, 0x00);
+
+    if (send_apdu_nodata(cmd, cmd_len) != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to re-select applet prior to verification.");
+        return false;
+    }
+
+    // Now the applet is refreshed and ready for the Secure Channel
     memcpy(g_session.applet_session.card_static_key, card_static_key, 16);
     if (!sc_establish_secure_channel()) return false;
 
@@ -276,6 +315,7 @@ bool sc_verify_enrollment(const uint8_t pin[4], const uint8_t fp_tmpl[512], cons
     if (!sc_verify_pin(pin_str)) return false;
 
     if (!sc_verify_fingerprint(fp_tmpl, 512)) return false;
+
     return true;
 }
 
@@ -312,6 +352,48 @@ bool sc_get_liveness_embedding(uint8_t *out, uint16_t *len_out) {
     return true;
 }
 
+// Helper function for AES-128 ECB Encryption (since the applet uses ECB for the token)
+static void crypto_aes128_ecb_encrypt_blocks(const uint8_t *key, const uint8_t *input, uint16_t length, uint8_t *output) {
+    mbedtls_aes_context ctx;
+    mbedtls_aes_init(&ctx);
+    mbedtls_aes_setkey_enc(&ctx, key, 128);
+    for (uint16_t i = 0; i < length; i += 16) {
+        mbedtls_aes_crypt_ecb(&ctx, MBEDTLS_AES_ENCRYPT, input + i, output + i);
+    }
+    mbedtls_aes_free(&ctx);
+}
+
+// 💥 The Core Function: Resets a blocked PIN using the Admin Token
+bool sc_admin_reset_pin(const uint8_t admin_token[32], const uint8_t new_pin[4]) {
+    if (!g_session.applet_session.established) {
+        ESP_LOGE(TAG, "Secure channel must be established before PIN reset.");
+        return false;
+    }
+
+    uint8_t payload[64];
+
+    // 1. Encrypt the Admin Token (AES-128-ECB, 2 blocks)
+    crypto_aes128_ecb_encrypt_blocks(g_session.applet_session.session_key, admin_token, 32, payload);
+
+    // 2. Hash the New PIN (Matching the exact raw byte logic we fixed earlier)
+    uint8_t pin_hash[32];
+    crypto_sha256(new_pin, 4, pin_hash);
+
+    // 3. Encrypt the New PIN Hash (AES-128-CBC, Zero IV)
+    crypto_aes128_cbc_enc_zero_iv(g_session.applet_session.session_key, pin_hash, 32, payload + 32);
+
+    // 4. Send the 0x22 INS command
+    uint8_t cmd[75];
+    uint16_t cmd_len = apdu_build_extended(cmd, 0x80, 0x22, 0x00, 0x00, payload, 64, false);
+
+    if (send_apdu_nodata(cmd, cmd_len) == ESP_OK) {
+        ESP_LOGI(TAG, "Admin PIN Reset successful! Card unlocked.");
+        return true;
+    } else {
+        ESP_LOGE(TAG, "Admin PIN Reset rejected by card. Invalid token?");
+        return false;
+    }
+}
 // ─── UNUSED INTERNALS (Left blank to satisfy linker if called) ───
 void sc_derive_session_key(void) {}
 bool sc_verify_card_cryptogram(const uint8_t *received) { return true; }

@@ -37,6 +37,7 @@ void ui_display_vote_confirmation(void);
 void ui_display_vote_success(const char *receipt_code);
 void ui_display_status(const char *msg);
 void ui_display_error(const char *msg);
+void ui_display_admin_reset_prompt(void);
 
 // ── Enrollment screens ────────────────────────────────────
 void ui_display_enroll_idle(void);
@@ -101,12 +102,13 @@ void ui_home_move_selection(int old_item, int new_item);
 //  Settings screen
 // ─────────────────────────────────────────────────────────────────────────
 
-#define SETTINGS_ITEM_COUNT 5
+#define SETTINGS_ITEM_COUNT 6
 #define SETTINGS_LIVENESS   0
 #define SETTINGS_DISPLAY    1
 #define SETTINGS_NETWORK    2
 #define SETTINGS_HEARTBEAT  3
 #define SETTINGS_TERMKEY    4
+#define SETTINGS_ADMIN_RESET 5
 
 /**
  * ui_display_settings — full redraw of the settings list.

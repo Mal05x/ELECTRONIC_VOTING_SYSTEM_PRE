@@ -3,6 +3,8 @@
 #include "driver/gpio.h"
 #include "driver/spi_master.h"
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include <string.h>
 #include <stdlib.h>
 #include <algorithm>
@@ -32,13 +34,10 @@ static const char *TAG = "ILI9341";
 #define ILI9341_GMCTRP1  0xE0
 #define ILI9341_GMCTRN1  0xE1
 
-// MADCTL bits
 #define MADCTL_MY   0x80
 #define MADCTL_MX   0x40
 #define MADCTL_MV   0x20
 #define MADCTL_BGR  0x08
-
-// Rotation 3: MX | MY | MV | BGR = landscape, 320×240
 #define MADCTL_ROTATION3 (MADCTL_MX | MADCTL_MY | MADCTL_MV | MADCTL_BGR)
 
 // ── State ─────────────────────────────────────────────────
@@ -46,24 +45,20 @@ static spi_device_handle_t s_spi = NULL;
 static int s_dc_pin  = -1;
 static int s_rst_pin = -1;
 
-// Text state
 static int16_t  s_cursor_x = 0, s_cursor_y = 0;
 static uint16_t s_text_color = 0xFFFF;
 static uint8_t  s_text_size  = 1;
 
-// ── DC pin pre-transfer callback ─────────────────────────
-// user = 0 → command, user = 1 → data
 static void IRAM_ATTR tft_pre_transfer_cb(spi_transaction_t *t) {
     gpio_set_level((gpio_num_t)s_dc_pin, (int)(intptr_t)t->user);
 }
 
 // ── Low-level SPI helpers ─────────────────────────────────
-
 static void tft_cmd(uint8_t cmd) {
     spi_transaction_t t = {};
     t.length    = 8;
     t.tx_data[0] = cmd;
-    t.user      = (void *)0;   // DC=0 → command
+    t.user      = (void *)0;
     t.flags     = SPI_TRANS_USE_TXDATA;
     spi_device_polling_transmit(s_spi, &t);
 }
@@ -72,7 +67,7 @@ static void tft_data8(uint8_t d) {
     spi_transaction_t t = {};
     t.length    = 8;
     t.tx_data[0] = d;
-    t.user      = (void *)1;   // DC=1 → data
+    t.user      = (void *)1;
     t.flags     = SPI_TRANS_USE_TXDATA;
     spi_device_polling_transmit(s_spi, &t);
 }
@@ -86,7 +81,6 @@ static void tft_data_buf(const uint8_t *data, size_t len) {
     spi_device_polling_transmit(s_spi, &t);
 }
 
-// ── Set draw window (column/row address) ─────────────────
 static void set_window(int16_t x0, int16_t y0, int16_t x1, int16_t y1) {
     uint8_t buf[4];
     tft_cmd(ILI9341_CASET);
@@ -101,18 +95,12 @@ static void set_window(int16_t x0, int16_t y0, int16_t x1, int16_t y1) {
 }
 
 // ── Write a block of one colour via DMA line buffer ───────
-// Line buffer: 320 pixels × 2 bytes, must be DMA-capable (SRAM)
 static uint16_t s_line_buf[TFT_W] __attribute__((aligned(4)));
 
 static void fill_pixels(uint16_t color, uint32_t count) {
-    // FIX: Acquire the SPI bus for the entire fill operation.
-    // Without this, the PN5180 Arduino library's SPI.beginTransaction()
-    // can interleave between pixel chunks, switching the clock from 40 MHz
-    // to 7 MHz mid-stream and corrupting the display. Acquiring the bus
-    // prevents any other SPI device from transacting until we release it.
+    if (count == 0) return;
     spi_device_acquire_bus(s_spi, portMAX_DELAY);
 
-    // Preload line buffer with byte-swapped colour
     uint16_t c_be = __builtin_bswap16(color);
     uint32_t chunk = (count < TFT_W) ? count : TFT_W;
     for (uint32_t i = 0; i < chunk; i++) s_line_buf[i] = c_be;
@@ -142,7 +130,7 @@ INIT_SEQ[] = {
     {ILI9341_VMCTR1,  {0x3E,0x28}, 2, 0},
     {ILI9341_VMCTR2,  {0x86}, 1, 0},
     {ILI9341_MADCTL,  {MADCTL_ROTATION3}, 1, 0},
-    {ILI9341_COLMOD,  {0x55}, 1, 0},   // 16-bit colour
+    {ILI9341_COLMOD,  {0x55}, 1, 0},
     {ILI9341_INVOFF,  {}, 0, 0},
     {ILI9341_NORON,   {}, 0, 10},
     {ILI9341_GMCTRP1, {0x0F,0x31,0x2B,0x0C,0x0E,0x08,0x4E,0xF1,
@@ -157,7 +145,6 @@ void ili9341_init(spi_host_device_t host, int mosi, int miso, int clk,
     s_dc_pin  = dc;
     s_rst_pin = rst;
 
-    // CS & DC as outputs (CS is managed by SPI driver)
     gpio_config_t io = {};
     io.mode = GPIO_MODE_OUTPUT;
     io.pull_up_en = GPIO_PULLUP_DISABLE;
@@ -166,14 +153,12 @@ void ili9341_init(spi_host_device_t host, int mosi, int miso, int clk,
     if (rst >= 0) io.pin_bit_mask |= (1ULL << rst);
     gpio_config(&io);
 
-    // CS starts high
     gpio_config_t cs_cfg = {};
     cs_cfg.mode = GPIO_MODE_OUTPUT;
     cs_cfg.pin_bit_mask = (1ULL << cs);
     gpio_config(&cs_cfg);
     gpio_set_level((gpio_num_t)cs, 1);
 
-    // Hardware reset
     if (rst >= 0) {
         gpio_set_level((gpio_num_t)rst, 0);
         vTaskDelay(pdMS_TO_TICKS(50));
@@ -181,7 +166,6 @@ void ili9341_init(spi_host_device_t host, int mosi, int miso, int clk,
         vTaskDelay(pdMS_TO_TICKS(150));
     }
 
-    // SPI bus init (shared with PN5180 — call only once from main)
     spi_bus_config_t bus = {};
     bus.mosi_io_num     = mosi;
     bus.miso_io_num     = miso;
@@ -194,16 +178,14 @@ void ili9341_init(spi_host_device_t host, int mosi, int miso, int clk,
         ESP_LOGE(TAG, "spi_bus_initialize failed: %s", esp_err_to_name(err));
     }
 
-    // Add TFT as SPI device
     spi_device_interface_config_t dev = {};
-    dev.clock_speed_hz = 40 * 1000 * 1000;  // 40 MHz
+    dev.clock_speed_hz = 40 * 1000 * 1000;
     dev.mode           = 0;
     dev.spics_io_num   = cs;
     dev.queue_size     = 7;
     dev.pre_cb         = tft_pre_transfer_cb;
     spi_bus_add_device(host, &dev, &s_spi);
 
-    // Run init sequence
     for (size_t i = 0; i < sizeof(INIT_SEQ)/sizeof(INIT_SEQ[0]); i++) {
         tft_cmd(INIT_SEQ[i].cmd);
         if (INIT_SEQ[i].len > 0)
@@ -225,10 +207,16 @@ void ili9341_fill_screen(uint16_t color) {
     fill_pixels(color, (uint32_t)TFT_W * TFT_H);
 }
 
+/* 💥 THE WDT CRASH FIX IS HERE 💥 */
 void ili9341_fill_rect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) {
     if (x >= TFT_W || y >= TFT_H || w <= 0 || h <= 0) return;
     if (x < 0) { w += x; x = 0; }
     if (y < 0) { h += y; y = 0; }
+
+    // SAFETY NET: Ensure w or h didn't become negative after bounds shifting
+    // If they did, it causes an infinite unsigned 32-bit integer loop!
+    if (w <= 0 || h <= 0) return;
+
     if (x + w > TFT_W) w = TFT_W - x;
     if (y + h > TFT_H) h = TFT_H - y;
     set_window(x, y, x + w - 1, y + h - 1);
@@ -250,7 +238,6 @@ void ili9341_draw_vline(int16_t x, int16_t y, int16_t len, uint16_t color) {
     ili9341_fill_rect(x, y, 1, len, color);
 }
 
-// Corner helper for rounded rects
 static void draw_circle_helper(int16_t cx, int16_t cy, int16_t r,
                                 uint8_t corners, uint16_t color) {
     int16_t f = 1 - r, ddF_x = 1, ddF_y = -2 * r;
@@ -258,19 +245,19 @@ static void draw_circle_helper(int16_t cx, int16_t cy, int16_t r,
     while (x < y) {
         if (f >= 0) { y--; ddF_y += 2; f += ddF_y; }
         x++; ddF_x += 2; f += ddF_x;
-        if (corners & 0x4) { // lower right
+        if (corners & 0x4) {
             set_window(cx+x, cy+y, cx+x, cy+y); fill_pixels(color,1);
             set_window(cx+y, cy+x, cx+y, cy+x); fill_pixels(color,1);
         }
-        if (corners & 0x2) { // upper right
+        if (corners & 0x2) {
             set_window(cx+x, cy-y, cx+x, cy-y); fill_pixels(color,1);
             set_window(cx+y, cy-x, cx+y, cy-x); fill_pixels(color,1);
         }
-        if (corners & 0x8) { // lower left
+        if (corners & 0x8) {
             set_window(cx-y, cy+x, cx-y, cy+x); fill_pixels(color,1);
             set_window(cx-x, cy+y, cx-x, cy+y); fill_pixels(color,1);
         }
-        if (corners & 0x1) { // upper left
+        if (corners & 0x1) {
             set_window(cx-y, cy-x, cx-y, cy-x); fill_pixels(color,1);
             set_window(cx-x, cy-y, cx-x, cy-y); fill_pixels(color,1);
         }
@@ -284,11 +271,11 @@ static void fill_circle_helper(int16_t cx, int16_t cy, int16_t r,
     while (x < y) {
         if (f >= 0) { y--; ddF_y += 2; f += ddF_y; }
         x++; ddF_x += 2; f += ddF_x;
-        if (sides & 0x1) { // right
+        if (sides & 0x1) {
             ili9341_draw_vline(cx + x, cy - y, 2 * y + 1, color);
             ili9341_draw_vline(cx + y, cy - x, 2 * x + 1, color);
         }
-        if (sides & 0x2) { // left
+        if (sides & 0x2) {
             ili9341_draw_vline(cx - x, cy - y, 2 * y + 1, color);
             ili9341_draw_vline(cx - y, cy - x, 2 * x + 1, color);
         }
@@ -298,8 +285,8 @@ static void fill_circle_helper(int16_t cx, int16_t cy, int16_t r,
 void ili9341_fill_round_rect(int16_t x, int16_t y, int16_t w, int16_t h,
                               int16_t r, uint16_t color) {
     ili9341_fill_rect(x + r, y, w - 2*r, h, color);
-    fill_circle_helper(x + w - r - 1, y + r, r, 0x1, color);  // right
-    fill_circle_helper(x         + r, y + r, r, 0x2, color);  // left
+    fill_circle_helper(x + w - r - 1, y + r, r, 0x1, color);
+    fill_circle_helper(x         + r, y + r, r, 0x2, color);
 }
 
 void ili9341_draw_round_rect(int16_t x, int16_t y, int16_t w, int16_t h,
@@ -338,7 +325,7 @@ void ili9341_fill_circle(int16_t cx, int16_t cy, int16_t r, uint16_t color) {
 
 void ili9341_draw_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color) {
     int16_t steep = abs(y1 - y0) > abs(x1 - x0);
-    if (steep)         { std::swap(x0,y0); std::swap(x1,y1); }
+    if (steep)        { std::swap(x0,y0); std::swap(x1,y1); }
     if (x0 > x1)      { std::swap(x0,x1); std::swap(y0,y1); }
     int16_t dx = x1-x0, dy = abs(y1-y0), err = dx/2;
     int16_t ystep = (y0 < y1) ? 1 : -1;
@@ -353,7 +340,6 @@ void ili9341_draw_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t 
 void ili9341_fill_triangle(int16_t x0, int16_t y0,
                             int16_t x1, int16_t y1,
                             int16_t x2, int16_t y2, uint16_t color) {
-    // Sort vertices by Y
     if (y0 > y1) { std::swap(y0,y1); std::swap(x0,x1); }
     if (y1 > y2) { std::swap(y1,y2); std::swap(x1,x2); }
     if (y0 > y1) { std::swap(y0,y1); std::swap(x0,x1); }
@@ -402,16 +388,20 @@ void ili9341_print_char(char c) {
         return;
     }
     if (c < FONT_FIRST_CHAR || c > (FONT_FIRST_CHAR + 95)) return;
-    const uint8_t *glyph = FONT_5X7[c - FONT_FIRST_CHAR];
+
+    // Safety: Auto-wrap text if it extends past the right edge
     int cw = (FONT_CHAR_W + FONT_CHAR_GAP) * s_text_size;
-    int ch = (FONT_CHAR_H + FONT_CHAR_GAP) * s_text_size;
-    // Background: clear character cell
-    // (Not filled — caller should fill background before text)
+    if (s_cursor_x + cw > TFT_W) {
+        s_cursor_x = 0;
+        s_cursor_y += (FONT_CHAR_H + FONT_CHAR_GAP) * s_text_size;
+    }
+
+    const uint8_t *glyph = FONT_5X7[c - FONT_FIRST_CHAR];
+
     for (int col = 0; col < FONT_CHAR_W; col++) {
         uint8_t line = glyph[col];
         for (int row = 0; row < FONT_CHAR_H; row++) {
             if (line & (1 << row)) {
-                // Foreground pixel
                 int px = s_cursor_x + col * s_text_size;
                 int py = s_cursor_y + row * s_text_size;
                 ili9341_fill_rect(px, py, s_text_size, s_text_size, s_text_color);
@@ -419,7 +409,6 @@ void ili9341_print_char(char c) {
         }
     }
     s_cursor_x += cw;
-    (void)ch;
 }
 
 void ili9341_print(const char *str) {

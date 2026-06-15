@@ -88,7 +88,7 @@ struct EnrollmentSession {
     std::string sessionId; // SHA-256(cardUID) — used as NVS key
     uint8_t     pin[4];             // Raw PIN digits chosen by voter
     uint8_t     pinConfirm[4];      // Re-entry for confirmation
-    uint8_t     fpTemplate[512];    // R307 template (512 bytes)
+    uint8_t fpTemplate[1536];    // R307 template (512 bytes)
     uint16_t    fpTemplateLen;
     uint8_t     livenessEmbedding[256]; // MiniFASNetV2_SE 8×8 grid embedding (64 bytes)
     uint16_t    livenessEmbeddingLen;
@@ -98,7 +98,8 @@ struct EnrollmentSession {
     bool        fingerprintCaptured;
     bool        livenessEmbeddingCaptured;
     bool        cardWritten;
-    bool        enrollVerified;     // post-write: secure channel + PIN + FP verified
+    bool        enrollVerified;// post-write: secure channel + PIN + FP verified
+    std::string voterPublicKey;
 };
 
 // ── System state machine ──────────────────────────────────
@@ -120,6 +121,8 @@ enum SystemState {
     STATE_VOTE_CONFIRMATION,
     STATE_VOTE_SUBMITTED,
     STATE_ERROR,
+	STATE_ADMIN_RESET_SCAN,      // 💥 Add this
+	STATE_ADMIN_RESET_PIN_ENTRY,
 
     // ── Enrollment states ─────────────────────────────────
     STATE_ENROLL_IDLE,          // waiting for blank card

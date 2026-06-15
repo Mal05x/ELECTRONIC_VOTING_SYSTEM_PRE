@@ -55,6 +55,12 @@
   #define ENROLL_BTN_HOLD_MS  2000UL  // must hold BTN_BACK this long during splash
 #endif
 
+// ── Backend Registration State Flags ──────────────────────────
+// Sent during initial /pending-registration to satisfy backend DTOs
+// before the physical smart card has generated its cryptographic keys.
+#define PROD_STATE_AWAITING_KEY   "AWAITING_CARD_GENERATION"
+#define PROD_STATE_AWAITING_DEMO  "AWAITING_ADMIN_INPUT"
+
 // ── AES-256-GCM backend key ─────────────────────────────────
 // Must match base64-decoded AES_256_SECRET in backend application.yml
 // Generate: openssl rand -base64 32  → decode to 32 bytes

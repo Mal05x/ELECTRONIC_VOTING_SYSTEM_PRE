@@ -12,7 +12,7 @@ bool net_ntp_sync(void);
 // Backend endpoints
 bool net_fetch_election_config(void);
 bool net_fetch_candidates(void);
-bool net_authenticate_voter(void);  // uses g_session, sets g_session.sessionToken
+bool net_request_tap_session(void);  // uses g_session, sets g_session.sessionToken
 bool net_submit_vote(void);         // uses g_session & g_nav, sets g_lastTransactionId
 void net_send_heartbeat(void);
 bool net_register_pending(void);
