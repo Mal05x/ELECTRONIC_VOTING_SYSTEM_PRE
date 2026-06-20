@@ -15,6 +15,7 @@
 #include "esp_random.h"
 #include "cJSON.h"
 #include "mbedtls/base64.h"
+#include "mbedtls/gcm.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
@@ -28,6 +29,9 @@
 
 
 static const char *TAG = "NET";
+
+volatile bool g_candidates_loaded = false;
+
 // Forward declaration for the offline cache
 static void cache_failed_vote(const char* card_hash, const char* election_id, const char* candidate_id, const char* burn_proof_b64);
 
@@ -238,7 +242,6 @@ bool net_fetch_candidates(void) {
     snprintf(path, sizeof(path), "/api/terminal/candidates/%s",
              g_electionCfg.electionId.c_str());
 
-
     HttpResp r = {};
     esp_http_client_handle_t h = make_client(path, HTTP_METHOD_GET, &r);
     add_auth_headers(h, "");
@@ -248,6 +251,7 @@ bool net_fetch_candidates(void) {
     esp_http_client_cleanup(h);
 
     if (err != ESP_OK || code != 200) {
+        ESP_LOGW(TAG, "Candidate fetch failed HTTP=%d", code);
         free(r.buf);
         return false;
     }
@@ -256,18 +260,29 @@ bool net_fetch_candidates(void) {
     free(r.buf);
     if (!json) return false;
 
+    // 💥 THE FIX: Check if it's wrapped in "candidates" OR if the root is the array
     cJSON *arr = cJSON_GetObjectItem(json, "candidates");
-    g_candidateCount = 0;
-    cJSON *item;
-    cJSON_ArrayForEach(item, arr) {
-        if (g_candidateCount >= 10) break;
-        g_candidates[g_candidateCount].id      = cJSON_GetStringValue(cJSON_GetObjectItem(item, "id"))       ?: "";
-        g_candidates[g_candidateCount].name    = cJSON_GetStringValue(cJSON_GetObjectItem(item, "fullName")) ?: "";
-        g_candidates[g_candidateCount].party   = cJSON_GetStringValue(cJSON_GetObjectItem(item, "partyAbbreviation")) ?: "";
-        g_candidates[g_candidateCount].position= cJSON_GetStringValue(cJSON_GetObjectItem(item, "position")) ?: "";
-        g_candidateCount++;
+    if (!arr && cJSON_IsArray(json)) {
+        arr = json;
     }
+
+    g_candidateCount = 0;
+
+    // Only loop if we successfully found a valid array
+    if (arr != NULL && cJSON_IsArray(arr)) {
+        cJSON *item;
+        cJSON_ArrayForEach(item, arr) {
+            if (g_candidateCount >= 10) break;
+            g_candidates[g_candidateCount].id      = cJSON_GetStringValue(cJSON_GetObjectItem(item, "id"))       ?: "";
+            g_candidates[g_candidateCount].name    = cJSON_GetStringValue(cJSON_GetObjectItem(item, "fullName")) ?: "";
+            g_candidates[g_candidateCount].party   = cJSON_GetStringValue(cJSON_GetObjectItem(item, "partyAbbreviation")) ?: "";
+            g_candidates[g_candidateCount].position= cJSON_GetStringValue(cJSON_GetObjectItem(item, "position")) ?: "";
+            g_candidateCount++;
+        }
+    }
+
     cJSON_Delete(json);
+
     ESP_LOGI(TAG, "%d candidates loaded", g_candidateCount);
     return true;
 }
@@ -643,78 +658,234 @@ bool net_complete_enrollment(void) {
         return (err == ESP_OK && code == 200);
     }
 
+// The new background task
+void task_background_candidate_sync(void *pvParameters) {
+    ESP_LOGI(TAG, "Background sync task started on Core 0...");
+
+    // 1. Fetch Election Configuration
+    ESP_LOGI(TAG, "Fetching Election Config...");
+    while (!net_fetch_election_config()) {
+        ESP_LOGW(TAG, "Config fetch failed, retrying in 5s...");
+        vTaskDelay(pdMS_TO_TICKS(5000));
+    }
+
+    // 1b. Fetch the Officer PIN Hash while we are here
+    net_fetch_officer_pin_hash();
+
+    // 2. The Backend Rate-Limit Delay (Blocks only this background task!)
+    ESP_LOGI(TAG, "⏳ Sleeping 32 seconds to clear backend rate limit...");
+    vTaskDelay(pdMS_TO_TICKS(32000));
+
+    // 3. Fetch Live Candidates
+    ESP_LOGI(TAG, "Fetching Live Candidates...");
+    while (!net_fetch_candidates() || g_candidateCount == 0) {
+        ESP_LOGW(TAG, "Candidate fetch failed, retrying in 5s...");
+        vTaskDelay(pdMS_TO_TICKS(5000));
+    }
+
+    ESP_LOGI(TAG, "✅ Loaded %d candidates. Terminal is READY.", g_candidateCount);
+
+    // 4. Unlock the UI!
+    g_candidates_loaded = true;
+
+    // 5. Delete this task to free up RAM
+    vTaskDelete(NULL);
+}
+
 // --- NEW BOOT RECOVERY LOOP ---
 bool net_check_and_recover_vote(void) {
-    nvs_handle_t h_rec;
-    if (nvs_open("vote_recovery", NVS_READONLY, &h_rec) != ESP_OK) {
+    // 1. Initialize the NVS Iterator for the "vote_cache" namespace
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+    nvs_iterator_t it = NULL;
+    esp_err_t err = nvs_entry_find("nvs", "vote_cache", NVS_TYPE_STR, &it);
+    if (err != ESP_OK || it == NULL) return false;
+#else
+    nvs_iterator_t it = nvs_entry_find("nvs", "vote_cache", NVS_TYPE_STR);
+    if (it == NULL) return false;
+#endif
+
+    ESP_LOGI(TAG, "🔄 BACKGROUND SYNC: Offline votes detected. Commencing push...");
+
+    nvs_handle_t handle;
+    if (nvs_open("vote_cache", NVS_READWRITE, &handle) != ESP_OK) {
+        nvs_release_iterator(it);
         return false;
     }
 
-    size_t required_len = 0;
-    if (nvs_get_str(h_rec, "pending_burn", NULL, &required_len) != ESP_OK) {
-        nvs_close(h_rec);
-        return false;
-    }
+    bool recovered_any = false;
 
-    ESP_LOGW(TAG, "ALERT: Unsubmitted vote payload found in flash memory. Initiating recovery...");
+    // 2. Loop through all saved offline votes
+    while (it != NULL) {
+        nvs_entry_info_t info;
+        nvs_entry_info(it, &info);
 
-    char burn[128] = {}, token[64] = {}, candidate[64] = {}, uid[32] = {};
-    size_t len_b = sizeof(burn), len_t = sizeof(token), len_c = sizeof(candidate), len_u = sizeof(uid);
+        size_t len = 0;
+        if (nvs_get_str(handle, info.key, NULL, &len) == ESP_OK) {
+            char* json_str = (char*)malloc(len);
+            if (nvs_get_str(handle, info.key, json_str, &len) == ESP_OK) {
 
-    nvs_get_str(h_rec, "pending_burn",      burn,      &len_b);
-    nvs_get_str(h_rec, "pending_token",     token,     &len_t);
-    nvs_get_str(h_rec, "pending_candidate", candidate, &len_c);
-    nvs_get_str(h_rec, "pending_uid",       uid,       &len_u);
-    nvs_close(h_rec);
+                ESP_LOGI(TAG, "Processing Offline Vote: %s", info.key);
+                cJSON *cache = cJSON_Parse(json_str);
 
-    cJSON *pkt = cJSON_CreateObject();
-    cJSON_AddStringToObject(pkt, "sessionToken",  token);
-    cJSON_AddStringToObject(pkt, "candidateId",   candidate);
-    cJSON_AddStringToObject(pkt, "cardIdHash",    crypto_sha256_hex(std::string(uid)).c_str());
-    cJSON_AddStringToObject(pkt, "terminalId",    TERMINAL_ID);
-    cJSON_AddStringToObject(pkt, "electionId",    g_electionCfg.electionId.c_str());
-    cJSON_AddStringToObject(pkt, "cardBurnProof", burn);
-    char *pkt_str = cJSON_PrintUnformatted(pkt);
-    cJSON_Delete(pkt);
+                if (cache) {
+                                    // 🔍 DUAL-KEY EXTRACTION: Fallback gracefully if keys are minified or full-length
+                                    cJSON *item_h = cJSON_GetObjectItem(cache, "h");
+                                    if (!item_h) item_h = cJSON_GetObjectItem(cache, "cardIdHash");
 
-    std::string encrypted = crypto_aes_gcm_encrypt(std::string(pkt_str));
-    free(pkt_str);
+                                    cJSON *item_e = cJSON_GetObjectItem(cache, "e");
+                                    if (!item_e) item_e = cJSON_GetObjectItem(cache, "electionId");
 
-    cJSON *outer = cJSON_CreateObject();
-    cJSON_AddStringToObject(outer, "payload", encrypted.c_str());
-    char *body_str = cJSON_PrintUnformatted(outer);
-    cJSON_Delete(outer);
-    std::string body(body_str);
-    free(body_str);
+                                    cJSON *item_c = cJSON_GetObjectItem(cache, "c");
+                                    if (!item_c) item_c = cJSON_GetObjectItem(cache, "candidateId");
 
-    HttpResp r = {};
-    esp_http_client_handle_t h = make_client("/api/terminal/vote", HTTP_METHOD_POST, &r);
-    esp_http_client_set_header(h, "Content-Type", "application/json");
-    add_auth_headers(h, body);
-    esp_http_client_set_post_field(h, body.c_str(), body.size());
+                                    cJSON *item_p = cJSON_GetObjectItem(cache, "p");
+                                    if (!item_p) item_p = cJSON_GetObjectItem(cache, "cardBurnProof");
 
-    net_wifi_reconnect_if_needed();
-    esp_err_t err = esp_http_client_perform(h);
-    int code = esp_http_client_get_status_code(h);
-    esp_http_client_cleanup(h);
-    free(r.buf);
+                                    // Sanity check: Ensure nothing critical is missing before talking to the server
+                                    if (!item_h || !item_e || !item_c || !item_p) {
+                                        ESP_LOGE(TAG, "❌ Cache extraction failed! Corrupt or incompatible offline structure.");
+                                        ESP_LOGD(TAG, "Raw Cache Content: %s", json_str);
+                                        cJSON_Delete(cache);
+                                        free(json_str);
+                                        continue;
+                                    }
 
-    if (err == ESP_OK && code == 200) {
-        ESP_LOGI(TAG, "Recovery successful! Clearing stale NVS tracking allocation.");
-        if (nvs_open("vote_recovery", NVS_READWRITE, &h_rec) == ESP_OK) {
-            nvs_erase_key(h_rec, "pending_burn");
-            nvs_erase_key(h_rec, "pending_token");
-            nvs_erase_key(h_rec, "pending_candidate");
-            nvs_erase_key(h_rec, "pending_uid");
-            nvs_commit(h_rec);
-            nvs_close(h_rec);
+                                    const char* card_hash   = item_h->valuestring;
+                                    const char* election_id = item_e->valuestring;
+                                    const char* candidate_id = item_c->valuestring;
+                                    const char* burn_proof  = item_p->valuestring;
+
+                                    ESP_LOGI(TAG, "🗳️ Extracted Cache -> Card: %s..., Election: %s...",
+                                             std::string(card_hash).substr(0, 8).c_str(),
+                                             std::string(election_id).substr(0, 8).c_str());
+
+                    // 3. Request a fresh Session Token for recovery (/api/terminal/tap)
+                    cJSON *tap_json = cJSON_CreateObject();
+                    cJSON_AddStringToObject(tap_json, "cardIdHash", card_hash);
+                    cJSON_AddStringToObject(tap_json, "electionId", election_id);
+                    // 🛠️ THE FIX: Add the missing terminal identifier expected by the DTO
+                                        cJSON_AddStringToObject(tap_json, "terminalId", "TERM-KD-001");
+                    //cJSON_AddStringToObject(tap_json, "mode", "RECOVERY");
+                    char *tap_data = cJSON_PrintUnformatted(tap_json);
+                    cJSON_Delete(tap_json);
+
+                    HttpResp tap_resp = {};
+                    esp_http_client_handle_t tap_client = make_client("/api/terminal/tap", HTTP_METHOD_POST, &tap_resp);
+                    esp_http_client_set_header(tap_client, "Content-Type", "application/json");
+                    add_auth_headers(tap_client, tap_data);
+                    esp_http_client_set_post_field(tap_client, tap_data, strlen(tap_data));
+
+                    esp_err_t tap_err = esp_http_client_perform(tap_client);
+                    int tap_code = esp_http_client_get_status_code(tap_client);
+                    esp_http_client_cleanup(tap_client);
+                    free(tap_data);
+
+                    if (tap_err == ESP_OK && tap_code == 200 && tap_resp.buf) {
+                        cJSON *tap_res = cJSON_Parse(tap_resp.buf);
+                        if (tap_res && cJSON_GetObjectItem(tap_res, "sessionToken")) {
+                            const char* session_token = cJSON_GetObjectItem(tap_res, "sessionToken")->valuestring;
+
+                            // 4. Build the AES-GCM Encrypted Payload
+                            const char *SERVER_AES_KEY_B64 = "aEq4iB1rIisBzZgc+y7c/9dsYGiVTy0XnbIK/3Fc59U=";
+                            unsigned char server_aes_key[33] = {0};
+                            size_t key_len = 0;
+                            mbedtls_base64_decode(server_aes_key, sizeof(server_aes_key), &key_len,
+                                                (const unsigned char *)SERVER_AES_KEY_B64, strlen(SERVER_AES_KEY_B64));
+
+                            cJSON *inner = cJSON_CreateObject();
+                            cJSON_AddStringToObject(inner, "sessionToken", session_token);
+                            cJSON_AddStringToObject(inner, "candidateId", candidate_id);
+                            cJSON_AddStringToObject(inner, "cardIdHash", card_hash);
+                            cJSON_AddStringToObject(inner, "electionId", election_id);
+                            cJSON_AddStringToObject(inner, "cardBurnProof", burn_proof);
+                            char *inner_str = cJSON_PrintUnformatted(inner);
+                            cJSON_Delete(inner);
+
+                            size_t inner_len = strlen(inner_str);
+                            uint8_t iv[12];
+                            esp_fill_random(iv, sizeof(iv));
+                            uint8_t tag[16] = {0};
+                            uint8_t *ciphertext = (uint8_t *)malloc(inner_len);
+
+                            mbedtls_gcm_context gcm;
+                            mbedtls_gcm_init(&gcm);
+                            mbedtls_gcm_setkey(&gcm, MBEDTLS_CIPHER_ID_AES, server_aes_key, 256);
+                            mbedtls_gcm_crypt_and_tag(&gcm, MBEDTLS_GCM_ENCRYPT, inner_len, iv, sizeof(iv), NULL, 0, (uint8_t *)inner_str, ciphertext, sizeof(tag), tag);
+                            mbedtls_gcm_free(&gcm);
+                            free(inner_str);
+
+                            size_t enc_len = 12 + inner_len + 16;
+                            uint8_t *enc_blob = (uint8_t *)malloc(enc_len);
+                            memcpy(enc_blob, iv, 12);
+                            memcpy(enc_blob + 12, ciphertext, inner_len);
+                            memcpy(enc_blob + 12 + inner_len, tag, 16);
+                            free(ciphertext);
+
+                            size_t b64_sz = ((enc_len + 2) / 3) * 4 + 1;
+                            unsigned char *payload_b64 = (unsigned char *)calloc(1, b64_sz);
+                            size_t pb64_len = 0;
+                            mbedtls_base64_encode(payload_b64, b64_sz, &pb64_len, enc_blob, enc_len);
+                            free(enc_blob);
+
+                            cJSON *vote_json = cJSON_CreateObject();
+                            cJSON_AddStringToObject(vote_json, "cardIdHash", card_hash);
+                            cJSON_AddStringToObject(vote_json, "payload", (char *)payload_b64);
+                            free(payload_b64);
+
+                            char *vote_data = cJSON_PrintUnformatted(vote_json);
+                            cJSON_Delete(vote_json);
+
+                            // 5. Submit Recovered Vote to Server (/api/terminal/vote)
+                            HttpResp vote_resp = {};
+                            esp_http_client_handle_t vote_client = make_client("/api/terminal/vote", HTTP_METHOD_POST, &vote_resp);
+                            esp_http_client_set_header(vote_client, "Content-Type", "application/json");
+                            add_auth_headers(vote_client, vote_data);
+                            esp_http_client_set_post_field(vote_client, vote_data, strlen(vote_data));
+
+                            esp_err_t vote_err = esp_http_client_perform(vote_client);
+                            int vote_code = esp_http_client_get_status_code(vote_client);
+                            esp_http_client_cleanup(vote_client);
+
+                            if (vote_err == ESP_OK && (vote_code == 200 || vote_code == 201)) {
+                                ESP_LOGI(TAG, "✅ Background sync successful! Erasing vote %s from offline cache.", info.key);
+                                nvs_erase_key(handle, info.key);
+                                nvs_commit(handle);
+                                recovered_any = true;
+                            } else {
+                                ESP_LOGW(TAG, "⚠️ Background sync rejected by server (HTTP %d). Will retry next cycle.", vote_code);
+                            }
+                            free(vote_data);
+                            if (vote_resp.buf) free(vote_resp.buf);
+                        }
+                        if (tap_res) cJSON_Delete(tap_res);
+                    } else {
+                        ESP_LOGW(TAG, "⚠️ Recovery Tap failed (HTTP %d).", tap_code);
+                        // 🔍 ADD THIS TO REVEAL THE SPRING BOOT VALIDATION ERROR:
+                                                if (tap_resp.buf != NULL) {
+                                                    ESP_LOGE(TAG, "🛑 SERVER REJECTED WITH: %s", tap_resp.buf);
+                                                }
+                    }
+                    if (tap_resp.buf) free(tap_resp.buf);
+                }
+                cJSON_Delete(cache);
+            }
+            free(json_str);
         }
-        return true;
+
+        // Move to the next cached vote
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+        nvs_entry_next(&it);
+#else
+        it = nvs_entry_next(it);
+#endif
     }
 
-    ESP_LOGE(TAG, "Recovery push failed (HTTP %d). Payload preserved for next retry cycle.", code);
-    return false;
+    nvs_close(handle);
+    nvs_release_iterator(it);
+
+    return recovered_any;
 }
+
 
 static void cache_failed_vote(const char* card_hash, const char* election_id,
                               const char* candidate_id, const char* burn_proof_b64) {

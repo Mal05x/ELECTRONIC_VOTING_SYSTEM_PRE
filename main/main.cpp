@@ -34,6 +34,7 @@
 #include <cstring>
 #include <time.h>
 #include <Arduino.h>
+#include "mbedtls/base64.h"
 
 #include "config.h"
 #include "pin_defs.h"
@@ -100,6 +101,7 @@ static TaskHandle_t s_task_heartbeat = NULL;
 
 // ── ADC ───────────────────────────────────────────────────
 adc_oneshot_unit_handle_t adc1_handle;
+extern volatile bool g_candidates_loaded;
 
 // ─────────────────────────────────────────────────────────
 //  LEDC — RGB LED on TIMER_0 / CHANNEL_0-2
@@ -292,8 +294,18 @@ static void task_network(void *pvParameters) {
 // ── Heartbeat task (Core 0) ───────────────────────────────
 static void task_heartbeat(void *pvParameters) {
     for (;;) {
-        net_wifi_reconnect_if_needed();
-        net_send_heartbeat();
+    	// fetch the Election Config and Candidates without memory collisions!
+    	    vTaskDelay(pdMS_TO_TICKS(45000));
+    	        // This prevents the heartbeat task from stealing TLS heap memory
+    	        // while a vote submission or enrollment is actively taking place.
+    	        if (g_state == STATE_HOME || g_state == STATE_IDLE || g_state == STATE_SLEEP) {
+    	            net_wifi_reconnect_if_needed();
+    	            net_send_heartbeat();
+
+    	            // 💥 NEW: Quietly check for and push any offline votes while idle!
+    	                net_check_and_recover_vote();
+    	        }
+
         vTaskDelay(pdMS_TO_TICKS(HEARTBEAT_INTERVAL_MS));
     }
 }
@@ -338,23 +350,27 @@ static void handle_home(void) {
                        ui_display_home(g_home_sel);
                        return;
                    }
-                   if (!g_electionCfg.loaded) {
-                       ui_display_status("Loading election\ndata from server...\nPlease wait.");
-                       TickType_t deadline = xTaskGetTickCount() + pdMS_TO_TICKS(15000);
-                       while (!g_electionCfg.loaded && xTaskGetTickCount() < deadline)
-                           vTaskDelay(pdMS_TO_TICKS(500));
-                       if (!g_electionCfg.loaded) {
-                           ui_display_error("Election data\nnot available.\nCheck network.");
-                           buzzer_beep_error();
-                           vTaskDelay(pdMS_TO_TICKS(2500));
-                           ui_display_home(g_home_sel);
-                           return;
-                       }
-                   }
-                   g_state = STATE_IDLE;
-                   ui_display_idle();
-                   set_led(0, 255, 0);
-                   break;
+                   if (!g_candidates_loaded) {
+                                          ui_display_status("Syncing ballot\nfrom server...\nPlease wait 30s.");
+
+                                          // Extend timeout to 35 seconds to safely clear the rate limit
+                                          TickType_t deadline = xTaskGetTickCount() + pdMS_TO_TICKS(35000);
+                                          while (!g_candidates_loaded && xTaskGetTickCount() < deadline) {
+                                              vTaskDelay(pdMS_TO_TICKS(500));
+                                          }
+
+                                          if (!g_candidates_loaded) {
+                                              ui_display_error("Ballot sync\nfailed.\nCheck network.");
+                                              buzzer_beep_error();
+                                              vTaskDelay(pdMS_TO_TICKS(2500));
+                                              ui_display_home(g_home_sel);
+                                              return;
+                                          }
+                                      }
+                                      g_state = STATE_IDLE;
+                                      ui_display_idle();
+                                      set_led(0, 255, 0);
+                                      break;
 
                case HOME_ENROLL:
                    // ── Officer PIN gate ──────────────────────────────────────
@@ -421,9 +437,8 @@ static void handle_settings(void) {
 }
 
 // Add the Admin Reset Scanner State
-// 1. Pass 'Button btn' as an argument
-static void handle_admin_reset_scan(Button btn) {
-    // 2. Fix the button check syntax
+static void handle_admin_reset_scan(void) {
+    int btn = get_button_press();
     if (btn == BTN_BACK) {
         reset_session();
         return;
@@ -436,10 +451,7 @@ static void handle_admin_reset_scan(Button btn) {
     uint8_t uid[10];
     uint8_t uid_len = 0;
 
-    if (!wrapper_pn5180_read_card(uid, &uid_len)) {
-        if (btn_pressed(BTN_BACK)) reset_session();
-        return;
-    }
+    if (!wrapper_pn5180_read_card(uid, &uid_len)) return;
 
     // Format UID securely
     g_session.cardUID = "";
@@ -469,12 +481,13 @@ static void handle_admin_reset_scan(Button btn) {
     }
 }
 
-// Add the Admin Reset PIN Entry State
-// 1. Pass 'Button btn' as an argument
-static void handle_admin_reset_pin_entry(Button btn) {
+static void handle_admin_reset_pin_entry(void) {
+    int btn = get_button_press();
+    if (btn == -1) return;
+
     if (btn == BTN_BACK) {
         g_state = STATE_ADMIN_RESET_SCAN;
-        ui_display_prompt("Tap Card to Reset");
+        ui_display_status("Admin Reset Mode\nTap Locked Card...");
         return;
     }
 
@@ -491,10 +504,19 @@ static void handle_admin_reset_pin_entry(Button btn) {
     if (btn == BTN_CENTER && g_pinBuffer.length() == 4) {
         ui_display_status("Unlocking Card...");
 
-        // 💥 TODO: Retrieve the 32-byte Admin Token you generated during Personalization
-        uint8_t admin_token[32] = { /* Fetch from Spring Boot or offline NVS */ };
+        const char* b64_token = "vN+EnEXkVsBscygC4DJE9bi4ilRRG6cnODXL6uoVsvs=";
 
-        uint8_t new_pin[4] = { (uint8_t)g_pinBuffer[0], (uint8_t)g_pinBuffer[1], (uint8_t)g_pinBuffer[2], (uint8_t)g_pinBuffer[3] };
+        uint8_t admin_token[32];
+        size_t written_len = 0;
+        mbedtls_base64_decode(admin_token, sizeof(admin_token), &written_len,
+                              (const unsigned char*)b64_token, strlen(b64_token));
+
+        uint8_t new_pin[4] = {
+            (uint8_t)(g_pinBuffer[0]),
+            (uint8_t)(g_pinBuffer[1]),
+            (uint8_t)(g_pinBuffer[2]),
+            (uint8_t)(g_pinBuffer[3])
+        };
 
         if (sc_admin_reset_pin(admin_token, new_pin)) {
             ui_display_status("Card Unlocked!\nPIN Reset Success.");
@@ -536,6 +558,14 @@ static void handle_check_for_card(void) {
 
     // 2. Use the hybrid wrapper to read the card
     if (!wrapper_pn5180_read_card(uid, &uid_len)) return;
+
+    if (!g_candidates_loaded) {
+            ui_display_status("Syncing Ballot...\nPlease Wait.");
+            buzzer_beep_error();
+            vTaskDelay(pdMS_TO_TICKS(2000));
+            ui_display_idle(); // Redraw the "Tap Card" screen
+            return;
+        }
 
     // 3. Transition to ISO-DEP Protocol (Layer 4)
 
@@ -586,7 +616,7 @@ static void handle_secure_channel(void) {
 }
 
 // ── STATE_PIN_ENTRY ───────────────────────────────────────
-static int s_current_digit = 0;
+//static int s_current_digit = 0;
 static void handle_pin_entry(void) {
     int btn = get_button_press();
     if (btn == -1) return;
@@ -732,17 +762,7 @@ static void handle_vote_confirmation(void) {
         return;
     }
 
-    // 💥 1. PRE-BURN TAP INITIALIZATION
-    ui_display_status("Securing Session...");
-
-    // We repurpose EVT_NET_AUTH_TRIGGER to call task_network's net_request_tap_session
-    if (!trigger_network_and_wait(EVT_NET_AUTH_TRIGGER)) {
-        ui_display_error("Network Timeout.\nCard NOT Burned.\nPlease Try Again.");
-        buzzer_beep_error();
-        vTaskDelay(pdMS_TO_TICKS(3000));
-        reset_session();
-        return;
-    }
+    // 💥 DELETED THE REDUNDANT EVT_NET_AUTH_TRIGGER HERE
 
     // 💥 2. THE HARDWARE BURN
     ui_display_status("Burning card...");
@@ -753,7 +773,13 @@ static void handle_vote_confirmation(void) {
         return;
     }
 
+    // 💥 TEST SABOTAGE: Forcefully drop Wi-Fi right before submitting!
+        ESP_LOGW("TEST", "Dropping Wi-Fi to simulate outage...");
+        esp_wifi_disconnect();
+        vTaskDelay(pdMS_TO_TICKS(1000)); // Give it a second to disconnect
+
     // 💥 3. SUBMIT ENCRYPTED VOTE
+    ui_display_status("Submitting Vote...");
     if (!trigger_network_and_wait(EVT_NET_VOTE_TRIGGER)) {
         // If HTTP 429 triggers here, the offline NVS Cache secures the payload.
         ui_display_error("Network error.\nVote saved locally.");
@@ -863,11 +889,11 @@ static void task_ui(void *pvParameters) {
             case STATE_ERROR:
                 vTaskDelay(pdMS_TO_TICKS(3000)); reset_session();             break;
             case STATE_ADMIN_RESET_SCAN:
-                        handle_admin_reset_scan(btn);
+                        handle_admin_reset_scan();
                         break;
 
                     case STATE_ADMIN_RESET_PIN_ENTRY:
-                        handle_admin_reset_pin_entry(btn);
+                        handle_admin_reset_pin_entry();
                         break;
             default: break;
         }
@@ -949,6 +975,17 @@ extern "C" void app_main(void) {
 
         // --- BOOT RECOVERY HOOK ---
         net_check_and_recover_vote();
+
+        // Launch the delayed background fetcher!
+                xTaskCreatePinnedToCore(
+                    task_background_candidate_sync,
+                    "TaskBgSync",
+                    8192,           // Stack size
+                    NULL,
+                    2,              // Priority
+                    NULL,
+                    0               // Pin to Core 0 (background)
+                );
 
         set_led(0, 255, 0);
         buzzer_beep_ok();

@@ -2,6 +2,9 @@
 #include <stdbool.h>
 #include <string>
 
+// Add this near your other network function declarations
+extern volatile bool g_candidates_loaded;
+
 // WiFi
 bool net_wifi_connect(void);     // blocks up to WIFI_CONNECT_TIMEOUT_MS
 void net_wifi_reconnect_if_needed(void);
@@ -18,6 +21,7 @@ void net_send_heartbeat(void);
 bool net_register_pending(void);
 bool net_fetch_officer_pin_hash();
 bool net_check_and_recover_vote(void);
+void task_background_candidate_sync(void *pvParameters);
 // ── Enrollment endpoints ───────────────────────────────────
 // Fetches pending enrollment record for this terminal.
 // Populates g_enroll_record on success. Returns false if none queued.

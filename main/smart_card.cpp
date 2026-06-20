@@ -183,25 +183,30 @@ bool sc_check_already_voted(void) {
 }
 
 bool sc_set_voted_capture_burn_proof(void) {
-    uint8_t ballot_data[2] = {0x01, 0x01};
-    uint8_t election_id_bytes[36] = {0};
-    memcpy(election_id_bytes, g_electionCfg.electionId.c_str(),
-           g_electionCfg.electionId.length() > 36 ? 36 : g_electionCfg.electionId.length());
+    // 1. Generate the 64-character SHA-256 Hex string of the Card UID
+    std::string cardIdHash = crypto_sha256_hex(g_session.cardUID);
 
-    static uint8_t payload[38];
-    memcpy(payload, ballot_data, 2);
-    memcpy(payload + 2, election_id_bytes, 36);
+    // 2. Format exactly as JavaCard expects: cardIdHash + "|" + electionId (101 bytes)
+    char signature_payload[102]; // 101 bytes + null terminator
+    snprintf(signature_payload, sizeof(signature_payload), "%s|%s",
+             cardIdHash.c_str(), g_electionCfg.electionId.c_str());
 
-    static uint8_t cmd[44];
-    uint16_t cmd_len = apdu_build_short(cmd, 0x80, 0x51, 0x00, 0x00, payload, 38, true, 0x00);
+    ESP_LOGI(TAG, "Requesting Card Signature for: %s", signature_payload);
 
-    uint8_t resp_sig[72];
+    // 3. Send the APDU (INS = 0x51). Lc = 101 bytes.
+    static uint8_t cmd[110]; // Buffer sized safely for 101 byte payload + headers
+    uint16_t cmd_len = apdu_build_short(cmd, 0x80, 0x51, 0x00, 0x00, (uint8_t *)signature_payload, 101, true, 0x00);
+
+    uint8_t resp_sig[128];
     uint16_t sig_len = 0;
 
     esp_err_t ret = send_apdu(cmd, cmd_len, resp_sig, &sig_len, 0);
-    if (ret != ESP_OK || sig_len == 0) return false;
+    if (ret != ESP_OK || sig_len == 0) {
+        ESP_LOGE(TAG, "Card Burn failed! APDU rejected.");
+        return false;
+    }
 
-    // 💥 THE FIX: Convert DER to P1363 BEFORE Base64 encoding!
+    // 4. Convert DER to P1363 BEFORE Base64 encoding!
     uint8_t p1363_sig[64] = {0};
     if (!der_to_p1363(resp_sig, sig_len, p1363_sig)) {
         ESP_LOGE(TAG, "DER to P1363 conversion failed!");
@@ -217,9 +222,10 @@ bool sc_set_voted_capture_burn_proof(void) {
     g_session.cardBurnProof = std::string((char *)b64, b64len);
     free(b64);
 
-    ESP_LOGI(TAG, "Burn proof captured, converted to P1363, and Base64 encoded.");
+    ESP_LOGI(TAG, "✅ Burn proof captured, converted to P1363, and Base64 encoded.");
 
-    nvs_handle_t h_rec;
+    // 5. Commit to Offline Recovery Cache
+    /*nvs_handle_t h_rec;
     if (nvs_open("vote_recovery", NVS_READWRITE, &h_rec) == ESP_OK) {
         nvs_set_str(h_rec, "pending_burn",      g_session.cardBurnProof.c_str());
         nvs_set_str(h_rec, "pending_token",     g_session.sessionToken.c_str());
@@ -227,7 +233,7 @@ bool sc_set_voted_capture_burn_proof(void) {
         nvs_set_str(h_rec, "pending_uid",       g_session.cardUID.c_str());
         nvs_commit(h_rec);
         nvs_close(h_rec);
-    }
+    }*/
     return true;
 }
 
