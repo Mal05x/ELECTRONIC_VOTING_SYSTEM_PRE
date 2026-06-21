@@ -161,19 +161,30 @@ export default function TallyView() {
   useEffect(() => { if (selectedId) loadTally(selectedId); }, [selectedId, loadTally]);
 
   // ─── WebSocket live updates ────────────────────────────────────────────────
-  const { lastMessage } = useWebSocket();
-  useEffect(() => {
-    if (!lastMessage) return;
-    try {
-      const msg = typeof lastMessage === "string" ? JSON.parse(lastMessage) : lastMessage;
-      if (msg.type === "TALLY_UPDATE" && msg.candidates) {
-        setCandidates(prev => prev.map(c => {
-          const upd = msg.candidates.find(x => x.id === c.id || x.party === c.party);
-          return upd ? { ...c, votes: upd.votes || upd.voteCount || c.votes } : c;
-        }));
-      }
-    } catch (_) {}
-  }, [lastMessage]);
+  // The hook subscribes to /topic/results/{topic} and /topic/merkle/{topic}.
+  // Merkle messages arrive with an injected type: 'MERKLE_UPDATE'.
+  // Results messages carry a candidates array with votes/voteCount fields.
+  const onWsMessage = useCallback((msg) => {
+    if (!msg) return;
+    if (msg.type === "MERKLE_UPDATE") {
+      // msg may carry merkleRoot directly or nested
+      const root = msg.merkleRoot || msg.root || null;
+      if (root) setMerkle(root);
+      return;
+    }
+    // Results update: array of candidate vote counts
+    const updatedCandidates = msg.candidates || (Array.isArray(msg) ? msg : null);
+    if (updatedCandidates) {
+      setCandidates(prev => prev.map(c => {
+        const upd = updatedCandidates.find(
+          x => x.id === c.id || x.candidateId === c.id || x.party === c.party
+        );
+        return upd ? { ...c, votes: upd.votes ?? upd.voteCount ?? c.votes } : c;
+      }));
+    }
+  }, []);
+
+  useWebSocket(selectedId, onWsMessage);
 
   // ─── Drill-down ───────────────────────────────────────────────────────────
   const openDrilldown = useCallback((row) => {
