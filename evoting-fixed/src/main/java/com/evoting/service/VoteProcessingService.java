@@ -54,7 +54,7 @@ public class VoteProcessingService {
         // For legacy firmware without it: fallback to static key transparently.
         //
         // The sessionTokenHash is passed in from the controller as an optional param.
-        // See VoteController for the updated signature.
+        // See TerminalController.submitVote for the updated signature.
         byte[] raw;
         try {
             raw = crypto.decrypt(encryptedPayload);
