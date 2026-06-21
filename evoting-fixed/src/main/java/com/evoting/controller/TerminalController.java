@@ -72,24 +72,37 @@ public class TerminalController {
 
     // ── ESP32 AUTHENTICATION & HEARTBEAT ──────────────────────────────────────
 
+    /**
+     * POST /api/terminal/authenticate — NOT IMPLEMENTED.
+     *
+     * This endpoint previously decrypted a payload and returned a random UUID
+     * sessionToken that was never persisted or bound to any session, implying
+     * an authentication step that did nothing. The firmware (network.cpp) does
+     * NOT call this endpoint — terminal identity is established via the
+     * ECDSA-signed headers verified by TerminalAuthFilter on every request,
+     * and voting sessions are created by POST /api/terminal/tap.
+     *
+     * Returning 501 so any stale firmware or tooling that calls this endpoint
+     * gets a clear, honest error instead of a silently-minted unbound token.
+     *
+     * TODO: Remove this endpoint entirely once confirmed no external client
+     * depends on it. If a real authentication handshake is needed in future,
+     * wire it to EphemeralKeyService for proper ECDH session key derivation.
+     */
     @PostMapping("/authenticate")
-    public ResponseEntity<?> authenticateTerminal(HttpServletRequest request, @RequestBody Map<String, String> body) {
-        String terminalSubject = request.getHeader("X-Terminal-Id");
-        if (terminalSubject == null || terminalSubject.isBlank()) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Invalid or missing terminal certificate"));
-        }
-
-        try {
-            String encryptedPayload = body.get("payload");
-            String decryptedJson = decryptAESGCM(encryptedPayload);
-            log.info("🔓 Terminal {} Authenticated. Payload: {}", terminalSubject, decryptedJson);
-
-            return ResponseEntity.ok(Map.of("sessionToken", UUID.randomUUID().toString()));
-        } catch (Exception e) {
-            log.error("Authentication decryption failed", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Decryption failed"));
-        }
+    public ResponseEntity<?> authenticateTerminal(HttpServletRequest request,
+                                                   @RequestBody Map<String, String> body) {
+        log.warn("[AUTHENTICATE] POST /api/terminal/authenticate called by terminal={} — " +
+                 "this endpoint is not implemented. Terminal auth is handled by " +
+                 "TerminalAuthFilter (ECDSA headers) and /tap (session creation).",
+                 request.getHeader("X-Terminal-Id"));
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
+                .body(Map.of(
+                        "error",  "This endpoint is not implemented.",
+                        "detail", "Terminal authentication is performed via ECDSA-signed " +
+                                  "request headers (TerminalAuthFilter). Use POST /api/terminal/tap " +
+                                  "to create a voting session."
+                ));
     }
 
     @PostMapping("/heartbeat")
