@@ -1,118 +1,156 @@
 package com.evoting.config;
-
-import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
+import com.evoting.security.JwtAuthFilter;
+import com.evoting.security.TerminalAuthFilter;
+import com.evoting.security.StepUpAuthFilter;
+import com.evoting.security.RateLimitFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.annotation.*;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.*;
+import java.util.List;
 
-/**
- * Fail-fast startup validation for required secrets.
- *
- * Required (will refuse to start if missing):
- *   AES_256_SECRET  — used for terminal packet encryption/decryption
- *   JWT_SECRET      — used for admin JWT signing and verification
- *
- * Optional (warnings logged, service degrades gracefully):
- *   AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY — only required for S3
- *   candidate photo uploads. If unset, the image upload endpoints return
- *   503 but all other functionality works normally.
- */
 @Configuration
-@Slf4j
-public class SecretsValidationConfig {
+@EnableWebSecurity
+@EnableMethodSecurity
+public class SecurityConfig {
 
-    @Value("${security.aes.secret-key}")
-    private String aesKey;
+    @Autowired private JwtAuthFilter    jwtFilter;
+    @Autowired private TerminalAuthFilter terminalAuthFilter;
+    @Autowired private RateLimitFilter rateLimitFilter;
 
-    @Value("${security.jwt.secret}")
-    private String jwtSecret;
+    /**
+     * CORS allowed origins — comma-separated list.
+     * Value comes from application.yml which reads the CORS_ALLOWED_ORIGIN env var.
+     * Default covers all common local dev ports on both http and https.
+     */
+    @Value("${security.cors.allowed-origin:http://localhost:3000,http://localhost:5173,http://localhost:4173,https://localhost:3000,https://localhost:5173,https://localhost:4173,https://192.168.0.159:3000}")
+    private String corsAllowedOrigin;
 
-    // Demographics encryption key — required; voter PII is encrypted with this
-    @Value("${security.demographics-key}")
-    private String demographicsKey;
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsSource()))
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-    // Optional — S3 photo uploads only; null if env var not set
-    @Value("${aws.access-key-id:#{null}}")
-    private String awsAccessKey;
+                /*
+                 * Return 401 (not 403) for unauthenticated requests to protected endpoints.
+                 * Without this, Spring Security 6 defaults to 403 for any rejected request,
+                 * which confuses the frontend — 403 looks like an auth success followed by
+                 * an access-denied, making it indistinguishable from a real permission error.
+                 */
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                )
 
-    @Value("${aws.secret-access-key:#{null}}")
-    private String awsSecretKey;
+                .authorizeHttpRequests(auth -> auth
+                        /*
+                         * Permit all CORS preflight OPTIONS requests unconditionally.
+                         * Without this, Spring Security 6 applies full auth chain to OPTIONS,
+                         * returning 403 before CORS headers are ever written — the browser then
+                         * reports the actual POST as a network/CORS error.
+                         */
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-    @PostConstruct
-    public void validateSecrets() {
-        StringBuilder failures = new StringBuilder();
+                        .requestMatchers("/api/terminal/**").permitAll()
+                        .requestMatchers("/api/locations/**").permitAll()
+                        .requestMatchers("/api/results/**").permitAll()
+                        .requestMatchers("/api/receipt/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/forgot-password").permitAll()
+                        // ESP32-CAM endpoints that require no JWT (authenticated by mTLS cert):
+                        //   POST /api/camera/liveness  — frame submission from ESP32-CAM
+                        //   GET  /api/camera/ping      — health check
+                        // NOT permitted: PUT /api/camera/liveness-config — requires SUPER_ADMIN JWT
+                        .requestMatchers("/api/camera/liveness").permitAll()
+                        .requestMatchers("/api/camera/liveness-burst").permitAll()
+                        .requestMatchers("/api/camera/stream").permitAll()
+                        .requestMatchers("/api/camera/ping").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
+                        .anyRequest().authenticated()
+                )
 
-        // ── Required secrets ──────────────────────────────────────────────
-        if (isInsecure(aesKey)) {
-            failures.append("\n  - AES_256_SECRET: not set or uses placeholder value. " +
-                    "Generate with: openssl rand -base64 32");
-        }
-        if (isInsecure(jwtSecret)) {
-            failures.append("\n  - JWT_SECRET: not set or uses placeholder value. " +
-                    "Generate with: openssl rand -base64 64");
-        }
-        if (isInsecure(demographicsKey)) {
-            failures.append("\n  - DEMOGRAPHICS_KEY: not set or uses placeholder value. " +
-                    "Generate with: openssl rand -base64 32  " +
-                    "(WARNING: changing this re-encrypts all voter demographics)");
-        }
+                /*
+                 * Register filters inside the security chain ONLY.
+                 * The @Component annotation on these filters would cause Spring Boot to
+                 * also register them as regular servlet filters (running before Spring Security).
+                 * We prevent that double-registration via FilterRegistrationBean beans below.
+                 * Only adding them here ensures correct, single-pass ordering:
+                 *   RateLimitFilter → JwtAuthFilter → Spring Security auth
+                 */
+                .addFilterBefore(jwtFilter,       UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(rateLimitFilter,     JwtAuthFilter.class)
+                .addFilterBefore(terminalAuthFilter, RateLimitFilter.class);
 
-        if (failures.length() > 0) {
-            throw new IllegalStateException(
-                    "Refusing to start: the following required secrets are not configured:"
-                            + failures
-                            + "\n\nSet these environment variables before starting the application.");
-        }
-
-        // Validate AES key decodes to at least 32 bytes
-        try {
-            byte[] keyBytes = java.util.Base64.getDecoder().decode(aesKey);
-            if (keyBytes.length < 32) {
-                throw new IllegalStateException(
-                        "AES_256_SECRET must decode to at least 32 bytes. " +
-                                "Generate with: openssl rand -base64 32");
-            }
-        } catch (IllegalArgumentException e) {
-            throw new IllegalStateException(
-                    "AES_256_SECRET is not valid Base64. Generate with: openssl rand -base64 32");
-        }
-
-        log.info("Required secrets validated — AES and JWT keys are configured.");
-
-        // ── Static AES key warning ────────────────────────────────────────
-        // The static pre-shared AES key (security.aes.secret-key) is used as a
-        // fallback when the terminal firmware does not perform an ECDH ephemeral
-        // key exchange.  This provides NO forward secrecy: a compromised terminal
-        // or a leaked key exposes all past and future vote packets encrypted with
-        // this key.
-        //
-        // ⚠️  ACTION REQUIRED:
-        //   1. Rotate the key before each election (openssl rand -base64 32).
-        //   2. Flash updated firmware with the new BACKEND_AES_KEY before rotating.
-        //   3. Migrate firmware to the ephemeral ECDH path (EphemeralKeyService)
-        //      so this static fallback is never used in production.
-        //      See TODO in MR description: "Remove static AES fallback".
-        //
-        // In a future 'prod' Spring profile this warning should become a hard
-        // startup failure once all terminals use ephemeral keys.
-        log.warn("⚠️  SECURITY: Static AES pre-shared key is active (security.aes.secret-key). " +
-                 "This key provides NO forward secrecy. Rotate before each election and " +
-                 "migrate firmware to the ephemeral ECDH key path (EphemeralKeyService). " +
-                 "See MR description for migration plan.");
-
-        // ── Optional secrets (warn, don't fail) ───────────────────────────
-        if (isInsecure(awsAccessKey) || isInsecure(awsSecretKey)) {
-            log.warn("AWS credentials not set (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY). " +
-                    "Candidate photo uploads (S3) will be unavailable. " +
-                    "All other features work normally without S3.");
-        } else {
-            log.info("AWS credentials present — S3 image uploads enabled.");
-        }
+        return http.build();
     }
 
-    private boolean isInsecure(String value) {
-        return value == null || value.isBlank()
-                || value.contains("CHANGE_ME")
-                || value.startsWith("${");
+    /**
+     * Prevent JwtAuthFilter from being auto-registered as a servlet filter by Spring Boot.
+     * Without this, it runs TWICE — once before Spring Security (as servlet filter)
+     * and once inside the security chain (via addFilterBefore above).
+     */
+    @Bean
+    public FilterRegistrationBean<JwtAuthFilter> jwtFilterRegistration(JwtAuthFilter filter) {
+        FilterRegistrationBean<JwtAuthFilter> reg = new FilterRegistrationBean<>(filter);
+        reg.setEnabled(false);
+        return reg;
+    }
+
+    /**
+     * Same prevention for RateLimitFilter.
+     */
+    @Bean
+    public FilterRegistrationBean<RateLimitFilter> rateLimitFilterRegistration(RateLimitFilter filter) {
+        FilterRegistrationBean<RateLimitFilter> reg = new FilterRegistrationBean<>(filter);
+        reg.setEnabled(false);
+        return reg;
+    }
+
+    @Bean
+    public FilterRegistrationBean<TerminalAuthFilter> terminalAuthFilterRegistration(TerminalAuthFilter filter) {
+        FilterRegistrationBean<TerminalAuthFilter> reg = new FilterRegistrationBean<>(filter);
+        reg.setEnabled(false);
+        return reg;
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(12);
+    }
+
+    @Bean
+    public CorsConfigurationSource corsSource() {
+        CorsConfiguration cfg = new CorsConfiguration();
+
+        // Split comma-separated list — supports multiple origins (dev + prod simultaneously)
+        List<String> origins = java.util.Arrays.stream(corsAllowedOrigin.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .collect(java.util.stream.Collectors.toList());
+
+        cfg.setAllowedOrigins(origins);
+        cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        cfg.setAllowedHeaders(List.of("*"));
+        cfg.setExposedHeaders(List.of("Authorization", "Content-Type"));
+        cfg.setAllowCredentials(true);
+        cfg.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
+        src.registerCorsConfiguration("/**", cfg);
+        return src;
     }
 }
