@@ -79,6 +79,27 @@ public class SecretsValidationConfig {
 
         log.info("Required secrets validated — AES and JWT keys are configured.");
 
+        // ── Static AES key warning ────────────────────────────────────────
+        // The static pre-shared AES key (security.aes.secret-key) is used as a
+        // fallback when the terminal firmware does not perform an ECDH ephemeral
+        // key exchange.  This provides NO forward secrecy: a compromised terminal
+        // or a leaked key exposes all past and future vote packets encrypted with
+        // this key.
+        //
+        // ⚠️  ACTION REQUIRED:
+        //   1. Rotate the key before each election (openssl rand -base64 32).
+        //   2. Flash updated firmware with the new BACKEND_AES_KEY before rotating.
+        //   3. Migrate firmware to the ephemeral ECDH path (EphemeralKeyService)
+        //      so this static fallback is never used in production.
+        //      See TODO in MR description: "Remove static AES fallback".
+        //
+        // In a future 'prod' Spring profile this warning should become a hard
+        // startup failure once all terminals use ephemeral keys.
+        log.warn("⚠️  SECURITY: Static AES pre-shared key is active (security.aes.secret-key). " +
+                 "This key provides NO forward secrecy. Rotate before each election and " +
+                 "migrate firmware to the ephemeral ECDH key path (EphemeralKeyService). " +
+                 "See MR description for migration plan.");
+
         // ── Optional secrets (warn, don't fail) ───────────────────────────
         if (isInsecure(awsAccessKey) || isInsecure(awsSecretKey)) {
             log.warn("AWS credentials not set (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY). " +
