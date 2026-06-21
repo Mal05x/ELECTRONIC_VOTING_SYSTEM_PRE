@@ -4,6 +4,7 @@ import com.evoting.model.TerminalRegistry;
 import com.evoting.repository.TerminalRegistryRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.security.KeyFactory;
@@ -12,6 +13,7 @@ import java.security.Signature;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.concurrent.TimeUnit;
 import java.security.*;
 import java.nio.charset.StandardCharsets;
 
@@ -62,8 +64,29 @@ public class TerminalAuthService {
     /** Maximum age of a signed request — prevents replay attacks. */
     private static final long MAX_REQUEST_AGE_SECS = 300L; // 5 minutes
 
+    /**
+     * Redis key prefix for the seen-signature nonce cache.
+     * Each entry is keyed on the X-Terminal-Signature value and expires after
+     * MAX_REQUEST_AGE_SECS, matching the timestamp window.  A signature that
+     * appears in this cache has already been accepted and must be rejected to
+     * prevent replay within the 5-minute window.
+     *
+     * If Redis is unavailable the nonce check is skipped with a warning rather
+     * than failing the request — this degrades gracefully to the timestamp-only
+     * protection that existed before.  In production, Redis availability should
+     * be monitored and treated as a hard dependency.
+     */
+    private static final String NONCE_KEY_PREFIX = "terminal:nonce:";
+
     @Autowired private TerminalRegistryRepository terminalRepo;
     @Autowired private AuditLogService auditLog;
+
+    /**
+     * Injected from RedisConfig.  May be null if Redis is not configured —
+     * the nonce check is skipped gracefully in that case.
+     */
+    @Autowired(required = false)
+    private StringRedisTemplate redisTemplate;
 
     /**
      * Verify a signed terminal request.
@@ -104,7 +127,32 @@ public class TerminalAuthService {
                             + "Check terminal NTP sync.");
         }
 
-        // ── Step 3: ECDSA signature ────────────────────────────────────────
+        // ── Step 3: Nonce / seen-signature cache (replay within window) ───
+        // Even within the ±5-minute timestamp window, the same signed request
+        // must not be accepted twice.  We cache the signature in Redis with a
+        // TTL equal to the window.  If the signature is already present, the
+        // request is a replay and is rejected.
+        //
+        // Graceful degradation: if Redis is unavailable, we log a warning and
+        // continue — the timestamp check still provides coarse replay protection.
+        // In production, Redis should be treated as a hard dependency and its
+        // availability monitored.
+        if (redisTemplate != null) {
+            String nonceKey = NONCE_KEY_PREFIX + signature;
+            Boolean isNew = redisTemplate.opsForValue()
+                    .setIfAbsent(nonceKey, "1", MAX_REQUEST_AGE_SECS, TimeUnit.SECONDS);
+            if (Boolean.FALSE.equals(isNew)) {
+                auditLog.log("TERMINAL_AUTH_REPLAY_NONCE", terminalId,
+                        "Duplicate signature detected — replay within window");
+                throw new SecurityException(
+                        "Replayed request signature detected. Each request must use a unique signature.");
+            }
+        } else {
+            log.warn("[TERMINAL-AUTH] Redis unavailable — nonce replay check skipped for {}. " +
+                     "Only timestamp-window protection is active.", terminalId);
+        }
+
+        // ── Step 4: ECDSA signature ────────────────────────────────────────
         // Canonical string must exactly match what the firmware signs
         String canonical = terminalId + "|" + timestamp + "|" + bodyHash;
 
