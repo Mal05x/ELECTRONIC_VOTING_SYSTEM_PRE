@@ -1,5 +1,6 @@
 server:
   port: 8443
+  forward-headers-strategy: framework
   # Fix B-06: TLS enabled — HTTPS required for all connections.
   # For mTLS (terminal mutual authentication), set client-auth: need
   # and provision a trust-store with the election CA certificate.
