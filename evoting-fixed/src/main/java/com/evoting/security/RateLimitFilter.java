@@ -42,7 +42,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     // Terminal endpoints — 1 request per 30 seconds per IP
     private static final int    TERMINAL_WINDOW_SECS = 30;
-    private static final int    TERMINAL_MAX_REQUESTS = 1;
+    private static final int    TERMINAL_MAX_REQUESTS = 2;
     private static final String TERMINAL_KEY_PREFIX  = "ratelimit:terminal:";
 
     // Admin login — 5 attempts per 5 minutes per IP (brute-force protection)
