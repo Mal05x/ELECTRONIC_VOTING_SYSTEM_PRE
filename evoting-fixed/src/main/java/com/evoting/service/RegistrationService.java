@@ -16,13 +16,13 @@ import java.util.*;
  * RegistrationService — two-step terminal-initiated voter registration.
  *
  * Step 1 (terminal):  POST /api/terminal/pending-registration
- *   Terminal reads JCOP4 card → sends cardIdHash + voterPublicKey + pollingUnitId
- *   Creates a pending_registrations record (status=AWAITING_DEMOGRAPHICS)
+ * Terminal reads JCOP4 card → sends cardIdHash + voterPublicKey + pollingUnitId
+ * Creates a pending_registrations record (status=AWAITING_DEMOGRAPHICS)
  *
  * Step 2 (admin dashboard): POST /api/admin/voters/commit-registration
- *   Admin selects the pending card, fills in firstName/surname/dob/gender
- *   Backend encrypts demographics, creates voter_registry + voter_demographics
- *   Generates voting ID (e.g. KD/IG/001/0042)
+ * Admin selects the pending card, fills in firstName/surname/dob/gender
+ * Backend encrypts demographics, creates voter_registry + voter_demographics
+ * Generates voting ID (e.g. KD/IG/001/0042)
  */
 @Service @Slf4j
 public class RegistrationService {
@@ -46,11 +46,16 @@ public class RegistrationService {
             throw new IllegalStateException("Card already registered: " + cardIdHash);
         }
 
-        // Reject if already pending
+        // FIX: Handle existing CANCELLED or EXPIRED pending registrations
         pendingRepo.findByCardIdHash(cardIdHash).ifPresent(existing -> {
             if ("AWAITING_DEMOGRAPHICS".equals(existing.getStatus())) {
                 throw new IllegalStateException(
                         "Card already has a pending registration. Ask admin to commit or cancel it.");
+            } else {
+                // If the previous attempt was CANCELLED or EXPIRED, delete it to clear the unique 
+                // constraint so the new tap can successfully create a fresh pending record.
+                pendingRepo.delete(existing);
+                pendingRepo.flush();
             }
         });
 
