@@ -47,8 +47,7 @@ public class VoterRegistry {
     @Column(name = "first_name",           length = 100)     private String  firstName;   // searchable plaintext
     @Column(name = "surname",              length = 100)     private String  surname;     // searchable plaintext
 
-    // Add this field to your existing VoterRegistry class
-    @Column(name = "admin_token_hash", length = 64)
+    @Column(name = "admin_token_hash", columnDefinition = "CHAR(64)")
     private String adminTokenHash;
 
     public Lga   getLga()   { return pollingUnit != null ? pollingUnit.getLga()  : null; }
