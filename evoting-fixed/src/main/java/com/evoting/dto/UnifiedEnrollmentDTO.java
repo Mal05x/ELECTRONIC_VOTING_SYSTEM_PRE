@@ -17,4 +17,16 @@ public class UnifiedEnrollmentDTO {
     
     // Location
     @NotNull  private Long pollingUnitId;
+
+    // Add this field to your existing UnifiedEnrollmentDTO
+private String adminToken;
+
+// Add getter and setter if not using Lombok:
+public String getAdminToken() {
+    return adminToken;
+}
+
+public void setAdminToken(String adminToken) {
+    this.adminToken = adminToken;
+}
 }
