@@ -197,6 +197,7 @@ public class EnrollmentService {
                 .encryptedDemographic(record.getEncryptedDemographic()) 
                 .pollingUnit(pu)
                 .cardStaticKeyHash(record.getCardStaticKeyHash())
+                .adminTokenHash(record.getAdminTokenHash())
                 .hasVoted(false)
                 .cardLocked(false)
                 .build();
