@@ -43,20 +43,6 @@ function Tab({ id, active, onClick, children }) {
 }
 
 // ── Officer PIN Modal ─────────────────────────────────────────────────────────
-//
-// Shown when a SUPER_ADMIN clicks "Set PIN" or "Rotate PIN" on a terminal row.
-//
-// Flow:
-//   1. Admin enters a 6-digit PIN and a confirmation of the same PIN.
-//   2. Client validates: exactly 6 digits, both fields match.
-//   3. On submit → PUT /api/admin/terminals/{id}/officer-pin
-//   4. On success → show "Record this PIN" screen with the plain PIN visible.
-//      The admin must explicitly confirm they have recorded it before closing.
-//
-// Security note:
-//   The plain PIN is visible in this modal only. After the admin closes the
-//   "Record" screen, the PIN cannot be retrieved — only reset. The backend
-//   hashes and discards the plain value immediately on receipt.
 
 function SetOfficerPinModal({ terminal, onClose, onSuccess }) {
   const [pin,         setPin]         = useState("");
@@ -64,17 +50,16 @@ function SetOfficerPinModal({ terminal, onClose, onSuccess }) {
   const [showPin,     setShowPin]     = useState(false);
   const [saving,      setSaving]      = useState(false);
   const [error,       setError]       = useState("");
-  const [recorded,    setRecorded]    = useState(false); // "record" confirmation screen
-  const [savedPin,    setSavedPin]    = useState("");    // plain PIN shown after success
+  const [recorded,    setRecorded]    = useState(false); 
+  const [savedPin,    setSavedPin]    = useState("");    
   const pinRef = useRef(null);
 
   useEffect(() => {
     setTimeout(() => pinRef.current?.focus(), 80);
   }, []);
 
-  const isRotate = terminal.pinProvisioned;
+  const isChange = terminal.pinProvisioned;
 
-  // Validate inline
   const pinValid     = /^\d{6}$/.test(pin);
   const confirmMatch = pin === confirm;
   const canSubmit    = pinValid && confirmMatch && pin.length === 6;
@@ -88,7 +73,7 @@ function SetOfficerPinModal({ terminal, onClose, onSuccess }) {
     try {
       await setOfficerPin(terminal.terminalId, pin);
       setSavedPin(pin);
-      setRecorded(false); // show "record" screen
+      setRecorded(false); 
     } catch (e) {
       setError(e.response?.data?.error || e.message || "Failed to set officer PIN");
     } finally {
@@ -101,24 +86,19 @@ function SetOfficerPinModal({ terminal, onClose, onSuccess }) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
         <div className="bg-card border border-border-hi rounded-2xl shadow-card w-full max-w-md animate-fade-up">
-
-          {/* Header */}
           <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-green-500/15 flex items-center justify-center">
                 <Ic n="check" s={16} c="#4ADE80" />
               </div>
               <h2 className="text-sm font-bold text-ink">
-                PIN {isRotate ? "Rotated" : "Set"} — Record It Now
+                PIN {isChange ? "Changed" : "Set"} — Record It Now
               </h2>
             </div>
           </div>
 
           <div className="px-6 py-5 space-y-4">
-
-            {/* Security warning */}
-            <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/25
-                            rounded-xl px-4 py-3">
+            <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
               <Ic n="warning" s={15} c="#FCD34D" className="mt-0.5 flex-shrink-0" />
               <p className="text-xs text-amber-200 leading-relaxed">
                 <span className="font-bold">This is the only time the plain PIN is visible.</span>
@@ -127,7 +107,6 @@ function SetOfficerPinModal({ terminal, onClose, onSuccess }) {
               </p>
             </div>
 
-            {/* Plain PIN display */}
             <div className="bg-elevated border border-border-hi rounded-xl p-5 text-center space-y-2">
               <p className="text-xs text-muted font-semibold uppercase tracking-widest">
                 Officer PIN for {terminal.terminalId}
@@ -140,7 +119,7 @@ function SetOfficerPinModal({ terminal, onClose, onSuccess }) {
                   onClick={() => navigator.clipboard.writeText(savedPin)}
                   className="text-muted hover:text-sub transition-colors"
                   title="Copy PIN">
-                  <Ic n="database" s={16} />
+                  <Ic n="copy" s={16} />
                 </button>
               </div>
               <p className="text-xs text-muted">
@@ -151,7 +130,6 @@ function SetOfficerPinModal({ terminal, onClose, onSuccess }) {
               </p>
             </div>
 
-            {/* Record confirmation */}
             <label className="flex items-start gap-3 cursor-pointer group">
               <input
                 type="checkbox"
@@ -164,12 +142,11 @@ function SetOfficerPinModal({ terminal, onClose, onSuccess }) {
                 Returning Officer via a tamper-evident physical channel before election day.
               </span>
             </label>
-
           </div>
 
           <div className="px-6 pb-5 flex gap-3">
             <button
-              className="btn btn-purple btn-sm flex-1"
+              className="btn btn-primary btn-sm flex-1"
               disabled={!recorded}
               onClick={() => { onSuccess(); onClose(); }}>
               <Ic n="check" s={13} /> Done — Close
@@ -184,8 +161,6 @@ function SetOfficerPinModal({ terminal, onClose, onSuccess }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-card border border-border-hi rounded-2xl shadow-card w-full max-w-md animate-fade-up">
-
-        {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-amber-500/15 flex items-center justify-center">
@@ -193,7 +168,7 @@ function SetOfficerPinModal({ terminal, onClose, onSuccess }) {
             </div>
             <div>
               <h2 className="text-sm font-bold text-ink">
-                {isRotate ? "Rotate Officer PIN" : "Set Officer PIN"}
+                {isChange ? "Change Officer PIN" : "Set Officer PIN"}
               </h2>
               <p className="text-xs text-muted mono">{terminal.terminalId}</p>
             </div>
@@ -204,10 +179,7 @@ function SetOfficerPinModal({ terminal, onClose, onSuccess }) {
         </div>
 
         <div className="px-6 py-5 space-y-5">
-
-          {/* How it works */}
-          <div className="flex items-start gap-3 bg-purple-500/8 border border-purple-500/20
-                          rounded-xl px-4 py-3">
+          <div className="flex items-start gap-3 bg-purple-500/8 border border-purple-500/20 rounded-xl px-4 py-3">
             <Ic n="shield" s={14} c="#A78BFA" className="mt-0.5 flex-shrink-0" />
             <p className="text-xs text-sub leading-relaxed">
               The PIN you enter will be <span className="text-purple-300 font-semibold">
@@ -218,7 +190,6 @@ function SetOfficerPinModal({ terminal, onClose, onSuccess }) {
             </p>
           </div>
 
-          {/* Error */}
           {error && (
             <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-3">
               <Ic n="warning" s={14} c="#F87171" className="mt-0.5 flex-shrink-0" />
@@ -226,19 +197,17 @@ function SetOfficerPinModal({ terminal, onClose, onSuccess }) {
             </div>
           )}
 
-          {/* Rotate warning */}
-          {isRotate && (
+          {isChange && (
             <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
               <Ic n="warning" s={14} c="#FCD34D" className="mt-0.5 flex-shrink-0" />
               <p className="text-xs text-amber-200 leading-relaxed">
-                Rotating the PIN immediately invalidates the old one. The terminal picks up the
+                Changing the PIN immediately invalidates the old one. The terminal picks up the
                 new hash on its next boot. Notify the Returning Officer of the change before
                 election day.
               </p>
             </div>
           )}
 
-          {/* PIN input */}
           <div className="space-y-3">
             <div>
               <Label>Officer PIN <span className="text-danger">*</span></Label>
@@ -300,7 +269,6 @@ function SetOfficerPinModal({ terminal, onClose, onSuccess }) {
             </div>
           </div>
 
-          {/* 6-dot visualiser */}
           <div className="flex items-center justify-center gap-2.5 py-1">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i}
@@ -313,19 +281,17 @@ function SetOfficerPinModal({ terminal, onClose, onSuccess }) {
               />
             ))}
           </div>
-
         </div>
 
-        {/* Actions */}
         <div className="px-6 pb-5 flex gap-3 border-t border-border pt-4">
           <button
-            className="btn btn-purple btn-sm flex-1"
+            className="btn btn-primary btn-sm flex-1"
             onClick={handleSubmit}
             disabled={!canSubmit || saving}>
             {saving
               ? <><Spinner s={13} /> Hashing & saving…</>
-              : <><Ic n={isRotate ? "refresh" : "shield"} s={13} />
-                  {isRotate ? "Rotate PIN" : "Set PIN"}</>}
+              : <><Ic n={isChange ? "refresh" : "shield"} s={13} />
+                  {isChange ? "Change PIN" : "Set PIN"}</>}
           </button>
           <button className="btn btn-surface btn-sm" onClick={onClose} disabled={saving}>
             Cancel
@@ -345,7 +311,6 @@ function MonitoringTab() {
   const [loading,     setLoading]     = useState(true);
   const [resolving,   setResolving]   = useState(null);
   const [toast,       setToast]       = useState({ msg: "", type: "success" });
-  // BUG-14 FIX: track last successful refresh so officers know if data is stale
   const [lastRefresh, setLastRefresh] = useState(null);
   const [refreshing,  setRefreshing]  = useState(false);
 
@@ -382,7 +347,7 @@ function MonitoringTab() {
         };
       });
       setTerminals(mapped);
-      setLastRefresh(new Date()); // BUG-14 FIX: record when data was last fetched
+      setLastRefresh(new Date()); 
     } catch (e) {
       if (!silent) setTerminals([]);
     } finally {
@@ -438,7 +403,6 @@ function MonitoringTab() {
           sub="ESP32-S3 terminal heartbeats and security status — updates every 10s"
           action={
             <div className="flex items-center gap-3">
-              {/* BUG-14 FIX: last-refresh timestamp so officers know data freshness */}
               {lastRefresh && (
                 <span className="text-[11px] text-muted font-mono hidden sm:block">
                   Updated {lastRefresh.toLocaleTimeString("en-NG", { hour:"2-digit", minute:"2-digit", second:"2-digit" })}
@@ -540,8 +504,7 @@ function RegistryTab() {
   const [formError,   setFormError]   = useState("");
   const [toast,       setToast]       = useState({ msg:"", type:"success" });
   const [rotateId,    setRotateId]    = useState(null);
-  const [pinModal,    setPinModal]    = useState(null); // terminal object for PIN modal
-  // BUG-11 FIX: track which terminal is being deactivated
+  const [pinModal,    setPinModal]    = useState(null); 
   const [deactivating, setDeactivating] = useState(null);
   const pubKeyRef                     = useRef(null);
 
@@ -550,14 +513,17 @@ function RegistryTab() {
     setTimeout(() => setToast({ msg:"", type:"success" }), 4000);
   };
 
-  const load = async () => {
-    setLoading(true);
+  // Ensure loading does not drop table layout during background refreshes
+  const load = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const data = await getTerminalRegistry();
       setRegistry(data);
     } catch (e) {
-      setRegistry([]);
-    } finally { setLoading(false); }
+      if (!silent) setRegistry([]);
+    } finally {
+      if (!silent) setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
@@ -619,7 +585,6 @@ function RegistryTab() {
     }
   };
 
-  // BUG-11 FIX: deactivate a terminal (requires confirmation)
   const handleDeactivate = async (terminalId) => {
     if (!window.confirm(
       `Deactivate terminal ${terminalId}?\n\nThis will immediately prevent the terminal from authenticating requests. ` +
@@ -629,7 +594,7 @@ function RegistryTab() {
     try {
       await deactivateTerminal(terminalId);
       showToast(`Terminal ${terminalId} deactivated`, "warning");
-      load();
+      load(true); // Silent reload
     } catch (e) {
       showToast(`Failed to deactivate ${terminalId}: ` + (e.response?.data?.error || e.message), "error");
     } finally {
@@ -637,26 +602,27 @@ function RegistryTab() {
     }
   };
 
-  // Terminals with no officer PIN — for the warning banner
   const unprovisioned = registry.filter(t => t.active && !t.pinProvisioned);
 
   return (
     <>
       <Toast msg={toast.msg} type={toast.type} onClose={() => setToast({ msg:"", type:"success" })} />
 
-      {/* Officer PIN modal */}
       {pinModal && (
         <SetOfficerPinModal
           terminal={pinModal}
           onClose={() => setPinModal(null)}
           onSuccess={() => {
-            showToast(`Officer PIN ${pinModal.pinProvisioned ? "rotated" : "set"} for ${pinModal.terminalId}. Record and seal the PIN before election day.`);
-            load();
+            showToast(`Officer PIN ${pinModal.pinProvisioned ? "changed" : "set"} for ${pinModal.terminalId}. Record and seal the PIN before election day.`);
+            // Optimistic UI Update: Instantly change to "PIN Set" and "Change PIN"
+            setRegistry(prev => prev.map(t => 
+              t.terminalId === pinModal.terminalId ? { ...t, pinProvisioned: true } : t
+            ));
+            load(true); // Refresh quietly in background
           }}
         />
       )}
 
-      {/* ── Unprovisioned PIN warning banner ──────────────────────────────── */}
       {isSuperAdmin && unprovisioned.length > 0 && (
         <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30
                         rounded-xl px-5 py-4 animate-fade-up">
@@ -680,14 +646,13 @@ function RegistryTab() {
           sub="ECDSA P-256 public keys and Officer PIN provisioning for registered terminals."
           action={
             isSuperAdmin && (
-              <button className="btn btn-purple btn-sm" onClick={() => openProvision()}>
+              <button className="btn btn-primary btn-sm" onClick={() => openProvision()}>
                 <Ic n="plus" s={13} /> Provision Terminal
               </button>
             )
           }
         />
 
-        {/* How it works info box */}
         <div className="bg-purple-500/8 border border-purple-500/20 rounded-xl p-4 mb-5 flex gap-3">
           <Ic n="shield" s={16} c="#A78BFA" className="mt-0.5 flex-shrink-0" />
           <div className="text-xs text-sub leading-relaxed space-y-1.5">
@@ -705,7 +670,6 @@ function RegistryTab() {
           </div>
         </div>
 
-        {/* Provision form */}
         {showForm && (
           <div className="bg-card border border-border-hi rounded-2xl p-6 mb-5 animate-fade-up space-y-4">
             <div className="flex items-center justify-between mb-2">
@@ -755,7 +719,7 @@ function RegistryTab() {
                 <button
                   onClick={pasteFromClipboard}
                   className="text-[11px] font-semibold text-purple-400 hover:text-purple-300 flex items-center gap-1">
-                  <Ic n="database" s={11} /> Paste from clipboard
+                  <Ic n="copy" s={11} /> Paste from clipboard
                 </button>
               </div>
               <textarea
@@ -796,7 +760,7 @@ function RegistryTab() {
             )}
 
             <div className="flex items-center gap-3 pt-1">
-              <button className="btn btn-purple btn-sm" onClick={handleSubmit} disabled={saving}>
+              <button className="btn btn-primary btn-sm" onClick={handleSubmit} disabled={saving}>
                 {saving ? <Spinner s={13} /> : <Ic n={rotateId ? "refresh" : "check"} s={13} />}
                 {saving ? "Saving…" : rotateId ? "Rotate Key" : "Provision Terminal"}
               </button>
@@ -807,7 +771,6 @@ function RegistryTab() {
           </div>
         )}
 
-        {/* Registry table */}
         {loading ? (
           <div className="flex justify-center py-12"><Spinner s={28} /></div>
         ) : registry.length === 0 ? (
@@ -820,7 +783,6 @@ function RegistryTab() {
           />
         ) : (
           <>
-            {/* Table header */}
             <div className="hidden xl:grid px-4 py-2 mb-1 gap-3"
               style={{ gridTemplateColumns:"130px 1fr 80px 110px 110px 120px auto" }}>
               {["Terminal ID","Label / Location","Unit","Registered By","Last Seen","Officer PIN","Actions"].map(h => (
@@ -849,7 +811,6 @@ function RegistryTab() {
                     : "Never"}
                 </span>
 
-                {/* ── Officer PIN status ────────────────────────────────── */}
                 <div>
                   {t.pinProvisioned
                     ? (
@@ -857,14 +818,12 @@ function RegistryTab() {
                         <Ic n="shield" s={11} /> PIN Set
                       </span>
                     ) : (
-                      <span className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-400
-                                       animate-pulse">
+                      <span className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-400 animate-pulse">
                         <Ic n="warning" s={11} /> No PIN
                       </span>
                     )}
                 </div>
 
-                {/* ── Actions ───────────────────────────────────────────── */}
                 <div className="flex gap-1.5 flex-wrap">
                   {isSuperAdmin && (
                     <>
@@ -881,14 +840,13 @@ function RegistryTab() {
                           ${t.pinProvisioned
                             ? "btn-surface"
                             : "btn-warning border border-amber-500/40 text-amber-300 hover:bg-amber-500/15"}`}
-                        aria-label={t.pinProvisioned ? `Rotate officer PIN for ${t.terminalId}` : `Set officer PIN for ${t.terminalId}`}
-                        title={t.pinProvisioned ? "Rotate officer PIN" : "Set officer PIN"}
+                        aria-label={t.pinProvisioned ? `Change officer PIN for ${t.terminalId}` : `Set officer PIN for ${t.terminalId}`}
+                        title={t.pinProvisioned ? "Change officer PIN" : "Set officer PIN"}
                         onClick={() => setPinModal(t)}>
                         <Ic n="shield" s={11} />
-                        {t.pinProvisioned ? "Rotate PIN" : "Set PIN"}
+                        {t.pinProvisioned ? "Change PIN" : "Set PIN"}
                       </button>
 
-                      {/* BUG-11 FIX: deactivate button — only shown for active terminals */}
                       {t.active && (
                         <button
                           className="btn btn-sm !text-[11px] btn-danger"
@@ -910,7 +868,6 @@ function RegistryTab() {
         )}
       </div>
 
-      {/* Footer info */}
       <div className="c-card p-4">
         <p className="text-xs font-bold text-sub uppercase tracking-wide mb-2">
           Security Architecture
