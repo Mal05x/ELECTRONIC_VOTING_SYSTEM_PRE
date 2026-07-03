@@ -351,6 +351,49 @@ public class TerminalController {
         return ResponseEntity.ok(Map.of("sessionToken", sessionToken));
     }
     
+    // ─────────────────────────────────────────────────────────────────────────
+    //  POST /api/terminal/biometric-reset-log
+    //  Called by ESP32 firmware immediately after a successful on-card
+    //  INS_ADMIN_RESET_BIOMETRIC_TRIES (0x33) call — the reset itself has
+    //  already happened locally on the JavaCard by the time this fires.
+    //  This is a best-effort audit record, NOT an authorization gate:
+    //  firmware does not block the officer's UI on this call succeeding,
+    //  and this endpoint never has the power to undo or veto a reset that
+    //  already took place on the card.
+    // ─────────────────────────────────────────────────────────────────────────
+    @Autowired private com.evoting.service.CardManagementService cardManagementService;
+
+    @PostMapping("/biometric-reset-log")
+    public ResponseEntity<?> logBiometricReset(HttpServletRequest request,
+                                                @RequestBody Map<String, String> body) {
+        // Terminal identity verified upstream by TerminalAuthFilter (ECDSA app-layer signing),
+        // same as /vote and /tap — no separate admin JWT exists on the terminal to check here.
+        String terminalId = request.getHeader("X-Terminal-Id");
+        String cardIdHash = body.get("cardIdHash");
+        String electionIdStr = body.get("electionId");
+
+        if (terminalId == null || terminalId.isBlank()) {
+            log.warn("[BIOMETRIC-RESET-LOG] Rejected: missing X-Terminal-Id header");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Terminal not identified"));
+        }
+        if (cardIdHash == null || cardIdHash.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "cardIdHash is required"));
+        }
+
+        UUID electionId = null;
+        if (electionIdStr != null && !electionIdStr.isBlank()) {
+            try {
+                electionId = UUID.fromString(electionIdStr);
+            } catch (IllegalArgumentException e) {
+                log.warn("[BIOMETRIC-RESET-LOG] Bad electionId '{}' from terminal={}, logging without it", electionIdStr, terminalId);
+            }
+        }
+
+        cardManagementService.resetBiometricTries(cardIdHash, electionId, "TERMINAL:" + terminalId);
+        log.info("[BIOMETRIC-RESET-LOG] card={} terminal={}", cardIdHash, terminalId);
+        return ResponseEntity.ok().build();
+    }
+
     // ── ADMIN DASHBOARD ENDPOINTS ─────────────────────────────────────────────
 
     @GetMapping("/all")
