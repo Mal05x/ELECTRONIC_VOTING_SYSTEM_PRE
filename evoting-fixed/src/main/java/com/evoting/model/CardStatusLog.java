@@ -32,7 +32,7 @@ public class CardStatusLog {
     @Column(name = "created_at")   
     private OffsetDateTime createdAt;
 
-    public enum CardEvent { LOCKED, UNLOCKED, REGISTRATION }
+    public enum CardEvent { LOCKED, UNLOCKED, REGISTRATION, BIOMETRIC_TRIES_RESET }
 
     public CardStatusLog(String cardIdHash, UUID electionId, CardEvent event, String triggeredBy) {
         this.cardIdHash  = cardIdHash;
