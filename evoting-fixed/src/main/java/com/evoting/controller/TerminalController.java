@@ -365,12 +365,15 @@ public class TerminalController {
 
     @PostMapping("/biometric-reset-log")
     public ResponseEntity<?> logBiometricReset(HttpServletRequest request,
-                                                @RequestBody Map<String, String> body) {
-        // Terminal identity verified upstream by TerminalAuthFilter (ECDSA app-layer signing),
-        // same as /vote and /tap — no separate admin JWT exists on the terminal to check here.
+                                                @RequestBody Map<String, Object> body) {
+        // Map<String,Object>, not Map<String,String> — the firmware payload
+        // is mixed-type (numbers for the tries counters, a boolean for
+        // biometricReset), and Jackson won't coerce those into String
+        // values in a Map<String,String> binding; it'll throw before this
+        // method body even runs. Object + per-field parsing avoids that.
         String terminalId = request.getHeader("X-Terminal-Id");
-        String cardIdHash = body.get("cardIdHash");
-        String electionIdStr = body.get("electionId");
+        String cardIdHash = asString(body.get("cardIdHash"));
+        String electionIdStr = asString(body.get("electionId"));
 
         if (terminalId == null || terminalId.isBlank()) {
             log.warn("[BIOMETRIC-RESET-LOG] Rejected: missing X-Terminal-Id header");
@@ -389,9 +392,36 @@ public class TerminalController {
             }
         }
 
-        cardManagementService.resetBiometricTries(cardIdHash, electionId, "TERMINAL:" + terminalId);
+        // Objective pre-reset status from the card (see sc_get_lockout_status()
+        // on the firmware side / INS_GET_LOCKOUT_STATUS on the applet side).
+        // Firmware omits a field entirely rather than send a fake value when
+        // its query failed, so absence here is meaningful, not just missing data.
+        Integer pinTries = asInteger(body.get("pinTriesRemaining"));
+        Integer fpTries = asInteger(body.get("fpTriesRemaining"));
+        Integer livenessTries = asInteger(body.get("livenessTriesRemaining"));
+        boolean biometricReset = Boolean.TRUE.equals(body.get("biometricReset"));
+
+        cardManagementService.resetBiometricTries(cardIdHash, electionId, "TERMINAL:" + terminalId,
+                                                    pinTries, fpTries, livenessTries, biometricReset);
         log.info("[BIOMETRIC-RESET-LOG] card={} terminal={}", cardIdHash, terminalId);
         return ResponseEntity.ok().build();
+    }
+
+    private String asString(Object v) {
+        return v == null ? null : String.valueOf(v);
+    }
+
+    // Jackson deserializes bare JSON numbers into Object as Integer (or
+    // Double for decimals) — our firmware only ever sends small whole
+    // numbers (0-5), so Integer/Number covers what actually arrives.
+    private Integer asInteger(Object v) {
+        if (v == null) return null;
+        if (v instanceof Number n) return n.intValue();
+        try {
+            return Integer.parseInt(String.valueOf(v));
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     // ── ADMIN DASHBOARD ENDPOINTS ─────────────────────────────────────────────
