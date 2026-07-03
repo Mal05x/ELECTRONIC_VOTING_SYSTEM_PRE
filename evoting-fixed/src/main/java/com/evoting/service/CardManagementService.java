@@ -92,6 +92,49 @@ public class CardManagementService {
     }
 
     /**
+     * BIOMETRIC TRIES RESET — records that a terminal cleared a card's
+     * on-card fingerprint/liveness try-counter lockout (MFAVotingApplet
+     * INS_ADMIN_RESET_BIOMETRIC_TRIES, 0x33).
+     *
+     * Deliberately does NOT look up / validate against VoterRegistry the
+     * way unlockCard()/lockCard() do, and never throws. The actual
+     * authorization for this action already happened locally on the
+     * JavaCard (admin-token verification inside the applet, before the
+     * terminal ever calls this) — this method's only job is to record
+     * that it happened. It must never be able to fail in a way that
+     * makes the terminal think the reset itself didn't work; the log
+     * write is best-effort, after the fact.
+     *
+     * pinTries/fpTries/livenessTries: the OBJECTIVE lockout counters read
+     * straight from the card via INS_GET_LOCKOUT_STATUS (0x34) BEFORE the
+     * reset — null if that query failed/wasn't available. This is what
+     * actually closes the "how do you know this wasn't misused" gap: the
+     * reason recorded here is what the card itself reported, not
+     * something an officer typed in. Deliberately NOT added as new
+     * card_status_log columns (avoids a schema migration this close to
+     * a deadline) — folded into AuditLogService's existing free-text
+     * eventData instead, which is already hash-chained and dashboard-visible.
+     */
+    @Transactional
+    public void resetBiometricTries(String cardIdHash, UUID electionId, String triggeredBy,
+                                     Integer pinTries, Integer fpTries, Integer livenessTries,
+                                     boolean biometricReset) {
+        logRepo.save(new CardStatusLog(cardIdHash, electionId, CardEvent.BIOMETRIC_TRIES_RESET, triggeredBy));
+
+        String reason = String.format(
+            "CardHash: %s | Pre-reset status (from card): PIN=%s FP=%s Liveness=%s | biometricReset=%b",
+            cardIdHash,
+            pinTries      != null ? pinTries      : "unknown",
+            fpTries       != null ? fpTries       : "unknown",
+            livenessTries != null ? livenessTries : "unknown",
+            biometricReset
+        );
+        auditLog.log("CARD_BIOMETRIC_TRIES_RESET", triggeredBy, reason);
+        log.info("Card {} biometric tries reset (triggered by {}) — pin={} fp={} liveness={} biometricReset={}",
+                 cardIdHash, triggeredBy, pinTries, fpTries, livenessTries, biometricReset);
+    }
+
+    /**
      * Get full status history for a card.
      */
     public List<CardStatusLog> getCardHistory(String cardIdHash) {
