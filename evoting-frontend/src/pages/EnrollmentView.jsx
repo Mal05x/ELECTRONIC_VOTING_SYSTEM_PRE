@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import client from "../api/client.js";
 import { getEnrollmentQueue, cancelEnrollment } from "../api/enrollment.js";
 import { getPendingRegistrations, cancelPendingRegistration } from "../api/registration.js";
@@ -59,8 +59,8 @@ function AdminTokenRevealModal({ enrollmentId, rawAdminToken, onAcknowledge }) {
 
 // ── EnrollmentView (The Unified Pipeline) ───────────────────────────────────
 export default function EnrollmentView() {
-  // Create a ref for the demographics section
   const demographicsRef = useRef(null);
+  
   // We now track TWO lists: Raw Scans (Pending) and Active Hardware Jobs (Queue)
   const [scans, setScans] = useState([]); 
   const [queue, setQueue] = useState([]);
@@ -134,7 +134,7 @@ export default function EnrollmentView() {
     setForm({ firstName: "", surname: "", dateOfBirth: "", gender: "MALE", stateId: "", lgaId: "", pollingUnit: "" });
     setWizardHeaders(null);
 
-        // Scroll to the demographics section smoothly after the modal renders
+    // Smooth scroll down to demographics section after modal opens
     setTimeout(() => {
       demographicsRef.current?.scrollIntoView({ 
         behavior: 'smooth', 
@@ -245,9 +245,7 @@ export default function EnrollmentView() {
       {/* ── THE UNIFIED ENROLLMENT WIZARD MODAL ── */}
       {wizardTarget && (
         <Modal title="Complete Registration" onClose={() => !saving && setWizardTarget(null)}>
-          {/* ATTACH THE REF HERE */}
           <div className="space-y-5" ref={demographicsRef}>
-          <div className="space-y-5">
             <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3 flex items-center justify-between">
               <span className="text-xs text-purple-300">Terminal: <strong className="font-mono">{wizardTarget.terminalId}</strong></span>
               <span className="text-xs text-purple-300">Card: <strong className="font-mono">{wizardTarget.cardIdHash.slice(0,10)}...</strong></span>
