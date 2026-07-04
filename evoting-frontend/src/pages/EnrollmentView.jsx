@@ -1,5 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
-import React, { useState, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from "react";
 import client from "../api/client.js";
 import { getEnrollmentQueue, cancelEnrollment } from "../api/enrollment.js";
 import { getPendingRegistrations, cancelPendingRegistration } from "../api/registration.js";
