@@ -145,10 +145,26 @@ public class VoteProcessingService {
             throw new InvalidSessionException("Card burn proof verification failed");
         }
 
-        String voteHash      = AuditLog.sha256(
+        // Internal only — encodes candidate + session + cast time. Used for
+        // Merkle-tree tallying/audit. NEVER expose this to the voter or put it
+        // in any public-facing receipt: with a small candidate list and a
+        // known tokenHash (the voter's own session token), this is
+        // brute-forceable, which breaks receipt-freeness / coercion-resistance.
+        String voteHash = AuditLog.sha256(
                 packet.getCandidateId() + tokenHash + OffsetDateTime.now());
-        String transactionId = AuditLog.sha256(voteHash + session.getElectionId())
-                .substring(0, 16).toUpperCase();
+
+        // Public transaction ID — candidate-blind by construction, since the
+        // burn proof only ever signs cardIdHash|electionId. Derived from the
+        // exact same input as the firmware's offline tracker (network.cpp:
+        // crypto_sha256_hex(cardBurnProof)), so the hex digits always agree.
+        // Case doesn't need to match: ReceiptController.verify() uppercases
+        // whatever the voter types before querying, so a lowercase firmware
+        // receipt still resolves against this uppercase stored value. What
+        // DOES matter: never truncate this, and never change which bytes get
+        // hashed on either side without updating both — that's what actually
+        // breaks the match, not letter case.
+        String transactionId = AuditLog.sha256(packet.getCardBurnProof())
+                .toUpperCase();
 
         ballotRepo.save(BallotBox.builder()
                 .electionId(session.getElectionId())
