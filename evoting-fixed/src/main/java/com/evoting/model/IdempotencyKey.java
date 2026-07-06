@@ -25,7 +25,7 @@ public class IdempotencyKey {
     @Column(name = "payload_hash", nullable = false, length = 64)
     private String payloadHash;       // SHA-256 of the raw encrypted bytes
 
-    @Column(name = "transaction_id", nullable = false, length = 16)
+    @Column(name = "transaction_id", nullable = false, length = 64)
     private String transactionId;     // the receipt returned for this payload
 
    @Builder.Default
