@@ -30,7 +30,17 @@ public class VoteProcessingService {
 
     @Transactional
     public VoteReceiptDTO processVote(String encryptedPayload) throws Exception {
-        // Idempotency guard — detect bit-for-bit retries before decryption
+        // Idempotency guard #1 — catches a literal byte-for-byte repeat of the
+        // exact same HTTP request (e.g. a raw TCP-level retransmission that
+        // somehow gets processed twice server-side). This does NOT catch the
+        // ESP32's offline-recovery retries: net_check_and_recover_vote()
+        // re-encrypts with esp_fill_random(iv, ...) — a fresh random IV — AND
+        // a brand new session token from a fresh /tap call on every single
+        // retry cycle, so the ciphertext (and therefore this hash) is
+        // different every time even though it's logically the same vote.
+        // Guard #2 below (transactionId-based) is what actually protects the
+        // offline-recovery path; this one is a cheap pre-decrypt short-circuit
+        // for the narrower case it can actually catch.
         String payloadHash = AuditLog.sha256(encryptedPayload);
         IdempotencyKey existing = idempotencyRepo.findByPayloadHash(payloadHash).orElse(null);
         if (existing != null) {
@@ -77,6 +87,29 @@ public class VoteProcessingService {
             raw = crypto.decryptWithKey(encryptedPayload, sessionKey);
             packet = mapper.readValue(raw, VotePacketDTO.class);
             log.debug("[VoteProcessing] Decrypted with ephemeral session key (forward secrecy active)");
+        }
+
+        // Idempotency guard #2 — THE one that matters for offline recovery.
+        // cardBurnProof is stable across every retry of this physical vote
+        // (a card can only be burned once), so this derived ID is identical
+        // whether this is attempt #1 or attempt #12, regardless of IV or
+        // session token. Computed here — once — and reused below for the
+        // stored transactionId, so there's exactly one source of truth.
+        // Checking this BEFORE touching session/voter state means a replay
+        // short-circuits to a 200 with the original receipt, instead of
+        // falling through to the voter.isHasVoted() check further down and
+        // throwing a generic 401 that the firmware's recovery loop doesn't
+        // recognize as terminal (it only stops retrying on 200/201/400/403/
+        // 404/409/422). This directly fixes "vote recorded but the ESP32
+        // never got confirmation, so it retries forever."
+        String transactionId = AuditLog.sha256(packet.getCardBurnProof()).toUpperCase();
+        IdempotencyKey existingByTx = idempotencyRepo.findByTransactionId(transactionId).orElse(null);
+        if (existingByTx != null) {
+            log.info("Idempotent retry detected for txId {} (payload hash differed — expected, see IV note above)", transactionId);
+            return new VoteReceiptDTO(
+                    existingByTx.getTransactionId(),
+                    crypto.encrypt(("ACK:" + existingByTx.getTransactionId()).getBytes()),
+                    "Vote already recorded. Receipt re-issued.");
         }
 
         VotingSession session = sessionRepo.findBySessionTokenHashAndUsedFalse(tokenHash)
@@ -153,18 +186,18 @@ public class VoteProcessingService {
         String voteHash = AuditLog.sha256(
                 packet.getCandidateId() + tokenHash + OffsetDateTime.now());
 
-        // Public transaction ID — candidate-blind by construction, since the
-        // burn proof only ever signs cardIdHash|electionId. Derived from the
-        // exact same input as the firmware's offline tracker (network.cpp:
-        // crypto_sha256_hex(cardBurnProof)), so the hex digits always agree.
-        // Case doesn't need to match: ReceiptController.verify() uppercases
-        // whatever the voter types before querying, so a lowercase firmware
-        // receipt still resolves against this uppercase stored value. What
-        // DOES matter: never truncate this, and never change which bytes get
-        // hashed on either side without updating both — that's what actually
-        // breaks the match, not letter case.
-        String transactionId = AuditLog.sha256(packet.getCardBurnProof())
-                .toUpperCase();
+        // Public transaction ID — computed once, early, at the idempotency
+        // guard above (see comment there). Candidate-blind by construction,
+        // since the burn proof only ever signs cardIdHash|electionId.
+        // Derived from the exact same input as the firmware's offline
+        // tracker (network.cpp: crypto_sha256_hex(cardBurnProof)), so the
+        // hex digits always agree. Case doesn't need to match:
+        // ReceiptController.verify() uppercases whatever the voter types
+        // before querying, so a lowercase firmware receipt still resolves
+        // against this uppercase stored value. What DOES matter: never
+        // truncate this, and never change which bytes get hashed on either
+        // side without updating both — that's what actually breaks the
+        // match, not letter case.
 
         ballotRepo.save(BallotBox.builder()
                 .electionId(session.getElectionId())
