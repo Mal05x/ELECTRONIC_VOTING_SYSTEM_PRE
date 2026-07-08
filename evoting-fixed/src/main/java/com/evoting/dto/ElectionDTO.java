@@ -32,4 +32,20 @@ public class ElectionDTO {
 
     @NotNull
     private OffsetDateTime endTime;
+
+    /**
+     * Optional. Set this to restrict a GUBERNATORIAL/SENATORIAL/
+     * STATE_ASSEMBLY election to voters registered in that one state (by
+     * State.id from the /api/admin/states reference list — or wherever your
+     * states are enumerated). Leave null for PRESIDENTIAL elections, or for
+     * a sub-national election you deliberately don't want scoped yet.
+     */
+    private Integer targetStateId;
+
+    /**
+     * Optional, and ONLY enforced for type=LOCAL_GOVERNMENT (see
+     * Election.targetLgaId javadoc for why it's not honored for
+     * SENATORIAL/STATE_ASSEMBLY even if you send it). By Lga.id.
+     */
+    private Integer targetLgaId;
 }
