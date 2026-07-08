@@ -343,6 +343,51 @@ public class TerminalController {
                     .body(Map.of("error", "Terminal not fully configured — set pollingUnitId via admin dashboard"));
         }
 
+        // Minimal state-scope eligibility check — see V27 migration and
+        // Election.targetStateId. A GUBERNATORIAL/SENATORIAL/STATE_ASSEMBLY
+        // election belongs to exactly one state; without this, a voter
+        // registered in ANY state could vote in an election meant for a
+        // different one, since nothing else here checks that.
+        //
+        // Deliberately fails OPEN (does not block) when either side of the
+        // comparison is unknown — election.targetStateId not set, or the
+        // voter's state couldn't be resolved above — rather than fail
+        // closed. This is a narrow, additive check on top of an existing
+        // system: it should only ever reject a tap it actively knows is
+        // out of scope, never one it's merely uncertain about. Existing
+        // PRESIDENTIAL elections and any election created before this
+        // column existed (targetStateId = NULL) are completely unaffected.
+        Election election = electionRepo.findById(session.getElectionId()).orElse(null);
+        if (election == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Election not found"));
+        }
+        if (election.getTargetStateId() != null
+                && !"PRESIDENTIAL".equals(election.getType())
+                && session.getStateId() != null
+                && !election.getTargetStateId().equals(session.getStateId())) {
+            log.warn("[TAP] ⛔ Voter (state={}) not eligible for election {} \"{}\" (scoped to state {})",
+                    session.getStateId(), election.getId(), election.getName(), election.getTargetStateId());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Not eligible to vote in this election from your registered state"));
+        }
+
+        // LGA-level check — ONLY meaningful for LOCAL_GOVERNMENT. See
+        // Election.targetLgaId javadoc: SENATORIAL/STATE_ASSEMBLY districts
+        // can span multiple LGAs, which this single-LGA field can't model,
+        // so it's deliberately never checked for those types even if an
+        // admin set it — checking it there would wrongly reject eligible
+        // voters from the district's other LGAs. Same fail-open rule as
+        // the state check above: unknown on either side means "don't block".
+        if ("LOCAL_GOVERNMENT".equals(election.getType())
+                && election.getTargetLgaId() != null
+                && session.getLgaId() != null
+                && !election.getTargetLgaId().equals(session.getLgaId())) {
+            log.warn("[TAP] ⛔ Voter (lga={}) not eligible for LOCAL_GOVERNMENT election {} \"{}\" (scoped to LGA {})",
+                    session.getLgaId(), election.getId(), election.getName(), election.getTargetLgaId());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Not eligible to vote in this election from your registered LGA"));
+        }
+
         sessionRepo.save(session);
 
         log.info("[TAP] ✅ Session created — pollingUnitId={} lgaId={} stateId={}",
