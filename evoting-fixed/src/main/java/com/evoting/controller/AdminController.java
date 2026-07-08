@@ -85,6 +85,8 @@ public class AdminController {
                 // type defaults to "PRESIDENTIAL" in ElectionDTO if not supplied by client
                 .type(dto.getType() != null ? dto.getType() : "PRESIDENTIAL")
                 .startTime(dto.getStartTime()).endTime(dto.getEndTime())
+                .targetStateId(dto.getTargetStateId())
+                .targetLgaId(dto.getTargetLgaId())
                 .createdBy(admin.getId())
                 .build());
         auditLog.log("ELECTION_CREATED", auth.getName(), saved.getName());
