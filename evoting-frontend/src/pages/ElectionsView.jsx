@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getElections, createElection, deleteElection, unlockCards, uploadCandidatePhoto } from "../api/elections.js";
+import { getStates, getLgasByState } from "../api/locations.js";
 import { initiateStateChange, signStateChange } from "../api/multisig.js";
 import { useStepUpAction } from "../components/StepUpModal.jsx";
 import { useKeypair } from "../context/KeypairContext.jsx";
@@ -11,9 +12,11 @@ export default function ElectionsView() {
   const { signChallenge } = useKeypair();
   const navigate = useNavigate();
   const [elections, setElections] = useState([]);
+  const [states,    setStates]    = useState([]); // for target-state scoping dropdown + badge lookup
+  const [lgas,      setLgas]      = useState([]); // for LOCAL_GOVERNMENT target-LGA dropdown + badge lookup
   const [loading,   setLoading]   = useState(true);
   const [showCreate,setShowCreate]= useState(false);
-  const [form,      setForm]      = useState({ name:"", type:"PRESIDENTIAL", startTime:"", endTime:"", description:"" });
+  const [form,      setForm]      = useState({ name:"", type:"PRESIDENTIAL", targetStateId:"", targetLgaId:"", startTime:"", endTime:"", description:"" });
   const [saving,    setSaving]    = useState(false);
   const [submitting, setSubmitting] = useState(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(null);
@@ -52,12 +55,21 @@ export default function ElectionsView() {
           description: form.description.trim(),
           startTime:   form.startTime ? new Date(form.startTime).toISOString() : null,
           endTime:     form.endTime   ? new Date(form.endTime).toISOString()   : null,
+          // Only meaningful for non-PRESIDENTIAL types — see Election.targetStateId.
+          // "" (unset in the dropdown) becomes null, not 0/NaN.
+          targetStateId: form.type !== "PRESIDENTIAL" && form.targetStateId
+            ? Number(form.targetStateId) : null,
+          // ONLY enforced by the backend for LOCAL_GOVERNMENT — see
+          // Election.targetLgaId javadoc for why SENATORIAL/STATE_ASSEMBLY
+          // don't honor this even if it's sent.
+          targetLgaId: form.type === "LOCAL_GOVERNMENT" && form.targetLgaId
+            ? Number(form.targetLgaId) : null,
         };
         await createElection(payload, headers);
         await load();
         showToast("Election created successfully");
         setShowCreate(false);
-        setForm({ name:"", type:"PRESIDENTIAL", startTime:"", endTime:"", description:"" });
+        setForm({ name:"", type:"PRESIDENTIAL", targetStateId:"", targetLgaId:"", startTime:"", endTime:"", description:"" });
       }
     );
 
@@ -74,7 +86,24 @@ export default function ElectionsView() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    getStates().then(setStates).catch(() => setStates([])); // non-fatal — badge/dropdown just won't show state names
+  }, []);
+
+  // Populate the LGA dropdown once a state is chosen for a LOCAL_GOVERNMENT
+  // election. Re-fetches whenever the selected state changes; clears the
+  // previously-chosen LGA too since it almost certainly belongs to the old
+  // state (stale IDs across a state switch would silently target the wrong LGA).
+  useEffect(() => {
+    if (form.type !== "LOCAL_GOVERNMENT" || !form.targetStateId) {
+      setLgas([]);
+      return;
+    }
+    getLgasByState(form.targetStateId)
+      .then(setLgas)
+      .catch(() => setLgas([]));
+  }, [form.type, form.targetStateId]);
 
   const handleCreate = async () => {
     if (!form.name.trim()) return showToast("Election name is required", "error");
@@ -227,6 +256,19 @@ export default function ElectionsView() {
                       <div className="flex items-center gap-3 flex-wrap mb-2">
                         <span className="text-[16px] font-bold text-white tracking-wide">{e.name}</span>
                         <StatusBadge status={e.status}/>
+                        {e.type && e.type !== "PRESIDENTIAL" && (
+                          <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-md
+                                          bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                            {e.type.replace("_"," ")}
+                            {e.targetStateId
+                              ? ` · ${states.find(s => s.id === e.targetStateId)?.name || `State #${e.targetStateId}`}`
+                              : " · Unrestricted"}
+                            {/* Specific LGA name isn't resolved here to avoid fetching all ~774
+                                LGAs just for a badge — the id is enough to confirm scoping is on;
+                                exact LGA is visible in the create form's dropdown when re-checking. */}
+                            {e.type === "LOCAL_GOVERNMENT" && e.targetLgaId && ` (LGA #${e.targetLgaId})`}
+                          </span>
+                        )}
                       </div>
                       <div className="mono text-[12px] text-muted flex items-center gap-2">
                         <Ic n="clock" s={12} c="#6B7280" />
@@ -317,7 +359,12 @@ export default function ElectionsView() {
               <select
                 className="inp inp-md bg-elevated border-border-hi text-white w-full appearance-none"
                 value={form.type}
-                onChange={e=>setForm(p=>({...p,type:e.target.value}))}
+                onChange={e=>setForm(p=>({
+                  ...p,
+                  type: e.target.value,
+                  targetStateId: e.target.value==="PRESIDENTIAL" ? "" : p.targetStateId,
+                  targetLgaId: e.target.value==="LOCAL_GOVERNMENT" ? p.targetLgaId : "",
+                }))}
               >
                 <option value="PRESIDENTIAL">Presidential (National)</option>
                 <option value="GUBERNATORIAL">Gubernatorial (State)</option>
@@ -326,6 +373,51 @@ export default function ElectionsView() {
                 <option value="LOCAL_GOVERNMENT">Local Government (LGA)</option>
               </select>
             </div>
+
+            {form.type !== "PRESIDENTIAL" && (
+              <div>
+                <Label>
+                  {form.type === "LOCAL_GOVERNMENT" ? "State (required to select LGA below)" : "Restrict to State (optional)"}
+                </Label>
+                <select
+                  className="inp inp-md bg-elevated border-border-hi text-white w-full appearance-none"
+                  value={form.targetStateId}
+                  onChange={e=>setForm(p=>({...p,targetStateId:e.target.value, targetLgaId:""}))}
+                >
+                  <option value="">— Not restricted (any registered voter can vote) —</option>
+                  {states.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+                <div className="text-[11px] text-muted mt-1.5 leading-relaxed">
+                  {form.type === "LOCAL_GOVERNMENT"
+                    ? "Pick the state this LGA belongs to, then choose the specific LGA below — LOCAL_GOVERNMENT elections are enforced at LGA level, not just state level."
+                    : <>Leave unrestricted only if you intend this {form.type.replace("_"," ").toLowerCase()} election
+                       to accept voters from any state. Setting a state means only voters registered
+                       in that state can tap in and vote here — everyone else gets turned away at the terminal.</>}
+                </div>
+              </div>
+            )}
+
+            {form.type === "LOCAL_GOVERNMENT" && form.targetStateId && (
+              <div>
+                <Label>Restrict to LGA (optional, but this is the whole point of a Local Government election)</Label>
+                <select
+                  className="inp inp-md bg-elevated border-border-hi text-white w-full appearance-none"
+                  value={form.targetLgaId}
+                  onChange={e=>setForm(p=>({...p,targetLgaId:e.target.value}))}
+                >
+                  <option value="">— Not restricted (any voter in the state above can vote) —</option>
+                  {lgas.map(l => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
+                  ))}
+                </select>
+                <div className="text-[11px] text-muted mt-1.5 leading-relaxed">
+                  Only voters whose registered LGA matches the one you pick here can tap in — everyone
+                  else in the state above (but a different LGA) gets turned away at the terminal.
+                </div>
+              </div>
+            )}
 
             <div>
               <Label>Description / Mandate</Label>
