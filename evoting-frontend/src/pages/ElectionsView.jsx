@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getElections, createElection, deleteElection, unlockCards, uploadCandidatePhoto } from "../api/elections.js";
 import { getStates, getLgasByState } from "../api/locations.js";
@@ -11,15 +11,32 @@ import { Ic } from "../components/ui.jsx";
 export default function ElectionsView() {
   const { signChallenge } = useKeypair();
   const navigate = useNavigate();
+  const formRef = useRef(null); // Create a reference for the form
+  
   const [elections, setElections] = useState([]);
-  const [states,    setStates]    = useState([]); // for target-state scoping dropdown + badge lookup
-  const [lgas,      setLgas]      = useState([]); // for LOCAL_GOVERNMENT target-LGA dropdown + badge lookup
+  const [states,    setStates]    = useState([]); 
+  const [lgas,      setLgas]      = useState([]); 
   const [loading,   setLoading]   = useState(true);
   const [showCreate,setShowCreate]= useState(false);
   const [form,      setForm]      = useState({ name:"", type:"PRESIDENTIAL", targetStateId:"", targetLgaId:"", startTime:"", endTime:"", description:"" });
   const [saving,    setSaving]    = useState(false);
   const [submitting, setSubmitting] = useState(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(null);
+  const [toast,     setToast]     = useState({ msg: "", type: "success" });
+
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast({ msg: "", type: "success" }), 3500);
+  };
+
+  // Smooth scroll handler
+  const handleScrollToForm = () => {
+    setShowCreate(true);
+    // Add a slight delay to ensure the DOM has rendered the form before scrolling
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  };
 
   const handlePhotoUpload = async (candidateId, file) => {
     if (!file) return;
@@ -27,7 +44,6 @@ export default function ElectionsView() {
     try {
       await uploadCandidatePhoto(candidateId, file);
       showToast("Photo uploaded successfully");
-      // Reload candidates to show updated imageUrl
       if (selectedElection) {
         const { getCandidates } = await import("../api/elections.js");
         const updated = await getCandidates(selectedElection.id);
@@ -36,12 +52,6 @@ export default function ElectionsView() {
     } catch (e) {
       showToast(e.response?.data?.error || "Photo upload failed", "error");
     } finally { setUploadingPhoto(null); }
-  };
-  const [toast,     setToast]     = useState({ msg: "", type: "success" });
-
-  const showToast = (msg, type = "success") => {
-    setToast({ msg, type });
-    setTimeout(() => setToast({ msg: "", type: "success" }), 3500);
   };
 
   const { trigger: createElectionWithAuth, modal: createElectionModal } =
@@ -55,13 +65,8 @@ export default function ElectionsView() {
           description: form.description.trim(),
           startTime:   form.startTime ? new Date(form.startTime).toISOString() : null,
           endTime:     form.endTime   ? new Date(form.endTime).toISOString()   : null,
-          // Only meaningful for non-PRESIDENTIAL types — see Election.targetStateId.
-          // "" (unset in the dropdown) becomes null, not 0/NaN.
           targetStateId: form.type !== "PRESIDENTIAL" && form.targetStateId
             ? Number(form.targetStateId) : null,
-          // ONLY enforced by the backend for LOCAL_GOVERNMENT — see
-          // Election.targetLgaId javadoc for why SENATORIAL/STATE_ASSEMBLY
-          // don't honor this even if it's sent.
           targetLgaId: form.type === "LOCAL_GOVERNMENT" && form.targetLgaId
             ? Number(form.targetLgaId) : null,
         };
@@ -70,6 +75,9 @@ export default function ElectionsView() {
         showToast("Election created successfully");
         setShowCreate(false);
         setForm({ name:"", type:"PRESIDENTIAL", targetStateId:"", targetLgaId:"", startTime:"", endTime:"", description:"" });
+        
+        // Scroll back to top smoothly after creation
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
     );
 
@@ -88,13 +96,9 @@ export default function ElectionsView() {
 
   useEffect(() => {
     load();
-    getStates().then(setStates).catch(() => setStates([])); // non-fatal — badge/dropdown just won't show state names
+    getStates().then(setStates).catch(() => setStates([])); 
   }, []);
 
-  // Populate the LGA dropdown once a state is chosen for a LOCAL_GOVERNMENT
-  // election. Re-fetches whenever the selected state changes; clears the
-  // previously-chosen LGA too since it almost certainly belongs to the old
-  // state (stale IDs across a state switch would silently target the wrong LGA).
   useEffect(() => {
     if (form.type !== "LOCAL_GOVERNMENT" || !form.targetStateId) {
       setLgas([]);
@@ -164,7 +168,6 @@ export default function ElectionsView() {
 
       if (signChallenge && changeId) {
         try {
-          // Use canonical payload from server — actionType|targetId|changeId
           const signingPayload = res.status?.signingPayload || changeId;
           const sig = await signChallenge(signingPayload);
           if (sig) {
@@ -226,7 +229,7 @@ export default function ElectionsView() {
           title="Electoral Lifecycle Management"
           sub={`${elections.length} total elections configured in system`}
           action={
-            <button className="btn btn-primary btn-sm flex items-center gap-2" onClick={()=>setShowCreate(true)}>
+            <button className="btn btn-primary btn-sm flex items-center gap-2" onClick={handleScrollToForm}>
               <Ic n="plus" s={14} c="#fff" sw={2.5}/> New Election
             </button>
           }
@@ -263,9 +266,6 @@ export default function ElectionsView() {
                             {e.targetStateId
                               ? ` · ${states.find(s => s.id === e.targetStateId)?.name || `State #${e.targetStateId}`}`
                               : " · Unrestricted"}
-                            {/* Specific LGA name isn't resolved here to avoid fetching all ~774
-                                LGAs just for a badge — the id is enough to confirm scoping is on;
-                                exact LGA is visible in the create form's dropdown when re-checking. */}
                             {e.type === "LOCAL_GOVERNMENT" && e.targetLgaId && ` (LGA #${e.targetLgaId})`}
                           </span>
                         )}
@@ -283,7 +283,6 @@ export default function ElectionsView() {
                       )}
                     </div>
 
-                    {/* ACTION BUTTONS WITH OUR NEW DESIGN */}
                     <div className="flex gap-3 flex-shrink-0">
                       {e.status==="PENDING" && (
                         <>
@@ -292,8 +291,6 @@ export default function ElectionsView() {
                                   disabled={submitting === e.id}>
                             {submitting === e.id ? "..." : <><Ic n="check" s={14} c="#34D399"/> Start Election</>}
                           </button>
-
-                          {/* NEW DELETION DESIGN: Quick delete for drafts */}
                           <button className="btn btn-surface border border-red-500/20 hover:border-red-500/50 hover:bg-red-500/10 text-danger text-xs px-4 py-2"
                                   onClick={()=>handleDelete(e.id)}
                                   disabled={submitting === e.id}>
@@ -309,7 +306,6 @@ export default function ElectionsView() {
                         </button>
                       )}
                       {e.status==="CLOSED" && (
-                        // NEW UNLOCK DESIGN: Manual broadcast override
                         <button className="btn btn-surface border border-purple-500/20 hover:border-purple-500/50 hover:bg-purple-500/10 text-purple-300 text-xs px-4 py-2"
                                 onClick={()=>handleUnlockCards(e.id)}
                                 disabled={submitting === e.id}>
@@ -343,9 +339,14 @@ export default function ElectionsView() {
         )}
       </div>
 
+      {/* REPLACED MODAL WITH AN INLINE DIV */}
       {showCreate && (
-        <Modal title="Configure New Election" onClose={()=>setShowCreate(false)}>
-          <div className="space-y-5">
+        <div ref={formRef} className="c-card p-6 mt-6 animate-fade-up border border-purple-500/30">
+          <SectionHeader 
+            title="Configure New Election" 
+            sub="Fill in the details to deploy a new election to the network"
+          />
+          <div className="space-y-5 mt-6">
             <div>
               <Label>Official Election Title *</Label>
               <input className="inp inp-md bg-elevated border-border-hi text-white w-full"
@@ -353,7 +354,6 @@ export default function ElectionsView() {
                 value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}/>
             </div>
 
-            {/* NEW TYPE DROPDOWN DESIGN */}
             <div>
               <Label>Election Scope / Type *</Label>
               <select
@@ -445,11 +445,14 @@ export default function ElectionsView() {
               {saving ? <Spinner s={16}/> : "Deploy Configuration"}
             </button>
             <button className="btn btn-surface border border-border-hi hover:bg-white/5 py-2.5 flex-1 rounded-xl transition-colors"
-              onClick={()=>setShowCreate(false)}>
+              onClick={()=>{
+                setShowCreate(false);
+                window.scrollTo({ top: 0, behavior: "smooth" }); // Scroll back to top on cancel
+              }}>
               Cancel
             </button>
           </div>
-        </Modal>
+        </div>
       )}
     {createElectionModal}
     </div>
