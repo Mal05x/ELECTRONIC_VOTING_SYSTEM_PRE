@@ -2,8 +2,9 @@ package com.evoting.service;
 import com.evoting.exception.EvotingAuthException;
 import com.evoting.model.CardStatusLog;
 import com.evoting.model.CardStatusLog.CardEvent;
-import com.evoting.model.VoterRegistry;
+import com.evoting.model.VoterElectionStatus;
 import com.evoting.repository.CardStatusLogRepository;
+import com.evoting.repository.VoterElectionStatusRepository;
 import com.evoting.repository.VoterRegistryRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,20 +32,29 @@ import java.util.UUID;
 public class CardManagementService {
 
     @Autowired private VoterRegistryRepository voterRepo;
+    @Autowired private VoterElectionStatusRepository statusRepo; // V29
     @Autowired private CardStatusLogRepository logRepo;
     @Autowired private AuditLogService         auditLog;
 
     /**
      * BULK UNLOCK — called automatically when election status → CLOSED.
      * Returns the number of cards unlocked.
+     *
+     * FIX (V29): previously called voterRepo.unlockAllCardsForElection(),
+     * which filtered WHERE voter_registry.election_id = :electionId. Every
+     * voter enrolled since V8 has election_id = NULL on their permanent
+     * identity row, so that query silently unlocked zero rows for any
+     * current voter — this bulk unlock has been dead code in practice.
+     * voter_election_status rows always carry a real election_id (they're
+     * created per election, never null), so this now actually works.
      */
     @Transactional
     public int bulkUnlockForElection(UUID electionId, String triggeredBy) {
-        int count = voterRepo.unlockAllCardsForElection(electionId);
+        int count = statusRepo.unlockAllForElection(electionId);
 
         // Log each card's unlock in card_status_log
-        voterRepo.findByElectionId(electionId).forEach(v ->
-            logRepo.save(new CardStatusLog(v.getCardIdHash(), electionId,
+        statusRepo.findByElectionId(electionId).forEach(s ->
+            logRepo.save(new CardStatusLog(s.getCardIdHash(), electionId,
                 CardEvent.UNLOCKED, triggeredBy)));
 
         auditLog.log("CARDS_BULK_UNLOCKED", triggeredBy,
@@ -58,35 +68,44 @@ public class CardManagementService {
      */
     @Transactional
     public void unlockCard(String cardIdHash, UUID electionId, String unlockedBy) {
-        VoterRegistry voter = voterRepo
-            .findByCardIdHashAndElectionId(cardIdHash, electionId)
-            .orElseThrow(() -> new EvotingAuthException("Card not found for this election"));
+        voterRepo.findByCardIdHash(cardIdHash)
+            .orElseThrow(() -> new EvotingAuthException("Card not found"));
 
-        if (!voter.isCardLocked()) {
+        VoterElectionStatus status = statusRepo
+            .findByElectionIdAndCardIdHash(electionId, cardIdHash)
+            .orElseThrow(() -> new IllegalStateException(
+                "Card has no voting status for this election yet (never voted or locked)"));
+
+        if (!status.isCardLocked()) {
             throw new IllegalStateException("Card is already unlocked");
         }
 
-        voterRepo.unlockCard(cardIdHash, electionId);
+        statusRepo.unlockCard(electionId, cardIdHash);
         logRepo.save(new CardStatusLog(cardIdHash, electionId, CardEvent.UNLOCKED, unlockedBy));
         auditLog.log("CARD_MANUALLY_UNLOCKED", unlockedBy, "CardHash: " + cardIdHash);
         log.info("Card {} manually unlocked by {}", cardIdHash, unlockedBy);
     }
 
     /**
-     * SINGLE LOCK — manual admin override (e.g. lost/stolen card).
+     * SINGLE LOCK — manual admin override (e.g. lost/stolen card). Upsert:
+     * an admin can lock a card pre-emptively before it has voted in this
+     * election, when no voter_election_status row exists yet.
      */
     @Transactional
     public void lockCard(String cardIdHash, UUID electionId, String lockedBy) {
-        VoterRegistry voter = voterRepo
-            .findByCardIdHashAndElectionId(cardIdHash, electionId)
-            .orElseThrow(() -> new EvotingAuthException("Card not found for this election"));
+        voterRepo.findByCardIdHash(cardIdHash)
+            .orElseThrow(() -> new EvotingAuthException("Card not found"));
 
-        if (voter.isCardLocked()) {
+        boolean alreadyLocked = statusRepo
+            .findByElectionIdAndCardIdHash(electionId, cardIdHash)
+            .map(VoterElectionStatus::isCardLocked)
+            .orElse(false);
+
+        if (alreadyLocked) {
             throw new IllegalStateException("Card is already locked");
         }
 
-        voter.setCardLocked(true);
-        voterRepo.save(voter);
+        statusRepo.lockCard(electionId, cardIdHash);
         logRepo.save(new CardStatusLog(cardIdHash, electionId, CardEvent.LOCKED, lockedBy));
         auditLog.log("CARD_MANUALLY_LOCKED", lockedBy, "CardHash: " + cardIdHash);
     }
