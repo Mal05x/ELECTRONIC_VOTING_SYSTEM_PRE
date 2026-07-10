@@ -23,6 +23,7 @@ public class AuthenticationService {
 
     @Autowired private CryptoService           crypto;
     @Autowired private VoterRegistryRepository voterRepo;
+    @Autowired private VoterElectionStatusRepository statusRepo; // V29
     @Autowired private VotingSessionRepository sessionRepo;
     @Autowired private AuditLogService         auditLog;
     @Autowired private ObjectMapper            mapper;
@@ -78,21 +79,38 @@ public class AuthenticationService {
         }
 
         // ── Step 3: Voter lookup ─────────────────────────────────────────────
+        // FIX (V29): was findByCardIdHashAndElectionId(cardIdHash, electionId).
+        // Every voter enrolled since V8 has voter_registry.election_id = NULL
+        // (permanent identity record, not tied to one election) — so that
+        // lookup always threw "Voter not registered for this election" for
+        // any current voter. This method has no controller wiring it up to a
+        // live endpoint right now (AuthController never calls authenticate()),
+        // so it never surfaced in practice, but it's fixed to match the same
+        // V8-safe lookup used in VoteProcessingService / TerminalController.
         VoterRegistry voter = voterRepo
-                .findByCardIdHashAndElectionId(packet.getCardIdHash(), packet.getElectionId())
+                .findByCardIdHash(packet.getCardIdHash())
                 .orElseThrow(() -> {
                     auditLog.log("AUTH_FAIL_NOT_REGISTERED", actor, packet.getCardIdHash());
-                    return new EvotingAuthException("Voter not registered for this election");
+                    return new EvotingAuthException("Voter not registered");
                 });
 
         // ── Step 4: Double-vote check ─────────────────────────────────────────
-        if (voter.isHasVoted()) {
+        // FIX (V29): was voter.isHasVoted() — a lifetime flag on the permanent
+        // voter_registry row, so a card that voted in election A would be
+        // rejected here for every election created afterwards. Per-election
+        // status now lives in voter_election_status; absent = never
+        // interacted with this election, which is the correct default.
+        VoterElectionStatus status = statusRepo
+                .findByElectionIdAndCardIdHash(packet.getElectionId(), packet.getCardIdHash())
+                .orElse(null);
+
+        if (status != null && status.isHasVoted()) {
             auditLog.log("AUTH_FAIL_ALREADY_VOTED", actor, voter.getVotingId());
-            throw new EvotingAuthException("Voter has already cast a ballot");
+            throw new EvotingAuthException("Voter has already cast a ballot in this election");
         }
 
         // ── Step 5: Card lock check ───────────────────────────────────────────
-        if (voter.isCardLocked()) {
+        if (status != null && status.isCardLocked()) {
             auditLog.log("AUTH_FAIL_CARD_LOCKED", actor, voter.getVotingId());
             throw new EvotingAuthException("Smart card is locked. Contact your presiding officer.");
         }
