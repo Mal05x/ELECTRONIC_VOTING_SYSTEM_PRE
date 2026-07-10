@@ -50,4 +50,6 @@ public interface VoterRegistryRepository extends JpaRepository<VoterRegistry, UU
     long countByHasVotedTrue();
     long countByElectionIdAndPollingUnitLgaStateId(UUID electionId, Integer stateId);
     long countByElectionIdAndHasVotedTrueAndPollingUnitLgaStateId(UUID electionId, Integer stateId);
+    // ADDED: The new permanent registry lookup required by TallyService
+    long countByPollingUnitLgaStateId(Integer stateId);
 }
