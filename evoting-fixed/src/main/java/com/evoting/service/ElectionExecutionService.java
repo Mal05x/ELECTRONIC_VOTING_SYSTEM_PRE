@@ -21,7 +21,7 @@ import java.util.UUID;
 public class ElectionExecutionService {
 
     @Autowired private ElectionRepository      electionRepo;
-    @Autowired private VoterRegistryRepository  voterRepo;
+    @Autowired private VoterElectionStatusRepository statusRepo; // V29 — replaces voterRepo.unlockAllCardsForElection()
     @Autowired private BallotBoxRepository      ballotRepo;
     @Autowired private AuditLogService          auditLog;
 
@@ -49,14 +49,18 @@ public class ElectionExecutionService {
         }
         e.setStatus(Election.ElectionStatus.CLOSED);
         electionRepo.save(e);
-        voterRepo.unlockAllCardsForElection(id);
+        // FIX (V29): was voterRepo.unlockAllCardsForElection(id), which
+        // filtered WHERE voter_registry.election_id = :id — a column every
+        // V8+ permanent voter row has as NULL, so it silently unlocked zero
+        // rows. voter_election_status rows always carry a real election_id.
+        statusRepo.unlockAllForElection(id);
         auditLog.log("ELECTION_CLOSED", "SYSTEM[MULTISIG]", e.getName());
         log.info("[ELECTION] Closed: {}", e.getName());
     }
 
     @Transactional
     public void bulkUnlockCards(UUID electionId) {
-        int unlocked = voterRepo.unlockAllCardsForElection(electionId);
+        int unlocked = statusRepo.unlockAllForElection(electionId);
         auditLog.log("CARDS_BULK_UNLOCKED", "SYSTEM[MULTISIG]",
                 "ElectionId=" + electionId + " Count=" + unlocked);
         log.info("[CARDS] Bulk unlocked {} cards for election {}", unlocked, electionId);
