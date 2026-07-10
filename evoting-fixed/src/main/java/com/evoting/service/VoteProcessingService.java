@@ -21,6 +21,7 @@ public class VoteProcessingService {
     @Autowired private EphemeralKeyService      ephemeralKeys;   // FIX DQ5
     @Autowired private VotingSessionRepository  sessionRepo;
     @Autowired private VoterRegistryRepository  voterRepo;
+    @Autowired private VoterElectionStatusRepository voterElectionStatusRepo; // V29
     @Autowired private BallotBoxRepository      ballotRepo;
     @Autowired private IdempotencyKeyRepository idempotencyRepo;
     @Autowired private AuditLogService          auditLog;
@@ -141,15 +142,24 @@ public class VoteProcessingService {
         session.setUsed(true);
         sessionRepo.save(session);
 
-        // Atomic mark-as-voted + card lock
+        // Voter identity lookup — still global (V8: one permanent row per
+        // card). Only used here for the public key below; vote-gating itself
+        // is scoped per election now, see the FIX (V29) block right after.
         VoterRegistry voter = voterRepo.findByCardIdHash(packet.getCardIdHash())
         .orElseThrow(() -> new InvalidSessionException("Voter not found for this card"));
-        if (voter.isHasVoted())
-            throw new InvalidSessionException("Voter has already cast a ballot");
 
-        int updated = voterRepo.markAsVotedAndLockByCardHash(packet.getCardIdHash());
+        // FIX (V29): "has this card voted" used to live as a lifetime
+        // has_voted boolean on the same permanent voter_registry row as the
+        // voter's identity — so once true, it stayed true forever, blocking
+        // every election created afterwards (this is the "new election
+        // rejects a vote that should be valid" bug). It's now tracked per
+        // (election, card) in voter_election_status. The atomic upsert below
+        // is the same concurrency guard the old markAsVotedAndLockByCardHash
+        // provided (WHERE has_voted = false), just correctly scoped to
+        // session.getElectionId() instead of the card for its whole lifetime.
+        int updated = voterElectionStatusRepo.markAsVotedAndLock(session.getElectionId(), packet.getCardIdHash());
         if (updated == 0)
-            throw new InvalidSessionException("Vote lock failed — possible concurrent attempt");
+            throw new InvalidSessionException("Voter has already cast a ballot in this election");
 
         // ── FIX BUG 2: Election-scoped burn proof ────────────────────────────
         //
