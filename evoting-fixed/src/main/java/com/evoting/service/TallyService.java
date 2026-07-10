@@ -175,8 +175,17 @@ public class TallyService {
                         .countVotesByCandidateAndState(electionId, stateId).stream()
                         .collect(Collectors.toMap(r -> r[0].toString(), r -> (Long) r[1],
                                 (a, b) -> a, LinkedHashMap::new));
-                long reg    = voterRepo.countByElectionIdAndPollingUnitLgaStateId(electionId, stateId);
-                long voted  = voterRepo.countByElectionIdAndHasVotedTrueAndPollingUnitLgaStateId(electionId, stateId);
+                // FIX (V29): reg was voterRepo.countByElectionIdAndPollingUnitLgaStateId(),
+                // which filters WHERE voter_registry.election_id = :electionId — a
+                // column every V8+ permanent voter has as NULL, so reg was always 0
+                // and turnout always reported as 0.0% regardless of real votes cast.
+                // Registration is permanent (not per-election) as of V8, so "registered
+                // voters in this state" shouldn't be election-scoped in the first place.
+                // voted no longer reads voter_registry.has_voted (frozen as of V29,
+                // see VoteProcessingService) — it's the sum of the candidate tally
+                // above, which is ballot_box-driven and always live.
+                long reg    = voterRepo.countByPollingUnitLgaStateId(stateId);
+                long voted  = tally.values().stream().mapToLong(Long::longValue).sum();
                 double turnout = reg > 0 ? Math.round(voted * 10000.0 / reg) / 100.0 : 0.0;
                 return new StateBreakdownDTO(electionId, state.getName(), state.getCode(),
                         stateId, total, reg, voted, turnout, tally);
