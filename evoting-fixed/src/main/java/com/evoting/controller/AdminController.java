@@ -47,6 +47,7 @@ public class AdminController {
     @Autowired private PollingUnitRepository    pollingUnitRepo;
     @Autowired private AuditLogRepository       auditLogRepo;
     @Autowired private VoterRegistryRepository  voterRepo;
+    @Autowired private com.evoting.repository.VoterElectionStatusRepository voterElectionStatusRepo; // V29
     @Autowired private AdminUserRepository      adminRepo;
     @Autowired private VoterRegistrationService  registrationService;
     @Autowired private CardManagementService     cardService;
@@ -469,7 +470,17 @@ public class AdminController {
         
         Pageable p = page(page, size);
         Page<com.evoting.model.VoterRegistry> votersPage = voterRepo.findAll(p);
-        
+
+        // FIX (V29): hasVoted/cardLocked on voter_registry are legacy/frozen
+        // now — real per-election state lives in voter_election_status (see
+        // V29 migration). When electionId is supplied, look it up there
+        // instead. Batched into one query for the whole page rather than
+        // N+1 per voter.
+        Map<String, VoterElectionStatus> statusByCard = electionId != null
+                ? voterElectionStatusRepo.findByElectionId(electionId).stream()
+                      .collect(Collectors.toMap(VoterElectionStatus::getCardIdHash, s -> s))
+                : Map.of();
+
         // Bulletproof DTO mapping to prevent Java JSON crashes
         java.util.List<Map<String, Object>> safeVoters = votersPage.getContent().stream().map(v -> {
             Map<String, Object> map = new java.util.HashMap<>();
@@ -477,8 +488,21 @@ public class AdminController {
             map.put("votingId", v.getVotingId());
             map.put("firstName", v.getFirstName());
             map.put("surname", v.getSurname());
-            map.put("hasVoted", v.isHasVoted());
-            map.put("cardLocked", v.isCardLocked());
+
+            if (electionId != null) {
+                VoterElectionStatus status = statusByCard.get(v.getCardIdHash());
+                map.put("hasVoted",   status != null && status.isHasVoted());
+                map.put("cardLocked", status != null && status.isCardLocked());
+            } else {
+                // No election in scope to report per-election status for —
+                // fall back to the legacy lifetime flags. These are frozen
+                // as of V29 (no longer written to), so they only reflect
+                // whatever was true the last time this voter voted under
+                // the old gate, not "has ever voted" going forward.
+                map.put("hasVoted", v.isHasVoted());
+                map.put("cardLocked", v.isCardLocked());
+            }
+
             map.put("enrolled", true);
             map.put("cardIdHash", v.getCardIdHash());
             
@@ -669,7 +693,13 @@ public class AdminController {
 
         // Voters — count across all elections
         long registeredVoters = voterRepo.count();
-        long votesCast = voterRepo.countByHasVotedTrue();
+        // FIX (V29): was voterRepo.countByHasVotedTrue(), which reads
+        // voter_registry.has_voted — no longer written to as of V29 (see
+        // VoteProcessingService), so this would freeze at whatever it was
+        // the moment the migration ran and never increase again.
+        // ballot_box has exactly one row per successfully cast vote across
+        // every election, which is what "votes cast" actually means here.
+        long votesCast = ballotRepo.count();
 
         return ResponseEntity.ok(Map.of(
                 "registeredVoters",  registeredVoters,
