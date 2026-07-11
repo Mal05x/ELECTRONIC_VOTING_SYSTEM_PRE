@@ -143,33 +143,27 @@ export default function ActiveLivenessView() {
   const intervalRef= useRef(null);
   const runRef     = useRef(false);
   const sentRef    = useRef(0);
+  
+  // 1. NEW: Add a ref to hold the stream outside of React's state cycle
+  const streamRef  = useRef(null);
 
   const addLog = (msg, type="info") =>
     setLog(p => [...p, { msg, type, t: new Date().toLocaleTimeString() }]);
 
-  /* ── FIX BUG-2: set srcObject in effect, after React has rendered ── */
-  useEffect(() => {
-    const vid = videoRef.current;
-    if (!vid) return;
-    if (stream) {
-      vid.srcObject = stream;
-      // autoPlay attribute handles play; call play() as fallback
-      vid.play().catch(e => addLog("Video play error: " + e.message, "err"));
-    } else {
-      vid.srcObject = null;
+  // 2. UPDATED: Stop webcam now uses the ref, so it has an empty dependency array
+  const stopWebcam = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
     }
-  }, [stream]);
+    setStream(null);
+  }, []); 
 
   const stopAll = useCallback(() => {
     runRef.current = false;
     clearTimeout(timerRef.current);
     clearInterval(intervalRef.current);
   }, []);
-
-  const stopWebcam = useCallback(() => {
-    stream?.getTracks().forEach(t => t.stop());
-    setStream(null);
-  }, [stream]);
 
   const reset = useCallback(() => {
     stopAll();
@@ -181,9 +175,38 @@ export default function ActiveLivenessView() {
     sentRef.current = 0;
   }, [stopAll, stopWebcam]);
 
-  useEffect(() => () => { stopAll(); stopWebcam(); }, [stopAll, stopWebcam]);
+  // 3. UPDATED: Cleanup effect now has an empty dependency array
+  useEffect(() => {
+    return () => {
+      stopAll();
+      stopWebcam();
+    };
+  }, []); // <-- Empty array stops the infinite loop
 
-  /* ── FIX BUG-4: separate camera permission step ─────────────────── */
+  // 4. UPDATED: Safely handle the video playback promise
+  useEffect(() => {
+    const vid = videoRef.current;
+    if (!vid) return;
+
+    if (stream) {
+      if (vid.srcObject !== stream) {
+        vid.srcObject = stream;
+      }
+      
+      const playPromise = vid.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(e => {
+          if (e.name !== "AbortError") {
+            addLog("Video play error: " + e.message, "err");
+          }
+        });
+      }
+    } else {
+      vid.srcObject = null;
+    }
+  }, [stream]);
+
+  // 5. UPDATED: Request camera saves the stream to BOTH state and the ref
   const requestCamera = useCallback(async () => {
     setPhase(PHASE.CAM_REQUEST);
     addLog("Requesting camera permission…");
@@ -191,7 +214,8 @@ export default function ActiveLivenessView() {
       const s = await navigator.mediaDevices.getUserMedia({
         video: { width: 640, height: 480, facingMode: "user" },
       });
-      setStream(s);
+      streamRef.current = s; // <-- Save to ref
+      setStream(s);          // <-- Save to state for UI updates
       setPhase(PHASE.CAM_READY);
       addLog("Camera granted ✓", "ok");
     } catch (e) {
@@ -199,6 +223,8 @@ export default function ActiveLivenessView() {
       addLog("Camera denied: " + e.message, "err");
     }
   }, []);
+
+  // ... the rest of your functions (waitForVideo, runChallenge, startChallenge, etc.) stay exactly the same
 
   /* ── FIX BUG-3: wait for canplay before drawing frames ─────────── */
   const waitForVideo = () => new Promise(resolve => {
