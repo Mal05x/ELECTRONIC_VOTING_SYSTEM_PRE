@@ -40,9 +40,16 @@ public class RegistrationService {
                                                     Long pollingUnitId,
                                                     String cardIdHash,
                                                     String voterPublicKey) {
-        // Reject if card already registered
-        if (voterRepo.findByCardIdHashAndElectionId(cardIdHash, null).isPresent() ||
-                voterRepo.findByCardIdHash(cardIdHash).isPresent()) {
+        // Reject if card already registered.
+        // findByCardIdHash alone is sufficient — card_id_hash is globally
+        // UNIQUE on voter_registry, so it catches every existing row for
+        // this card regardless of what its election_id happens to be
+        // (NULL for V8-permanent rows, or a specific election for rows
+        // created via the legacy VoterRegistrationService.register() path).
+        // The old first clause (findByCardIdHashAndElectionId(cardIdHash,
+        // null)) was fully subsumed by this — removed as dead weight, not
+        // a behavior change.
+        if (voterRepo.findByCardIdHash(cardIdHash).isPresent()) {
             throw new IllegalStateException("Card already registered: " + cardIdHash);
         }
 
