@@ -137,62 +137,53 @@ export default function ActiveLivenessView() {
   const [framesSent, setFramesSent] = useState(0);
   const [sessionId] = useState("brws-" + Math.random().toString(36).slice(2,9));
 
+  /* ── Service status — mirrors BiometricCaptureView's ModelStatusTab,
+     just pointed at the active/app.py service instead of the passive one.
+     Backed by GET /api/camera/liveness-health-active, kept warm by
+     LivenessServiceKeepAlive on the backend (10 min ping, same as passive). */
+  const [health,        setHealth]        = useState(null);
+  const [healthLoading, setHealthLoading] = useState(false);
+  const [healthError,   setHealthError]   = useState(null);
+
+  const fetchHealth = useCallback(async () => {
+    setHealthLoading(true); setHealthError(null);
+    try {
+      const res = await client.get("/camera/liveness-health-active");
+      setHealth(res.data);
+    } catch (e) {
+      setHealth(null);
+      setHealthError(e?.response?.data?.error || e.message);
+    } finally {
+      setHealthLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchHealth(); }, [fetchHealth]);
+
   const videoRef   = useRef(null);
   const canvasRef  = useRef(document.createElement("canvas"));
   const timerRef   = useRef(null);
   const intervalRef= useRef(null);
   const runRef     = useRef(false);
   const sentRef    = useRef(0);
-  
-  // 1. NEW: Add a ref to hold the stream outside of React's state cycle
+  // FIX: stopWebcam needs to read the live stream without stream itself
+  // being a dependency (see stopWebcam below for why).
   const streamRef  = useRef(null);
 
   const addLog = (msg, type="info") =>
     setLog(p => [...p, { msg, type, t: new Date().toLocaleTimeString() }]);
 
-  // 2. UPDATED: Stop webcam now uses the ref, so it has an empty dependency array
-  const stopWebcam = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
-      streamRef.current = null;
-    }
-    setStream(null);
-  }, []); 
-
-  const stopAll = useCallback(() => {
-    runRef.current = false;
-    clearTimeout(timerRef.current);
-    clearInterval(intervalRef.current);
-  }, []);
-
-  const reset = useCallback(() => {
-    stopAll();
-    stopWebcam();
-    setPhase(PHASE.IDLE);
-    setChallenge(null);
-    setLog([]);
-    setFramesSent(0);
-    sentRef.current = 0;
-  }, [stopAll, stopWebcam]);
-
-  // 3. UPDATED: Cleanup effect now has an empty dependency array
-  useEffect(() => {
-    return () => {
-      stopAll();
-      stopWebcam();
-    };
-  }, []); // <-- Empty array stops the infinite loop
-
-  // 4. UPDATED: Safely handle the video playback promise
+  /* FIX BUG-2: set srcObject in effect, after React has rendered.
+     FIX (this round): guard against redundant reassignment, and don't log
+     AbortError — that's play() being interrupted by a subsequent play()/
+     pause() call, which happens routinely here and isn't a real failure. */
   useEffect(() => {
     const vid = videoRef.current;
     if (!vid) return;
-
     if (stream) {
       if (vid.srcObject !== stream) {
         vid.srcObject = stream;
       }
-      
       const playPromise = vid.play();
       if (playPromise !== undefined) {
         playPromise.catch(e => {
@@ -206,7 +197,48 @@ export default function ActiveLivenessView() {
     }
   }, [stream]);
 
-  // 5. UPDATED: Request camera saves the stream to BOTH state and the ref
+  const stopAll = useCallback(() => {
+    runRef.current = false;
+    clearTimeout(timerRef.current);
+    clearInterval(intervalRef.current);
+  }, []);
+
+  /* FIX (this round): was `useCallback(..., [stream])`, which gave
+     stopWebcam a new identity every time stream changed — including the
+     instant requestCamera() called setStream(s). The unmount-cleanup
+     effect below lists stopWebcam as a dependency, so that identity change
+     tore down and re-ran it, firing the *old* cleanup closure — whose
+     setStream(null) ran unconditionally and immediately nulled the stream
+     that had just been granted. Reading from a ref instead of the stream
+     dependency keeps stopWebcam's identity stable across renders while
+     still always operating on the current stream. */
+  const stopWebcam = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    setStream(null);
+  }, []);
+
+  const reset = useCallback(() => {
+    stopAll();
+    stopWebcam();
+    setPhase(PHASE.IDLE);
+    setChallenge(null);
+    setLog([]);
+    setFramesSent(0);
+    sentRef.current = 0;
+  }, [stopAll, stopWebcam]);
+
+  /* FIX (this round): empty deps — this should only run its cleanup on
+     actual unmount, not every time stopAll/stopWebcam happen to get a new
+     identity. Safe now that both are stable (empty-dep) callbacks that
+     read live values via refs rather than closing over stream directly. */
+  useEffect(() => {
+    return () => { stopAll(); stopWebcam(); };
+  }, []);
+
+  /* ── FIX BUG-4: separate camera permission step ─────────────────── */
   const requestCamera = useCallback(async () => {
     setPhase(PHASE.CAM_REQUEST);
     addLog("Requesting camera permission…");
@@ -214,8 +246,8 @@ export default function ActiveLivenessView() {
       const s = await navigator.mediaDevices.getUserMedia({
         video: { width: 640, height: 480, facingMode: "user" },
       });
-      streamRef.current = s; // <-- Save to ref
-      setStream(s);          // <-- Save to state for UI updates
+      streamRef.current = s; // FIX (this round): keep ref in sync with state
+      setStream(s);
       setPhase(PHASE.CAM_READY);
       addLog("Camera granted ✓", "ok");
     } catch (e) {
@@ -223,8 +255,6 @@ export default function ActiveLivenessView() {
       addLog("Camera denied: " + e.message, "err");
     }
   }, []);
-
-  // ... the rest of your functions (waitForVideo, runChallenge, startChallenge, etc.) stay exactly the same
 
   /* ── FIX BUG-3: wait for canplay before drawing frames ─────────── */
   const waitForVideo = () => new Promise(resolve => {
@@ -368,6 +398,41 @@ export default function ActiveLivenessView() {
       </div>
 
       <div className="max-w-4xl mx-auto px-6 py-8">
+
+        {/* Service status — same shape/behavior as the passive Model Status
+            health card in BiometricCaptureView.jsx, pointed at active/app.py */}
+        <div className="flex items-center justify-between rounded-xl px-4 py-3 mb-6 border border-white/5 bg-white/2">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                 style={{ background: health ? "#34d39918" : "#f8717118" }}>
+              <Ic n={health ? "check" : "warning"} s={15}
+                  c={health ? "#34d399" : (healthError ? "#f87171" : "#64748b")} />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-ink">
+                Active Liveness Service {health ? "Online" : (healthError ? "Unreachable" : "Checking…")}
+              </div>
+              {health && (
+                <div className="text-xs text-muted">
+                  Model: <span className="text-purple-400">{health.model}</span>
+                  &nbsp;·&nbsp;Challenges: {Array.isArray(health.challenges) ? health.challenges.length : "—"}
+                  &nbsp;·&nbsp;v{health.version}
+                  &nbsp;·&nbsp;secret {health.secret_configured ? "configured" : "MISSING"}
+                </div>
+              )}
+              {healthError && (
+                <div className="text-xs text-red-400">
+                  {healthError} — check active/app.py is running on port 5002
+                </div>
+              )}
+            </div>
+          </div>
+          <button type="button" onClick={fetchHealth}
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold border border-white/5 bg-purple-500/10 text-purple-300 transition-all">
+            {healthLoading ? "…" : "Refresh"}
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-6">
 
           {/* ── Webcam column ── */}
