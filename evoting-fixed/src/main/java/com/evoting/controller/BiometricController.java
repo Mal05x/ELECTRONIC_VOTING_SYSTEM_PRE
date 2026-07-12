@@ -48,9 +48,16 @@ public class BiometricController {
     @Value("${liveness.service.secret:}")
     private String livenessSecret;
 
-    @Value("${liveness.active.service.url:http://127.0.0.1:5002}")   
+    // FIX: was @Value("${liveness.active.service.url:...}") — that property
+    // path doesn't exist in application.yml (the real key is
+    // liveness.active-service.url, same as BiometricService uses), so this
+    // silently fell back to the hardcoded default in any environment where
+    // ACTIVE_LIVENESS_SERVICE_URL pointed somewhere other than
+    // 127.0.0.1:5002. Only affected the informational field in the
+    // liveness-mode response before now; matters more once the keep-alive
+    // and health-detail proxy below depend on it being correct.
+    @Value("${liveness.active-service.url:http://127.0.0.1:5002}")
     private String activeServiceUrl;
-    
 
     // ─────────────────────────────────────────────────────────────────────────
     //  V2 — Single frame (kept for backward compatibility)
@@ -218,6 +225,34 @@ public class BiometricController {
         } catch (Exception e) {
             return ResponseEntity.status(503)
                     .body(Map.of("error", "Liveness service unreachable: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * GET /api/camera/liveness-health-active
+     * Same idea as /liveness-health above, but for the MediaPipe active
+     * service (active/app.py, port 5002) instead of the passive MiniFASNet
+     * one. Backs the status card on ActiveLivenessView.jsx — same shared-
+     * secret auth pattern as /liveness-health.
+     */
+    @GetMapping("/liveness-health-active")
+    public ResponseEntity<?> livenessHealthActive() {
+        try {
+            HttpHeaders h = new HttpHeaders();
+            if (livenessSecret != null && !livenessSecret.isBlank()) {
+                h.set("X-Liveness-Secret", livenessSecret);
+            }
+            RestTemplate rt = new RestTemplate();
+            ResponseEntity<String> resp = rt.exchange(
+                    activeServiceUrl + "/health/detail",
+                    HttpMethod.GET,
+                    new HttpEntity<>(h),
+                    String.class
+            );
+            return ResponseEntity.status(resp.getStatusCode()).body(resp.getBody());
+        } catch (Exception e) {
+            return ResponseEntity.status(503)
+                    .body(Map.of("error", "Active liveness service unreachable: " + e.getMessage()));
         }
     }
     
