@@ -55,6 +55,41 @@ def health():
     return jsonify({"status": "ok", "service": "active-liveness", "version": "1.2.0", "port": 5002})
 
 
+@app.get("/health/detail")
+def health_detail():
+    """
+    Extended health check for the admin dashboard's Active Liveness view —
+    mirrors liveness-service/main.py's GET /health/detail (the passive
+    service's Model Status tab) so the frontend can show the same kind of
+    "is it actually configured and warm" picture for the active model too.
+    """
+    err = _require_secret()
+    if err:
+        return err
+
+    return jsonify({
+        "status":        "ok",
+        "service":       "active-liveness",
+        "version":       "1.2.0",
+        "port":          5002,
+        "model":         "mediapipe_face_mesh",
+        "secret_configured": bool(LIVENESS_SECRET),
+        "challenges": sorted(VALID_CHALLENGES),
+        "face_mesh_config": {
+            "max_num_faces":            1,
+            "refine_landmarks":         True,
+            "min_detection_confidence": 0.6,
+            "min_tracking_confidence":  0.6,
+        },
+        "thresholds": {
+            "head_turn_ratio":  0.45,
+            "blink_avg_gap":    0.012,
+            "smile_mouth_open": 0.040,
+            "smile_mouth_width":0.120,
+        },
+    })
+
+
 @app.post("/analyze-frame")
 def analyze_frame():
     err = _require_secret()
